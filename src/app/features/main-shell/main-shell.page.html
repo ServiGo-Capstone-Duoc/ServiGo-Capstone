@@ -1,0 +1,92 @@
+<ion-tabs>
+
+  <ion-tab-bar
+    slot="bottom"
+    *ngIf="
+      navigationMode$ | async
+      as mode
+    "
+  >
+
+    <!-- INICIO -->
+
+    <ion-tab-button
+      tab="home"
+      [href]="
+        mode === 'tecnico'
+          ? '/app/technician/home'
+          : '/app/home'
+      "
+    >
+
+      <ion-icon
+        name="home-outline"
+      ></ion-icon>
+
+      <ion-label>
+        Inicio
+      </ion-label>
+
+    </ion-tab-button>
+
+
+    <!-- SERVICIOS / TRABAJOS -->
+
+    <ion-tab-button
+      tab="services"
+      href="/app/services"
+    >
+
+      <ion-icon
+        name="construct-outline"
+      ></ion-icon>
+
+      <ion-label>
+        {{
+          mode === 'tecnico'
+            ? 'Trabajos'
+            : 'Servicios'
+        }}
+      </ion-label>
+
+    </ion-tab-button>
+
+
+    <!-- CHAT -->
+
+    <ion-tab-button
+      tab="messages"
+      href="/app/messages"
+    >
+
+      <ion-icon
+        name="chatbubble-ellipses-outline"
+      ></ion-icon>
+
+      <ion-label>
+        Chat
+      </ion-label>
+
+    </ion-tab-button>
+
+
+    <!-- PERFIL -->
+
+    <ion-tab-button
+      tab="profile"
+      href="/app/profile"
+    >
+
+      <ion-icon
+        name="person-outline"
+      ></ion-icon>
+
+      <ion-label>
+        Perfil
+      </ion-label>
+
+    </ion-tab-button>
+
+  </ion-tab-bar>
+
+</ion-tabs>

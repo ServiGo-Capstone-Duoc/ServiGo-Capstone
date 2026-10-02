@@ -1,0 +1,250 @@
+<ion-content>
+
+  <main class="detail-container">
+
+
+    <header class="detail-header">
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="detail-logo"
+      />
+
+    </header>
+
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando servicio...
+      </span>
+
+    </div>
+
+
+    <div
+      class="error-state"
+      *ngIf="
+        !loading &&
+        errorMessage
+      "
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        request as service
+      "
+    >
+
+      <section class="request-card">
+
+        <span>
+          SOLICITUD
+        </span>
+
+        <h1>
+          {{ service.category }}
+        </h1>
+
+        <p>
+          {{ service.description }}
+        </p>
+
+
+        <div class="request-info">
+
+          <div>
+
+            <ion-icon
+              name="location-outline"
+            ></ion-icon>
+
+            <span>
+              {{ service.commune }}
+            </span>
+
+          </div>
+
+
+          <div>
+
+            <ion-icon
+              name="calendar-outline"
+            ></ion-icon>
+
+            <span>
+              {{
+                formatDate(
+                  service.preferredDate
+                )
+              }}
+            </span>
+
+          </div>
+
+
+          <div>
+
+            <ion-icon
+              name="time-outline"
+            ></ion-icon>
+
+            <span>
+              {{ service.timeSlot }}
+            </span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="quotes-section">
+
+        <div class="section-heading">
+
+          <div>
+
+            <span>
+              PRESUPUESTOS
+            </span>
+
+            <h2>
+              Propuestas recibidas
+            </h2>
+
+          </div>
+
+
+          <strong>
+            {{ quotes.length }}
+          </strong>
+
+        </div>
+
+
+        <div
+          class="empty-quotes"
+          *ngIf="
+            quotes.length === 0
+          "
+        >
+
+          <ion-icon
+            name="document-text-outline"
+          ></ion-icon>
+
+          <strong>
+            Aún no recibes presupuestos
+          </strong>
+
+          <span>
+            Cuando un técnico envíe una propuesta,
+            aparecerá aquí.
+          </span>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="quote-card"
+          *ngFor="
+            let quote
+            of quotes
+          "
+          (click)="
+            openQuote(
+              quote
+            )
+          "
+        >
+
+          <div
+            class="quote-avatar"
+          >
+
+            <ion-icon
+              name="person-outline"
+            ></ion-icon>
+
+          </div>
+
+
+          <div
+            class="quote-main"
+          >
+
+            <span>
+              TÉCNICO
+            </span>
+
+            <h3>
+              {{ quote.technicianName }}
+            </h3>
+
+            <small>
+              Disponible
+              {{
+                formatDate(
+                  quote.availableDate
+                )
+              }}
+            </small>
+
+          </div>
+
+
+          <div
+            class="quote-price"
+          >
+
+            <strong>
+              $
+              {{
+                quote.totalAmount
+                  | number:'1.0-0'
+              }}
+            </strong>
+
+            <ion-icon
+              name="chevron-forward-outline"
+            ></ion-icon>
+
+          </div>
+
+        </button>
+
+      </section>
+
+    </ng-container>
+
+  </main>
+
+</ion-content>

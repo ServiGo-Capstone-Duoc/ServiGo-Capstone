@@ -1,0 +1,358 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background:
+    var(--servigo-background);
+}
+
+.services-container {
+  width: 100%;
+  max-width: 720px;
+
+  margin: 0 auto;
+
+  padding:
+    18px
+    18px
+    30px;
+}
+
+
+.services-header {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 18px;
+}
+
+
+.services-logo {
+  width: 120px;
+}
+
+
+.new-service-button {
+  min-height: 38px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  padding:
+    0
+    12px;
+
+  border: 0;
+  border-radius: 12px;
+
+  background:
+    var(--servigo-blue);
+
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+.services-intro {
+  margin-bottom: 22px;
+
+  > span {
+    color:
+      var(--servigo-blue);
+
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  h1 {
+    margin:
+      4px
+      0
+      6px;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 27px;
+  }
+
+  p {
+    margin: 0;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 11px;
+  }
+}
+
+
+.service-card {
+  width: 100%;
+
+  display: block;
+
+  margin-bottom: 12px;
+
+  padding: 16px;
+
+  border:
+    1px solid
+    rgba(11, 115, 224, 0.08);
+
+  border-radius: 19px;
+
+  background: #ffffff;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+
+.service-card-top {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+.service-icon {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 13px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+}
+
+
+.service-main {
+  min-width: 0;
+
+  flex: 1;
+
+  > span {
+    color:
+      var(--servigo-blue);
+
+    font-size: 8px;
+    font-weight: 800;
+  }
+
+  h2 {
+    margin:
+      2px
+      0
+      0;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 14px;
+  }
+}
+
+
+.status-badge {
+  flex: 0 0 auto;
+
+  padding:
+    5px
+    8px;
+
+  border-radius: 11px;
+
+  background: #f1f5f9;
+
+  color:
+    var(--servigo-text-secondary);
+
+  font-size: 8px;
+  font-weight: 800;
+}
+
+
+.service-description {
+  display: -webkit-box;
+
+  overflow: hidden;
+
+  margin:
+    12px
+    0;
+
+  color:
+    var(--servigo-text-secondary);
+
+  font-size: 10px;
+
+  line-height: 1.45;
+
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+
+.service-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 10px;
+
+  margin-bottom: 12px;
+
+  span {
+    display: flex;
+    align-items: center;
+
+    gap: 4px;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 9px;
+  }
+
+  ion-icon {
+    color:
+      var(--servigo-blue);
+  }
+}
+
+
+.quotes-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding:
+    10px
+    11px;
+
+  border-radius: 12px;
+
+  background: #f7f9fc;
+
+  color:
+    var(--servigo-text-secondary);
+
+  > div {
+    display: flex;
+    align-items: center;
+
+    gap: 6px;
+  }
+
+  span {
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  &.has-quotes {
+    background:
+      var(--servigo-blue-light);
+
+    color:
+      var(--servigo-blue);
+  }
+}
+
+
+.loading-state,
+.error-state,
+.empty-state {
+  text-align: center;
+}
+
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 9px;
+
+  padding: 40px 20px;
+
+  color:
+    var(--servigo-text-secondary);
+
+  font-size: 10px;
+}
+
+
+.empty-state {
+  padding: 34px 20px;
+
+  border-radius: 20px;
+
+  background: #ffffff;
+
+  h2 {
+    color:
+      var(--servigo-text);
+
+    font-size: 17px;
+  }
+
+  p {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 10px;
+  }
+
+  button {
+    margin-top: 12px;
+
+    padding:
+      10px
+      14px;
+
+    border: 0;
+    border-radius: 12px;
+
+    background:
+      var(--servigo-blue);
+
+    color: #ffffff;
+
+    font-size: 10px;
+    font-weight: 800;
+  }
+}
+
+
+.empty-icon {
+  color:
+    var(--servigo-blue);
+
+  ion-icon {
+    font-size: 40px;
+  }
+}

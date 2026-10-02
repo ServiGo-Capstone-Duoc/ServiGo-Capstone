@@ -1,0 +1,135 @@
+<ion-content [fullscreen]="true">
+
+  <div class="auth-shell">
+
+    <section class="brand">
+
+      <div class="brand-logo-container">
+        <img
+          src="assets/branding/servigo-logo-horizontal.png"
+          alt="ServiGo"
+          class="brand-logo"
+        />
+      </div>
+
+      <p>
+        Servicios confiables, donde los necesitas.
+      </p>
+
+    </section>
+
+    <section class="auth-card">
+
+      <div class="heading">
+
+        <h2>
+          Bienvenido
+        </h2>
+
+        <p>
+          Ingresa a tu cuenta para continuar.
+        </p>
+
+      </div>
+
+      <form
+        [formGroup]="form"
+        (ngSubmit)="login()"
+      >
+
+        <ion-item lines="none">
+
+          <ion-input
+            label="Correo electrónico"
+            labelPlacement="stacked"
+            type="email"
+            autocomplete="email"
+            formControlName="email"
+            placeholder="nombre@correo.cl"
+          ></ion-input>
+
+        </ion-item>
+
+        <ion-note
+          *ngIf="
+            form.controls.email.touched &&
+            form.controls.email.invalid
+          "
+          color="danger"
+          class="field-error"
+        >
+          Ingresa un correo válido.
+        </ion-note>
+
+        <ion-item lines="none">
+
+          <ion-input
+            label="Contraseña"
+            labelPlacement="stacked"
+            type="password"
+            autocomplete="current-password"
+            formControlName="password"
+            placeholder="Tu contraseña"
+          ></ion-input>
+
+        </ion-item>
+
+        <ion-note
+          *ngIf="
+            form.controls.password.touched &&
+            form.controls.password.invalid
+          "
+          color="danger"
+          class="field-error"
+        >
+          La contraseña debe tener al menos 6 caracteres.
+        </ion-note>
+
+        <div
+          class="login-error"
+          *ngIf="errorMessage"
+          role="alert"
+          aria-live="polite"
+        >
+          {{ errorMessage }}
+        </div>
+
+        <ion-button
+          expand="block"
+          type="submit"
+          [disabled]="form.invalid || loading"
+        >
+
+          <ion-spinner
+            *ngIf="loading"
+            name="crescent"
+          ></ion-spinner>
+
+          <span *ngIf="!loading">
+            Iniciar sesión
+          </span>
+
+        </ion-button>
+
+      </form>
+
+      <div class="secondary-action">
+
+        <span>
+          ¿Aún no tienes cuenta?
+        </span>
+
+        <ion-button
+          fill="clear"
+          routerLink="/register"
+        >
+          Crear cuenta
+        </ion-button>
+
+      </div>
+
+    </section>
+
+  </div>
+
+</ion-content>

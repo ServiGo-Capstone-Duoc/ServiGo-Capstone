@@ -1,0 +1,209 @@
+<ion-content>
+
+  <main class="quote-container">
+
+
+    <header class="quote-header">
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="quote-logo"
+      />
+
+    </header>
+
+
+    <section
+      class="success-card"
+      *ngIf="success"
+    >
+
+      <ion-icon
+        name="checkmark-circle"
+      ></ion-icon>
+
+
+      <span>
+        PRESUPUESTO ENVIADO
+      </span>
+
+
+      <h1>
+        Tu propuesta fue enviada
+      </h1>
+
+
+      <p>
+        El cliente podrá revisar
+        tu presupuesto y decidir
+        si desea contratarte.
+      </p>
+
+
+      <ion-button
+        expand="block"
+        type="button"
+        (click)="goHome()"
+      >
+        Volver al panel técnico
+      </ion-button>
+
+    </section>
+
+
+    <ng-container
+      *ngIf="!success"
+    >
+
+      <section class="intro">
+
+        <span>
+          PRESUPUESTO
+        </span>
+
+        <h1>
+          Cotiza el servicio
+        </h1>
+
+        <p
+          *ngIf="opportunity"
+        >
+          {{ opportunity.request.category }}
+          ·
+          {{ opportunity.request.commune }}
+        </p>
+
+      </section>
+
+
+      <form
+        [formGroup]="form"
+      >
+
+        <section class="form-card">
+
+          <h2>
+            Costos
+          </h2>
+
+
+          <ion-input
+            label="Mano de obra"
+            labelPlacement="stacked"
+            type="number"
+            formControlName="laborAmount"
+          ></ion-input>
+
+
+          <ion-input
+            label="Materiales"
+            labelPlacement="stacked"
+            type="number"
+            formControlName="materialsAmount"
+          ></ion-input>
+
+
+          <ion-input
+            label="Otros costos"
+            labelPlacement="stacked"
+            type="number"
+            formControlName="otherAmount"
+          ></ion-input>
+
+        </section>
+
+
+        <section class="total-card">
+
+          <span>
+            TOTAL PRESUPUESTO
+          </span>
+
+          <strong>
+            $
+            {{
+              totalAmount
+                | number:'1.0-0'
+            }}
+          </strong>
+
+        </section>
+
+
+        <section class="form-card">
+
+          <h2>
+            Disponibilidad
+          </h2>
+
+
+          <ion-input
+            label="Fecha disponible"
+            labelPlacement="stacked"
+            type="date"
+            [min]="today"
+            formControlName="availableDate"
+          ></ion-input>
+
+
+          <ion-textarea
+            label="Comentario al cliente"
+            labelPlacement="stacked"
+            formControlName="comment"
+            [autoGrow]="true"
+            placeholder="Ej: El valor incluye mano de obra. Puedo asistir durante la tarde..."
+          ></ion-textarea>
+
+        </section>
+
+
+        <div
+          class="form-error"
+          *ngIf="errorMessage"
+        >
+          {{ errorMessage }}
+        </div>
+
+
+        <ion-button
+          expand="block"
+          type="button"
+          class="send-button"
+          [disabled]="sending"
+          (click)="submit()"
+        >
+
+          <ion-spinner
+            *ngIf="sending"
+            name="crescent"
+          ></ion-spinner>
+
+          <span
+            *ngIf="!sending"
+          >
+            Enviar presupuesto
+          </span>
+
+        </ion-button>
+
+      </form>
+
+    </ng-container>
+
+  </main>
+
+</ion-content>

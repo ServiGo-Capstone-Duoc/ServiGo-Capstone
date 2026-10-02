@@ -1,0 +1,499 @@
+<ion-content>
+
+  <main
+    class="technician-home"
+    *ngIf="
+      profile$ | async as profile
+    "
+  >
+
+    <!-- MARCA -->
+
+    <header
+      class="technician-header"
+    >
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="technician-logo"
+      />
+
+      <span>
+        Modo profesional
+      </span>
+
+    </header>
+
+
+    <!-- SELECTOR -->
+
+    <app-mode-switcher
+      *ngIf="
+        mode$ | async as mode
+      "
+      [activeMode]="mode"
+    ></app-mode-switcher>
+
+
+    <!-- BIENVENIDA -->
+
+    <section
+      class="professional-welcome"
+    >
+
+      <span
+        class="professional-eyebrow"
+      >
+        PANEL TÉCNICO
+      </span>
+
+      <h1>
+        Hola,
+        {{ profile.displayName }}
+      </h1>
+
+      <p>
+        Gestiona tus oportunidades,
+        trabajos y reputación profesional.
+      </p>
+
+    </section>
+
+
+    <!-- KPIs -->
+
+    <section
+      class="metrics-grid"
+    >
+
+      <button
+        type="button"
+        class="metric-card"
+        (click)="openOpportunities()"
+      >
+
+        <div
+          class="metric-icon"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <strong>
+          {{
+            loadingOpportunities
+              ? '…'
+              : opportunities.length
+          }}
+        </strong>
+
+
+        <span>
+          Nuevas oportunidades
+        </span>
+
+      </button>
+
+
+      <button
+        type="button"
+        class="metric-card"
+        (click)="openActiveJobs()"
+      >
+
+        <div
+          class="metric-icon"
+        >
+
+          <ion-icon
+            name="time-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <strong>
+          {{
+            loadingActiveJobs
+              ? '…'
+              : activeJobs.length
+          }}
+        </strong>
+
+
+        <span>
+          Trabajos activos
+        </span>
+
+      </button>
+
+
+      <button
+        type="button"
+        class="metric-card"
+        (click)="openQuotes()"
+      >
+
+        <div
+          class="metric-icon"
+        >
+
+          <ion-icon
+            name="document-text-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <strong>
+          0
+        </strong>
+
+
+        <span>
+          Presupuestos enviados
+        </span>
+
+      </button>
+
+
+      <div
+        class="metric-card rating-card"
+      >
+
+        <div
+          class="metric-icon"
+        >
+
+          <ion-icon
+            name="star"
+          ></ion-icon>
+
+        </div>
+
+
+        <strong>
+          {{
+            profile.averageRating !== null
+              ? profile.averageRating.toFixed(1)
+              : '—'
+          }}
+        </strong>
+
+
+        <span>
+          Reputación
+        </span>
+
+      </div>
+
+    </section>
+
+
+    <!-- OPORTUNIDADES -->
+
+    <section
+      class="opportunities-section"
+    >
+
+      <div
+        class="section-heading"
+      >
+
+        <div>
+
+          <h2>
+            Oportunidades cercanas
+          </h2>
+
+          <span>
+            Solicitudes compatibles
+            con tus especialidades
+          </span>
+
+        </div>
+
+
+        <button
+          type="button"
+          (click)="openOpportunities()"
+        >
+          Ver todas
+        </button>
+
+      </div>
+
+
+      <!-- CARGANDO -->
+
+      <div
+        class="opportunity-loading"
+        *ngIf="
+          loadingOpportunities
+        "
+      >
+
+        <ion-spinner
+          name="crescent"
+        ></ion-spinner>
+
+        <span>
+          Cargando oportunidades...
+        </span>
+
+      </div>
+
+
+      <!-- ERROR -->
+
+      <div
+        class="opportunity-error"
+        *ngIf="
+          !loadingOpportunities &&
+          opportunitiesError
+        "
+      >
+        {{ opportunitiesError }}
+      </div>
+
+
+      <!-- VACÍO -->
+
+      <div
+        class="empty-opportunities"
+        *ngIf="
+          !loadingOpportunities &&
+          !opportunitiesError &&
+          opportunities.length === 0
+        "
+      >
+
+        <div
+          class="empty-icon"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div
+          class="empty-copy"
+        >
+
+          <strong>
+            Aún no hay oportunidades
+            disponibles
+          </strong>
+
+          <span>
+            Cuando el sistema encuentre
+            una solicitud compatible con
+            tu perfil profesional,
+            aparecerá aquí.
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- OPORTUNIDADES BACKEND -->
+
+      <button
+        type="button"
+        class="opportunity-card"
+        *ngFor="
+          let item
+          of opportunities
+        "
+        (click)="
+          openOpportunity(
+            item
+          )
+        "
+      >
+
+        <div
+          class="opportunity-top"
+        >
+
+          <div
+            class="opportunity-category"
+          >
+
+            <div
+              class="opportunity-icon"
+            >
+
+              <ion-icon
+                name="construct-outline"
+              ></ion-icon>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                OPORTUNIDAD
+              </span>
+
+              <h3>
+                {{
+                  item.request.category
+                }}
+              </h3>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="match-badge"
+          >
+            {{
+              item.opportunity.matchScore
+            }}%
+          </div>
+
+        </div>
+
+
+        <p
+          class="opportunity-description"
+        >
+          {{
+            item.request.description
+          }}
+        </p>
+
+
+        <div
+          class="opportunity-meta"
+        >
+
+          <span>
+
+            <ion-icon
+              name="location-outline"
+            ></ion-icon>
+
+            {{
+              item.request.commune
+            }}
+
+          </span>
+
+
+          <span>
+
+            <ion-icon
+              name="time-outline"
+            ></ion-icon>
+
+            {{
+              item.request.timeSlot
+            }}
+
+          </span>
+
+        </div>
+
+
+        <div
+          class="match-reasons"
+        >
+
+          <span
+            *ngFor="
+              let reason
+              of item.opportunity.matchReasons
+            "
+          >
+            {{ reason }}
+          </span>
+
+        </div>
+
+
+        <div
+          class="opportunity-footer"
+        >
+
+          <span
+            class="urgency"
+            [class.urgent]="
+              item.request.urgency ===
+              'urgent'
+            "
+          >
+
+            {{
+              item.request.urgency ===
+                'urgent'
+                ? 'Urgente'
+                : item.request.urgency ===
+                    'soon'
+                  ? 'Pronto'
+                  : 'Normal'
+            }}
+
+          </span>
+
+
+          <span
+            class="view-opportunity"
+          >
+
+            Ver solicitud
+
+            <ion-icon
+              name="chevron-forward-outline"
+            ></ion-icon>
+
+          </span>
+
+        </div>
+
+      </button>
+
+    </section>
+
+
+    <!-- ESTADO -->
+
+    <section
+      class="professional-status"
+    >
+
+      <div>
+
+        <span>
+          ESTADO PROFESIONAL
+        </span>
+
+        <strong>
+          Técnico activo
+        </strong>
+
+      </div>
+
+
+      <div
+        class="active-dot"
+      ></div>
+
+    </section>
+
+  </main>
+
+</ion-content>

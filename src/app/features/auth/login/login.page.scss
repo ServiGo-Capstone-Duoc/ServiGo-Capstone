@@ -1,0 +1,133 @@
+:host {
+  --servigo-blue: #0b73e0;
+  --servigo-blue-dark: #0757b4;
+  --servigo-yellow: #ffc21a;
+  --servigo-background: #f6f8fb;
+  --servigo-text: #1f2937;
+  --servigo-muted: #6b7280;
+}
+
+ion-content {
+  --background: var(--servigo-background);
+}
+
+.auth-shell {
+  min-height: 100%;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+
+.brand {
+  text-align: center;
+
+  h1 {
+    margin: 12px 0 6px;
+    color: var(--servigo-blue);
+    font-size: 34px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0 auto;
+    max-width: 320px;
+    color: var(--servigo-muted);
+    line-height: 1.45;
+  }
+}
+
+.brand-logo-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.brand-logo {
+  display: block;
+  width: min(300px, 80vw);
+  height: auto;
+  object-fit: contain;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px;
+
+  background: #ffffff;
+  border-radius: 24px;
+
+  box-shadow:
+    0 12px 40px rgba(31, 41, 55, 0.08);
+}
+
+.heading {
+  margin-bottom: 22px;
+
+  h2 {
+    margin: 0 0 6px;
+    color: var(--servigo-text);
+    font-size: 24px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--servigo-muted);
+  }
+}
+
+ion-item {
+  --background: #f8fafc;
+  --border-radius: 14px;
+
+  margin-bottom: 14px;
+}
+
+ion-button[type='submit'] {
+  --background: var(--servigo-blue);
+  --background-hover: var(--servigo-blue-dark);
+  --border-radius: 14px;
+
+  min-height: 50px;
+  margin-top: 22px;
+
+  font-weight: 700;
+}
+
+.secondary-action {
+  margin-top: 18px;
+  text-align: center;
+  color: var(--servigo-muted);
+}
+
+.error {
+  margin: 10px 4px;
+  font-size: 14px;
+}
+
+.login-error {
+  margin: 12px 2px 4px;
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+
+  color: #b91c1c;
+
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.field-error {
+  display: block;
+  margin: -6px 4px 10px;
+
+  font-size: 12px;
+}

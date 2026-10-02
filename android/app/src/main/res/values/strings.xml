@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ServiGo</string>
+    <string name="title_activity_main">ServiGo</string>
+    <string name="package_name">cl.servigo.app</string>
+    <string name="custom_url_scheme">cl.servigo.app</string>
+</resources>

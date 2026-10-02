@@ -1,0 +1,293 @@
+<ion-header class="servigo-header">
+
+  <ion-toolbar>
+
+    <div class="header-content">
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="header-logo"
+      />
+
+      <button
+        class="notification-button"
+        type="button"
+        aria-label="Notificaciones"
+      >
+        <ion-icon
+          name="notifications-outline"
+        ></ion-icon>
+
+        <span
+          class="notification-dot"
+        ></span>
+      </button>
+
+    </div>
+
+  </ion-toolbar>
+
+</ion-header>
+
+
+<ion-content>
+
+  <main
+    class="home-container"
+    *ngIf="
+      profile$ | async as profile
+    "
+  >
+
+    <!-- BIENVENIDA -->
+
+    <section
+      class="welcome-section"
+    >
+
+      <span
+        class="welcome-small"
+      >
+        Hola,
+        {{ profile.displayName }}
+      </span>
+
+      <h1>
+        ¿Qué servicio
+        necesitas hoy?
+      </h1>
+
+      <p>
+        Encuentra técnicos
+        confiables cerca de ti.
+      </p>
+
+    </section>
+<ng-container
+  *ngIf="
+    profile.roles.includes('tecnico')
+  "
+>
+
+  <app-mode-switcher
+    *ngIf="
+      mode$ | async as mode
+    "
+    [activeMode]="mode"
+  ></app-mode-switcher>
+
+</ng-container>
+
+    <!-- BUSCADOR -->
+
+    <button
+      class="search-box"
+      type="button"
+    >
+
+      <ion-icon
+        name="search-outline"
+      ></ion-icon>
+
+      <span>
+        Buscar un servicio
+      </span>
+
+    </button>
+
+
+    <!-- CATEGORÍAS -->
+
+    <section
+      class="section-block"
+    >
+
+      <div
+        class="section-heading"
+      >
+
+        <h2>
+          Categorías
+        </h2>
+
+        <button
+          type="button"
+          class="text-button"
+        >
+          Ver todas
+        </button>
+
+      </div>
+
+
+      <div
+        class="category-grid"
+      >
+
+        <button
+          type="button"
+          class="category-card"
+          *ngFor="
+            let category
+            of categories
+          "
+          (click)="
+            selectCategory(
+              category.name
+            )
+          "
+        >
+
+          <div
+            class="category-icon"
+          >
+
+            <ion-icon
+              [name]="
+                category.icon
+              "
+            ></ion-icon>
+
+          </div>
+
+          <span>
+            {{ category.name }}
+          </span>
+
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- GEOLOCALIZACIÓN -->
+
+    <section
+      class="location-card"
+    >
+
+      <div
+        class="map-placeholder"
+      >
+
+        <div
+          class="map-grid"
+        ></div>
+
+        <div
+          class="location-pin"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+        </div>
+
+        <div
+          class="location-copy"
+        >
+
+          <strong>
+            Técnicos cerca de ti
+          </strong>
+
+          <span>
+            Usaremos tu ubicación
+            para encontrar las mejores opciones.
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- CTA PRINCIPAL -->
+
+    <ion-button
+      expand="block"
+      class="request-button"
+      (click)="
+        requestService()
+      "
+    >
+      Solicitar servicio
+    </ion-button>
+
+
+    <!-- ACTIVIDAD -->
+
+    <section
+      class="section-block recent-section"
+    >
+
+      <div
+        class="section-heading"
+      >
+
+        <h2>
+          Servicios recientes
+        </h2>
+
+        <button
+          type="button"
+          class="text-button"
+        >
+          Ver todos
+        </button>
+
+      </div>
+
+
+      <div
+        class="empty-service"
+      >
+
+        <div
+          class="empty-service-icon"
+        >
+
+          <img
+            src="assets/branding/servigo-logo-badge.png"
+            alt=""
+          />
+
+        </div>
+
+        <div
+          class="empty-service-text"
+        >
+
+          <strong>
+            Aún no tienes servicios activos
+          </strong>
+
+          <span>
+            Cuando solicites uno,
+            podrás seguirlo desde aquí.
+          </span>
+
+        </div>
+
+        <ion-icon
+          name="chevron-forward-outline"
+        ></ion-icon>
+
+      </div>
+
+    </section>
+
+
+    <!-- ESPACIO PARA TAB BAR -->
+
+    <div
+      class="bottom-safe-space"
+    ></div>
+
+  </main>
+
+</ion-content>

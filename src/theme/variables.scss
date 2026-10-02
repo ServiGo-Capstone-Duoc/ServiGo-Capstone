@@ -1,0 +1,61 @@
+// For information on how to create your own theme, please refer to:
+// https://ionicframework.com/docs/theming/
+:root {
+
+  /* =========================================
+     SERVIGO BRAND
+     ========================================= */
+
+  --servigo-blue: #0b73e0;
+  --servigo-blue-dark: #0757b4;
+  --servigo-blue-light: #eaf4ff;
+
+  --servigo-yellow: #ffc21a;
+  --servigo-orange: #ff9f00;
+
+  --servigo-background: #f6f8fb;
+  --servigo-surface: #ffffff;
+
+  --servigo-text: #1f2937;
+  --servigo-text-secondary: #6b7280;
+
+  --servigo-success: #22c55e;
+  --servigo-warning: #f59e0b;
+  --servigo-error: #ef4444;
+
+
+  /* =========================================
+     IONIC PRIMARY
+     ========================================= */
+
+  --ion-color-primary: #0b73e0;
+  --ion-color-primary-rgb: 11, 115, 224;
+
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+
+  --ion-color-primary-shade: #0a65c5;
+  --ion-color-primary-tint: #2381e3;
+
+
+  /* =========================================
+     IONIC SECONDARY
+     ========================================= */
+
+  --ion-color-secondary: #ffc21a;
+  --ion-color-secondary-rgb: 255, 194, 26;
+
+  --ion-color-secondary-contrast: #1f2937;
+  --ion-color-secondary-contrast-rgb: 31, 41, 55;
+
+  --ion-color-secondary-shade: #e0ab17;
+  --ion-color-secondary-tint: #ffc831;
+
+
+  /* =========================================
+     APP
+     ========================================= */
+
+  --ion-background-color: #f6f8fb;
+  --ion-text-color: #1f2937;
+}
