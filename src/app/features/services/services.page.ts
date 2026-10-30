@@ -5,7 +5,6 @@ import {
 import {
   ChangeDetectorRef,
   Component,
-  OnInit,
   inject
 } from '@angular/core';
 
@@ -29,7 +28,8 @@ import {
   timeOutline,
   chevronForwardOutline,
   documentTextOutline,
-  addOutline
+  addOutline,
+  checkmarkCircleOutline
 } from 'ionicons/icons';
 
 import {
@@ -63,8 +63,14 @@ export interface ClientServiceItem {
 }
 
 
+type ServiceView =
+  'active'
+  | 'history';
+
+
 @Component({
-  selector: 'app-services',
+  selector:
+    'app-services',
 
   templateUrl:
     './services.page.html',
@@ -73,7 +79,8 @@ export interface ClientServiceItem {
     './services.page.scss'
   ],
 
-  standalone: true,
+  standalone:
+    true,
 
   imports: [
     CommonModule,
@@ -82,25 +89,32 @@ export interface ClientServiceItem {
     IonSpinner
   ]
 })
-export class ServicesPage
-  implements OnInit {
+export class ServicesPage {
 
 
   private readonly router =
-    inject(Router);
+    inject(
+      Router
+    );
+
 
   private readonly authService =
-    inject(AuthService);
+    inject(
+      AuthService
+    );
+
 
   private readonly requestService =
     inject(
       ServiceRequestService
     );
 
+
   private readonly quoteService =
     inject(
       QuoteService
     );
+
 
   private readonly cdr =
     inject(
@@ -120,31 +134,66 @@ export class ServicesPage
     ClientServiceItem[] = [];
 
 
+  activeServices:
+    ClientServiceItem[] = [];
+
+
+  historyServices:
+    ClientServiceItem[] = [];
+
+
+  selectedView:
+    ServiceView =
+      'active';
+
+
   constructor() {
 
     addIcons({
+
       constructOutline,
+
       locationOutline,
+
       timeOutline,
+
       chevronForwardOutline,
+
       documentTextOutline,
-      addOutline
+
+      addOutline,
+
+      checkmarkCircleOutline
     });
   }
 
 
-  async ngOnInit():
+  /*
+   * =========================================
+   * REFRESCAR AL ENTRAR
+   * =========================================
+   */
+
+  async ionViewWillEnter():
     Promise<void> {
 
     await this.loadServices();
   }
 
 
+  /*
+   * =========================================
+   * CARGA
+   * =========================================
+   */
+
   async loadServices():
     Promise<void> {
 
+
     this.loading =
       true;
+
 
     this.errorMessage =
       '';
@@ -155,13 +204,21 @@ export class ServicesPage
         .waitForAuthReady();
 
 
-    if (!user) {
+    if (
+      !user
+    ) {
 
       this.loading =
         false;
 
+
       this.errorMessage =
         'No pudimos validar tu sesión.';
+
+
+      this.cdr
+        .detectChanges();
+
 
       return;
     }
@@ -203,6 +260,52 @@ export class ServicesPage
         );
 
 
+      /*
+       * =====================================
+       * ACTIVOS
+       * =====================================
+       */
+
+      this.activeServices =
+        this.services.filter(
+          item =>
+            item.request.status !==
+              'completed'
+            &&
+            item.request.status !==
+              'cancelled'
+        );
+
+
+      /*
+       * =====================================
+       * HISTORIAL
+       * =====================================
+       */
+
+      this.historyServices =
+        this.services.filter(
+          item =>
+            item.request.status ===
+              'completed'
+            ||
+            item.request.status ===
+              'cancelled'
+        );
+
+
+      console.log(
+        '[ServiGo] Servicios activos cliente:',
+        this.activeServices
+      );
+
+
+      console.log(
+        '[ServiGo] Historial cliente:',
+        this.historyServices
+      );
+
+
     } catch (error) {
 
       console.error(
@@ -220,44 +323,78 @@ export class ServicesPage
       this.loading =
         false;
 
-      this.cdr.detectChanges();
+
+      this.cdr
+        .detectChanges();
     }
   }
 
 
-  async newRequest():
-    Promise<void> {
+  /*
+   * =========================================
+   * SELECTOR
+   * =========================================
+   */
 
-    await this.router.navigateByUrl(
-      '/app/services/new'
-    );
+  selectView(
+    view: ServiceView
+  ): void {
+
+    this.selectedView =
+      view;
   }
 
 
+  /*
+   * =========================================
+   * NUEVA SOLICITUD
+   * =========================================
+   */
+
+  async newRequest():
+    Promise<void> {
+
+    await this.router
+      .navigateByUrl(
+        '/app/services/new'
+      );
+  }
+
+
+  /*
+   * =========================================
+   * ABRIR SERVICIO
+   * =========================================
+   */
+
   async openService(
-    item: ClientServiceItem
+    item:
+      ClientServiceItem
   ): Promise<void> {
 
     await this.router.navigate(
       [
         '/app/services',
         item.request.id
-      ],
-      {
-        state: {
-          serviceItem:
-            item
-        }
-      }
+      ]
     );
   }
 
+
+  /*
+   * =========================================
+   * ESTADO
+   * =========================================
+   */
 
   getStatusLabel(
     status: string
   ): string {
 
-    switch (status) {
+
+    switch (
+      status
+    ) {
 
       case 'published':
         return 'Publicado';
@@ -283,5 +420,21 @@ export class ServicesPage
       default:
         return status;
     }
+  }
+
+
+  /*
+   * =========================================
+   * LISTA ACTUAL
+   * =========================================
+   */
+
+  get visibleServices():
+    ClientServiceItem[] {
+
+    return this.selectedView ===
+      'active'
+        ? this.activeServices
+        : this.historyServices;
   }
 }

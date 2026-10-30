@@ -6,6 +6,7 @@ import {
   collection,
   DocumentData,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -15,6 +16,11 @@ import {
 } from 'firebase/firestore';
 
 import {
+  httpsCallable
+} from 'firebase/functions';
+
+import {
+  firebaseFunctions,
   firestore
 } from '../firebase/firebase';
 
@@ -44,6 +50,26 @@ export interface CreateServiceRequest {
   timeSlot: string;
 
   urgency: ServiceUrgency;
+}
+
+
+interface UpdateJobStatusResponse {
+
+  ok: boolean;
+
+  requestId: string;
+
+  status:
+    | 'en_route'
+    | 'arrived'
+    | 'in_progress'
+    | 'completed';
+
+  previousStatus:
+    | 'accepted'
+    | 'en_route'
+    | 'arrived'
+    | 'in_progress';
 }
 
 
@@ -116,8 +142,11 @@ export class ServiceRequestService {
 
   /*
    * =========================================
-   * TRABAJOS ASIGNADOS AL TÉCNICO
+   * TRABAJOS ACTIVOS DEL TÉCNICO
    * =========================================
+   *
+   * Solo aparecen trabajos que todavía
+   * requieren gestión del técnico.
    */
 
   async getAssignedRequestsForTechnician(
@@ -152,12 +181,20 @@ export class ServiceRequestService {
             snapshot.data()
           )
       )
-      .filter(
-        request =>
-          request.status === 'accepted'
-          ||
-          request.status === 'in_progress'
-      )
+.filter(
+  request =>
+    request.status ===
+      'accepted'
+    ||
+    request.status ===
+      'en_route'
+    ||
+    request.status ===
+      'arrived'
+    ||
+    request.status ===
+      'in_progress'
+)
       .sort(
         (
           a,
@@ -180,6 +217,442 @@ export class ServiceRequestService {
       );
   }
 
+/*
+ * =========================================
+ * HISTORIAL DEL TÉCNICO
+ * =========================================
+ *
+ * Recupera trabajos que ya terminaron
+ * su ciclo operativo.
+ *
+ * Por ahora:
+ *
+ * completed
+ * cancelled
+ *
+ * Se mantiene separado de trabajos activos
+ * para no alterar el comportamiento actual
+ * del Home técnico.
+ */
+
+
+
+async getHistoryForTechnician(
+  technicianId: string
+): Promise<ServiceRequest[]> {
+
+  const requestsQuery =
+    query(
+      collection(
+        firestore,
+        'serviceRequests'
+      ),
+
+      where(
+        'assignedTechnicianId',
+        '==',
+        technicianId
+      )
+    );
+
+
+  const result =
+    await getDocs(
+      requestsQuery
+    );
+
+
+  return result.docs
+    .map(
+      snapshot =>
+        this.mapRequest(
+          snapshot.data()
+        )
+    )
+    .filter(
+      request =>
+        request.status ===
+          'completed'
+        ||
+        request.status ===
+          'cancelled'
+    )
+    .sort(
+      (
+        a,
+        b
+      ) => {
+
+        const dateA =
+          a.updatedAt
+            ?.getTime()
+          ?? 0;
+
+
+        const dateB =
+          b.updatedAt
+            ?.getTime()
+          ?? 0;
+
+
+        return dateB - dateA;
+      }
+    );
+}
+  /*
+   * =========================================
+   * DETALLE DE TRABAJO DEL TÉCNICO
+   * =========================================
+   *
+   * Permite recuperar también un trabajo
+   * completed, por ejemplo al refrescar
+   * la pantalla después de finalizarlo.
+   */
+
+  async getRequestForTechnician(
+    requestId: string,
+    technicianId: string
+  ): Promise<ServiceRequest | null> {
+
+    const requestRef =
+      doc(
+        firestore,
+        'serviceRequests',
+        requestId
+      );
+
+
+    const snapshot =
+      await getDoc(
+        requestRef
+      );
+
+
+    if (
+      !snapshot.exists()
+    ) {
+
+      return null;
+    }
+
+
+    const request =
+      this.mapRequest(
+        snapshot.data()
+      );
+
+
+    if (
+      request.assignedTechnicianId !==
+      technicianId
+    ) {
+
+      return null;
+    }
+
+
+    return request;
+  }
+
+/*
+ * =========================================
+ * IR AL DOMICILIO
+ * =========================================
+ *
+ * accepted -> en_route
+ */
+
+async startTrip(
+  requestId: string
+): Promise<void> {
+
+  await this.updateJobStatus(
+    requestId,
+    'start_trip'
+  );
+}
+
+
+/*
+ * =========================================
+ * MARCAR LLEGADA
+ * =========================================
+ *
+ * en_route -> arrived
+ */
+
+async markArrived(
+  requestId: string
+): Promise<void> {
+
+  await this.updateJobStatus(
+    requestId,
+    'arrive'
+  );
+}
+
+
+/*
+ * =========================================
+ * INICIAR TRABAJO
+ * =========================================
+ *
+ * arrived -> in_progress
+ */
+
+async startJob(
+  requestId: string
+): Promise<void> {
+
+  await this.updateJobStatus(
+    requestId,
+    'start'
+  );
+}
+
+
+/*
+ * =========================================
+ * FINALIZAR TRABAJO
+ * =========================================
+ *
+ * in_progress -> completed
+ */
+
+async completeJob(
+  requestId: string
+): Promise<void> {
+
+  await this.updateJobStatus(
+    requestId,
+    'complete'
+  );
+}
+
+/*
+ * =========================================
+ * CANCELAR SERVICIO
+ * =========================================
+ *
+ * La cancelación se ejecuta exclusivamente
+ * mediante la Callable cancelService.
+ *
+ * El frontend solamente entrega:
+ *
+ * - requestId
+ * - reason
+ *
+ * El backend determina de forma autoritativa:
+ *
+ * - usuario autenticado
+ * - cliente o técnico
+ * - permisos
+ * - estado actual
+ * - si puede cancelar
+ * - auditoría
+ * - limpieza GPS
+ * - notificaciones Push
+ */
+
+async cancelService(
+  requestId: string,
+  reason: string
+): Promise<void> {
+
+
+  /*
+   * =====================================
+   * NORMALIZAR DATOS
+   * =====================================
+   */
+
+  const normalizedRequestId =
+    requestId.trim();
+
+
+  const normalizedReason =
+    reason.trim();
+
+
+  /*
+   * =====================================
+   * VALIDACIÓN LOCAL BÁSICA
+   * =====================================
+   *
+   * Estas validaciones mejoran UX.
+   *
+   * La seguridad real sigue estando
+   * en backend.
+   */
+
+  if (
+    !normalizedRequestId
+  ) {
+
+    throw new Error(
+      'cancel-service-request-id-required'
+    );
+  }
+
+
+  if (
+    normalizedReason.length <
+    5
+  ) {
+
+    throw new Error(
+      'cancel-service-reason-required'
+    );
+  }
+
+
+  /*
+   * =====================================
+   * CALLABLE
+   * =====================================
+   */
+
+  const cancelServiceFunction =
+    httpsCallable<
+      {
+        requestId: string;
+        reason: string;
+      },
+      {
+        ok: boolean;
+
+        requestId: string;
+
+        status:
+          'cancelled';
+
+        previousStatus:
+          ServiceRequestStatus;
+
+        cancelledBy:
+          | 'client'
+          | 'technician';
+      }
+    >(
+      firebaseFunctions,
+      'cancelService'
+    );
+
+
+  /*
+   * =====================================
+   * EJECUTAR
+   * =====================================
+   */
+
+  const response =
+    await cancelServiceFunction({
+
+      requestId:
+        normalizedRequestId,
+
+      reason:
+        normalizedReason
+    });
+
+
+  /*
+   * =====================================
+   * VALIDAR RESPUESTA
+   * =====================================
+   */
+
+  if (
+    !response.data.ok
+    ||
+    response.data.status !==
+    'cancelled'
+  ) {
+
+    throw new Error(
+      'cancel-service-failed'
+    );
+  }
+
+
+  console.log(
+    '[ServiGo] Servicio cancelado por backend:',
+    response.data
+  );
+}
+/*
+ * =========================================
+ * CALLABLE - ESTADO DEL TRABAJO
+ * =========================================
+ */
+
+private async updateJobStatus(
+  requestId: string,
+
+  action:
+    | 'start_trip'
+    | 'arrive'
+    | 'start'
+    | 'complete'
+): Promise<void> {
+
+
+  const updateJobStatusFunction =
+    httpsCallable<
+      {
+        requestId: string;
+
+        action:
+          | 'start_trip'
+          | 'arrive'
+          | 'start'
+          | 'complete';
+      },
+      {
+        ok: boolean;
+
+        requestId: string;
+
+        status:
+          | 'en_route'
+          | 'arrived'
+          | 'in_progress'
+          | 'completed';
+
+        previousStatus:
+          | 'accepted'
+          | 'en_route'
+          | 'arrived'
+          | 'in_progress';
+      }
+    >(
+      firebaseFunctions,
+      'updateJobStatus'
+    );
+
+
+  const response =
+    await updateJobStatusFunction({
+      requestId,
+      action
+    });
+
+
+  if (
+    !response.data.ok
+  ) {
+
+    throw new Error(
+      'update-job-status-failed'
+    );
+  }
+
+
+  console.log(
+    '[ServiGo] Estado de trabajo actualizado por backend:',
+    response.data
+  );
+}
 
   /*
    * =========================================
@@ -252,16 +725,28 @@ export class ServiceRequestService {
           'published',
 
         assignedTechnicianId:
-          null,
+  null,
 
-        acceptedQuoteId:
-          null,
+acceptedQuoteId:
+  null,
 
-        createdAt:
-          serverTimestamp(),
+/*
+ * =====================================
+ * ESTADO ECONÓMICO
+ * =====================================
+ */
 
-        updatedAt:
-          serverTimestamp()
+paymentStatus:
+  'pending',
+
+paymentId:
+  null,
+
+createdAt:
+  serverTimestamp(),
+
+updatedAt:
+  serverTimestamp()
       }
     );
 
@@ -347,13 +832,36 @@ export class ServiceRequestService {
         ?? null,
 
       acceptedQuoteId:
-        data['acceptedQuoteId']
-        ?? null,
+  data['acceptedQuoteId']
+  ?? null,
 
-      createdAt:
-        this.toDate(
-          data['createdAt']
-        ),
+
+/*
+ * =====================================
+ * ESTADO ECONÓMICO
+ * =====================================
+ *
+ * Compatibilidad con solicitudes
+ * creadas antes del módulo de pagos.
+ */
+
+paymentStatus:
+  data['paymentStatus'] ===
+    'paid'
+      ? 'paid'
+      : 'pending',
+
+paymentId:
+  typeof data['paymentId'] ===
+    'string'
+      ? data['paymentId']
+      : null,
+
+
+createdAt:
+  this.toDate(
+    data['createdAt']
+  ),
 
       updatedAt:
         this.toDate(
@@ -367,7 +875,10 @@ export class ServiceRequestService {
     value: string
   ): Timestamp | null {
 
-    if (!value) {
+    if (
+      !value
+    ) {
+
       return null;
     }
 
@@ -429,4 +940,5 @@ export class ServiceRequestService {
 
     return null;
   }
+  
 }

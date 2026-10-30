@@ -75,7 +75,34 @@ export const routes: Routes = [
         )
   },
 
+/*
+ * =========================================
+ * RETORNO WEBPAY
+ * =========================================
+ *
+ * Ruta externa al MainShell.
+ *
+ * Transbank retorna directamente aquí
+ * después de completar o abandonar
+ * el proceso de pago.
+ */
 
+{
+  path:
+    'payment/webpay-return',
+
+  canActivate: [
+    authGuard
+  ],
+
+  loadComponent: () =>
+    import(
+      './features/payment/webpay-return/webpay-return.page'
+    )
+      .then(
+        m => m.WebpayReturnPage
+      )
+},
   /*
    * =========================================
    * APLICACIÓN AUTENTICADA
@@ -99,6 +126,7 @@ export const routes: Routes = [
         ),
 
     children: [
+
 
       /*
        * -------------------------------------
@@ -160,8 +188,9 @@ export const routes: Routes = [
       /*
        * Nueva solicitud.
        *
-       * Va antes que :requestId para evitar
-       * que "new" sea interpretado como ID.
+       * Debe ir antes de :requestId
+       * para que "new" no sea interpretado
+       * como un identificador.
        */
 
       {
@@ -179,9 +208,7 @@ export const routes: Routes = [
 
 
       /*
-       * Detalle específico de presupuesto.
-       *
-       * Va antes que services/:requestId.
+       * Detalle de presupuesto.
        */
 
       {
@@ -218,7 +245,33 @@ export const routes: Routes = [
 
       /*
        * -------------------------------------
-       * MENSAJES
+       * MENSAJES - DETALLE
+       * -------------------------------------
+       *
+       * Conversación asociada a un
+       * serviceRequest concreto.
+       *
+       * Se deja antes de "messages"
+       * por claridad de estructura.
+       */
+
+      {
+        path:
+          'messages/:requestId',
+
+        loadComponent: () =>
+          import(
+            './features/messages/chat-detail/chat-detail.page'
+          )
+            .then(
+              m => m.ChatDetailPage
+            )
+      },
+
+
+      /*
+       * -------------------------------------
+       * MENSAJES - LISTADO
        * -------------------------------------
        */
 
@@ -302,6 +355,66 @@ export const routes: Routes = [
           )
             .then(
               m => m.HomePage
+            )
+      },
+
+
+      /*
+       * -------------------------------------
+       * TRABAJOS - DETALLE
+       * -------------------------------------
+       */
+
+      {
+        path:
+          'technician/jobs/:requestId',
+
+        canActivate: [
+          roleGuard
+        ],
+
+        data: {
+          roles: [
+            'tecnico'
+          ]
+        },
+
+        loadComponent: () =>
+          import(
+            './features/technician/job-detail/job-detail.page'
+          )
+            .then(
+              m => m.JobDetailPage
+            )
+      },
+
+
+      /*
+       * -------------------------------------
+       * TRABAJOS - LISTADO
+       * -------------------------------------
+       */
+
+      {
+        path:
+          'technician/jobs',
+
+        canActivate: [
+          roleGuard
+        ],
+
+        data: {
+          roles: [
+            'tecnico'
+          ]
+        },
+
+        loadComponent: () =>
+          import(
+            './features/technician/jobs/jobs.page'
+          )
+            .then(
+              m => m.JobsPage
             )
       },
 
@@ -413,5 +526,9 @@ export const routes: Routes = [
 
     redirectTo:
       'app/home'
+  },
+  {
+    path: 'webpay-return',
+    loadComponent: () => import('./features/payment/webpay-return/webpay-return.page').then( m => m.WebpayReturnPage)
   }
 ];

@@ -49,8 +49,16 @@ import {
 } from '../../../core/services/push-notification.service';
 
 import {
+  QuoteService
+} from '../../../core/services/quote.service';
+
+import {
   ServiceRequestService
 } from '../../../core/services/service-request.service';
+
+import {
+  DemandAnalyticsService
+} from '../../../core/services/demand-analytics.service';
 
 import {
   TechnicianOpportunityService,
@@ -58,10 +66,17 @@ import {
 } from '../../../core/services/technician-opportunity.service';
 
 import {
+  Quote
+} from '../../../core/models/quote.model';
+
+import {
   ServiceRequest
 } from '../../../core/models/service-request.model';
 
-
+import {
+  DemandAnalytics,
+  DemandRecommendation
+} from '../../../core/models/demand-analytics.model';
 
 import {
   ModeSwitcherComponent
@@ -103,19 +118,33 @@ export class HomePage
    */
 
   private readonly router =
-    inject(Router);
+    inject(
+      Router
+    );
 
 
   private readonly modeService =
-    inject(AppModeService);
+    inject(
+      AppModeService
+    );
 
 
   private readonly authService =
-    inject(AuthService);
+    inject(
+      AuthService
+    );
 
 
   private readonly requestService =
-    inject(ServiceRequestService);
+    inject(
+      ServiceRequestService
+    );
+
+
+  private readonly demandAnalyticsService =
+    inject(
+      DemandAnalyticsService
+    );
 
 
   private readonly opportunityService =
@@ -124,8 +153,16 @@ export class HomePage
     );
 
 
+  private readonly quoteService =
+    inject(
+      QuoteService
+    );
+
+
   private readonly profileService =
-    inject(ProfileService);
+    inject(
+      ProfileService
+    );
 
 
   private readonly pushNotificationService =
@@ -135,7 +172,9 @@ export class HomePage
 
 
   private readonly cdr =
-    inject(ChangeDetectorRef);
+    inject(
+      ChangeDetectorRef
+    );
 
 
   /*
@@ -145,35 +184,24 @@ export class HomePage
    */
 
   readonly profile$ =
-    this.profileService.profile$;
+    this.profileService
+      .profile$;
 
 
   readonly mode$ =
-    this.modeService.mode$;
+    this.modeService
+      .mode$;
 
 
   /*
    * =========================================
    * OPORTUNIDADES
    * =========================================
-   *
-   * Estas oportunidades YA EXISTEN
-   * en Firestore.
-   *
-   * El Home técnico:
-   *
-   * - NO hace matching
-   * - NO calcula score
-   * - NO calcula prioridad
-   * - NO decide push
-   * - NO crea oportunidades
-   *
-   * Todo eso pertenece al backend.
-   * =========================================
    */
 
-opportunities:
-  TechnicianOpportunityView[] = [];
+  opportunities:
+    TechnicianOpportunityView[] =
+      [];
 
 
   loadingOpportunities =
@@ -191,14 +219,83 @@ opportunities:
    */
 
   activeJobs:
-    ServiceRequest[] = [];
+    ServiceRequest[] =
+      [];
 
 
   loadingActiveJobs =
     true;
 
 
+  /*
+   * =========================================
+   * PRESUPUESTOS
+   * =========================================
+   */
+
+  quotes:
+    Quote[] =
+      [];
+
+
+  loadingQuotes =
+    true;
+
+
+  /*
+   * =========================================
+   * DEMANDA RECOMENDADA
+   * =========================================
+   */
+
+  demandPredictions:
+    DemandAnalytics[] =
+      [];
+
+
+  demandAnalytics:
+    DemandAnalytics | null =
+      null;
+
+
+  demandCategories:
+    string[] =
+      [];
+
+
+  demandTimeBands:
+    string[] =
+      [];
+
+
+  selectedDemandCategory =
+    '';
+
+
+  selectedDemandTimeBand =
+    '';
+
+
+  loadingDemandAnalytics =
+    true;
+
+
+  demandAnalyticsError =
+    '';
+
+
+  /*
+   * =========================================
+   * PUSH
+   * =========================================
+   */
+
+  private pushInitialized =
+    false;
+
+
   constructor() {
+
 
     addIcons({
 
@@ -227,21 +324,63 @@ opportunities:
     Promise<void> {
 
 
-    this.modeService.setMode(
-      'tecnico'
-    );
+    this.modeService
+      .setMode(
+        'tecnico'
+      );
 
 
     /*
-     * Registro FCM del dispositivo.
-     *
-     * Esto sigue perteneciendo al cliente
-     * porque cada dispositivo debe registrar
-     * su propio token.
+     * =====================================
+     * PUSH
+     * =====================================
      */
 
-    await this.pushNotificationService
-      .initialize();
+    if (
+      !this.pushInitialized
+    ) {
+
+      try {
+
+        await this
+          .pushNotificationService
+          .initialize();
+
+
+        this.pushInitialized =
+          true;
+
+
+      } catch (error) {
+
+        console.error(
+          '[ServiGo] Error inicializando notificaciones:',
+          error
+        );
+      }
+    }
+  }
+
+
+  /*
+   * =========================================
+   * ION VIEW WILL ENTER
+   * =========================================
+   */
+
+  async ionViewWillEnter():
+    Promise<void> {
+
+
+    this.modeService
+      .setMode(
+        'tecnico'
+      );
+
+
+    console.log(
+      '[ServiGo] Home técnico activo. Recargando dashboard...'
+    );
 
 
     await this.loadDashboard();
@@ -258,6 +397,12 @@ opportunities:
     Promise<void> {
 
 
+    /*
+     * =====================================
+     * ESTADO DE CARGA
+     * =====================================
+     */
+
     this.loadingOpportunities =
       true;
 
@@ -266,16 +411,78 @@ opportunities:
       true;
 
 
+    this.loadingQuotes =
+      true;
+
+
+    this.loadingDemandAnalytics =
+      true;
+
+
     this.opportunitiesError =
       '';
 
+
+    this.demandAnalyticsError =
+      '';
+
+
+    /*
+     * =====================================
+     * LIMPIAR DATOS ANTERIORES
+     * =====================================
+     */
+
+    this.opportunities =
+      [];
+
+
+    this.activeJobs =
+      [];
+
+
+    this.quotes =
+      [];
+
+
+    this.demandPredictions =
+      [];
+
+
+    this.demandAnalytics =
+      null;
+
+
+    this.demandCategories =
+      [];
+
+
+    this.demandTimeBands =
+      [];
+
+
+    this.selectedDemandCategory =
+      '';
+
+
+    this.selectedDemandTimeBand =
+      '';
+
+
+    /*
+     * =====================================
+     * SESIÓN
+     * =====================================
+     */
 
     const user =
       await this.authService
         .waitForAuthReady();
 
 
-    if (!user) {
+    if (
+      !user
+    ) {
 
       this.loadingOpportunities =
         false;
@@ -285,47 +492,92 @@ opportunities:
         false;
 
 
+      this.loadingQuotes =
+        false;
+
+
+      this.loadingDemandAnalytics =
+        false;
+
+
       this.opportunitiesError =
         'No pudimos validar tu sesión.';
 
 
-      this.cdr.detectChanges();
+      this.demandAnalyticsError =
+        'No pudimos validar tu sesión.';
+
+
+      this.cdr
+        .detectChanges();
+
 
       return;
     }
 
 
-    try {
+    /*
+     * =====================================
+     * CARGA DEL DASHBOARD
+     * =====================================
+     */
 
-      /*
-       * =====================================
-       * CARGA PARALELA
-       * =====================================
-       *
-       * Oportunidades:
-       * generadas previamente por backend.
-       *
-       * Trabajos:
-       * solicitudes ya asignadas al técnico.
-       */
+    try {
 
       const [
         opportunities,
-        activeJobs
+        activeJobs,
+        quotes,
+        demandPredictions
       ] =
         await Promise.all([
+
+
+          /*
+           * Oportunidades disponibles.
+           */
 
           this.opportunityService
             .getAvailableOpportunities(
               user.uid
             ),
 
+
+          /*
+           * Servicios asignados.
+           */
+
           this.requestService
             .getAssignedRequestsForTechnician(
               user.uid
-            )
+            ),
+
+
+          /*
+           * Presupuestos enviados.
+           */
+
+          this.quoteService
+            .getQuotesForTechnician(
+              user.uid
+            ),
+
+
+          /*
+           * Todas las combinaciones de
+           * demanda disponibles.
+           */
+
+          this.demandAnalyticsService
+            .getPredictions()
         ]);
 
+
+      /*
+       * =====================================
+       * ASIGNACIÓN
+       * =====================================
+       */
 
       this.opportunities =
         opportunities;
@@ -334,6 +586,28 @@ opportunities:
       this.activeJobs =
         activeJobs;
 
+
+      this.quotes =
+        quotes;
+
+
+      this.demandPredictions =
+        demandPredictions;
+
+
+      /*
+       * Inicializamos categoría,
+       * franja y predicción visible.
+       */
+
+      this.initializeDemandSelection();
+
+
+      /*
+       * =====================================
+       * LOGS
+       * =====================================
+       */
 
       console.log(
         '[ServiGo] Oportunidades backend:',
@@ -347,13 +621,42 @@ opportunities:
       );
 
 
+      console.log(
+        '[ServiGo] Presupuestos enviados:',
+        this.quotes
+      );
+
+
+      console.log(
+        '[ServiGo] Predicciones de demanda cargadas:',
+        this.demandPredictions.length
+      );
+
+
+      console.log(
+        '[ServiGo] Demanda seleccionada:',
+        this.demandAnalytics
+      );
+
+
       if (
         this.opportunities.length ===
-        0
+          0
       ) {
 
         console.log(
           '[ServiGo] No existen oportunidades disponibles.'
+        );
+      }
+
+
+      if (
+        this.demandPredictions.length ===
+          0
+      ) {
+
+        console.log(
+          '[ServiGo] No existen recomendaciones de demanda disponibles.'
         );
       }
 
@@ -366,8 +669,48 @@ opportunities:
       );
 
 
+      this.opportunities =
+        [];
+
+
+      this.activeJobs =
+        [];
+
+
+      this.quotes =
+        [];
+
+
+      this.demandPredictions =
+        [];
+
+
+      this.demandAnalytics =
+        null;
+
+
+      this.demandCategories =
+        [];
+
+
+      this.demandTimeBands =
+        [];
+
+
+      this.selectedDemandCategory =
+        '';
+
+
+      this.selectedDemandTimeBand =
+        '';
+
+
       this.opportunitiesError =
         'No pudimos cargar la información profesional.';
+
+
+      this.demandAnalyticsError =
+        'No pudimos cargar la recomendación de demanda.';
 
 
     } finally {
@@ -380,7 +723,336 @@ opportunities:
         false;
 
 
-      this.cdr.detectChanges();
+      this.loadingQuotes =
+        false;
+
+
+      this.loadingDemandAnalytics =
+        false;
+
+
+      this.cdr
+        .detectChanges();
+    }
+  }
+
+
+  /*
+   * =========================================
+   * INICIALIZAR SELECTORES DE DEMANDA
+   * =========================================
+   */
+
+  private initializeDemandSelection():
+    void {
+
+
+    this.demandCategories =
+      this.demandAnalyticsService
+        .getCategories(
+          this.demandPredictions
+        );
+
+
+    if (
+      this.demandCategories.length ===
+        0
+    ) {
+
+      this.demandAnalytics =
+        null;
+
+
+      return;
+    }
+
+
+    /*
+     * Electricidad como categoría inicial
+     * cuando esté disponible.
+     */
+
+    this.selectedDemandCategory =
+      this.demandCategories.includes(
+        'Electricidad'
+      )
+        ? 'Electricidad'
+        : (
+            this.demandCategories[
+              0
+            ]
+            ??
+            ''
+          );
+
+
+    this.refreshDemandTimeBands();
+
+
+    /*
+     * Mañana como franja inicial
+     * cuando esté disponible.
+     */
+
+    this.selectedDemandTimeBand =
+      this.demandTimeBands.includes(
+        'Mañana'
+      )
+        ? 'Mañana'
+        : (
+            this.demandTimeBands[
+              0
+            ]
+            ??
+            ''
+          );
+
+
+    this.refreshDemandPrediction();
+  }
+
+
+  /*
+   * =========================================
+   * CAMBIO DE CATEGORÍA
+   * =========================================
+   */
+
+  onDemandCategoryChange(
+    value:
+      string
+  ): void {
+
+
+    this.selectedDemandCategory =
+      value;
+
+
+    this.refreshDemandTimeBands();
+
+
+    /*
+     * Si la franja anterior no existe para
+     * la nueva categoría seleccionamos
+     * nuevamente una válida.
+     */
+
+    if (
+      !this.demandTimeBands.includes(
+        this.selectedDemandTimeBand
+      )
+    ) {
+
+      this.selectedDemandTimeBand =
+        this.demandTimeBands.includes(
+          'Mañana'
+        )
+          ? 'Mañana'
+          : (
+              this.demandTimeBands[
+                0
+              ]
+              ??
+              ''
+            );
+    }
+
+
+    this.refreshDemandPrediction();
+  }
+
+
+  /*
+   * =========================================
+   * CAMBIO DE FRANJA
+   * =========================================
+   */
+
+  onDemandTimeBandChange(
+    value:
+      string
+  ): void {
+
+
+    this.selectedDemandTimeBand =
+      value;
+
+
+    this.refreshDemandPrediction();
+  }
+
+
+  /*
+   * =========================================
+   * FRANJAS DISPONIBLES
+   * =========================================
+   */
+
+  private refreshDemandTimeBands():
+    void {
+
+
+    this.demandTimeBands =
+      this.demandAnalyticsService
+        .getTimeBands(
+          this.demandPredictions,
+          this.selectedDemandCategory
+        );
+  }
+
+
+  /*
+   * =========================================
+   * ACTUALIZAR PREDICCIÓN
+   * =========================================
+   */
+
+  private refreshDemandPrediction():
+    void {
+
+
+    if (
+      !this.selectedDemandCategory
+      ||
+      !this.selectedDemandTimeBand
+    ) {
+
+      this.demandAnalytics =
+        null;
+
+
+      return;
+    }
+
+
+    this.demandAnalytics =
+      this.demandAnalyticsService
+        .findPrediction(
+          this.demandPredictions,
+          this.selectedDemandCategory,
+          this.selectedDemandTimeBand
+        );
+
+
+    console.log(
+      '[ServiGo] Predicción seleccionada:',
+      {
+        category:
+          this.selectedDemandCategory,
+
+        timeBand:
+          this.selectedDemandTimeBand,
+
+        prediction:
+          this.demandAnalytics
+      }
+    );
+  }
+
+
+  /*
+   * =========================================
+   * TOP DEMANDA
+   * =========================================
+   */
+
+  get topDemandRecommendations():
+    DemandRecommendation[] {
+
+
+    return (
+      this.demandAnalytics
+        ?.recommendations
+        ?.slice(
+          0,
+          3
+        )
+      ??
+      []
+    );
+  }
+
+
+  /*
+   * =========================================
+   * FECHA DE PREDICCIÓN
+   * =========================================
+   */
+
+  get demandPredictionDateLabel():
+    string {
+
+
+    const value =
+      this.demandAnalytics
+        ?.predictionDate;
+
+
+    if (
+      !value
+    ) {
+
+      return '';
+    }
+
+
+    const parts =
+      value.split(
+        '-'
+      );
+
+
+    if (
+      parts.length !==
+        3
+    ) {
+
+      return value;
+    }
+
+
+    return (
+      `${parts[2]}/${parts[1]}`
+    );
+  }
+
+
+  /*
+   * =========================================
+   * CLASE VISUAL NIVEL DEMANDA
+   * =========================================
+   */
+
+  getDemandLevelClass(
+    level:
+      DemandRecommendation[
+        'level'
+      ]
+  ): string {
+
+
+    switch (
+      level
+    ) {
+
+      case 'Alta':
+
+        return 'high';
+
+
+      case 'Media':
+
+        return 'medium';
+
+
+      case 'Baja':
+
+        return 'low';
+
+
+      default:
+
+        return '';
     }
   }
 
@@ -392,79 +1064,19 @@ opportunities:
    */
 
   async openOpportunity(
-  item:
-    TechnicianOpportunityView
-): Promise<void> {
+    item:
+      TechnicianOpportunityView
+  ): Promise<void> {
 
 
-  /*
-   * Registramos que el técnico abrió
-   * la oportunidad.
-   */
-
-  try {
-
-    if (
-      item.opportunity.status ===
-      'available'
-    ) {
-
-      await this.opportunityService
-        .markAsViewed(
-          item.opportunity.id
-        );
-
-
-      item.opportunity.status =
-        'viewed';
-    }
-
-
-  } catch (error) {
-
-    /*
-     * Una falla registrando viewedAt
-     * no debe impedir abrir el servicio.
-     */
-
-    console.error(
-      '[ServiGo] Error marcando oportunidad como vista:',
-      error
-    );
+    await this.router
+      .navigate(
+        [
+          '/app/technician/opportunity',
+          item.request.id
+        ]
+      );
   }
-
-
-  await this.router.navigate(
-    [
-      '/app/technician/opportunity',
-      item.request.id
-    ],
-    {
-      state: {
-
-        /*
-         * Mantenemos temporalmente una estructura
-         * compatible con OpportunityDetailPage.
-         */
-
-        opportunity: {
-
-          request:
-            item.request,
-
-          matchScore:
-            item.opportunity.matchScore,
-
-          matchReasons:
-            item.opportunity.matchReasons,
-
-          opportunityId:
-            item.opportunity.id
-        }
-      }
-    }
-  );
-}
 
 
   /*
@@ -490,14 +1102,14 @@ opportunities:
    * =========================================
    */
 
-  openActiveJobs():
-    void {
+  async openActiveJobs():
+    Promise<void> {
 
 
-    console.log(
-      '[ServiGo] Trabajos activos:',
-      this.activeJobs
-    );
+    await this.router
+      .navigateByUrl(
+        '/app/technician/jobs'
+      );
   }
 
 
@@ -512,7 +1124,8 @@ opportunities:
 
 
     console.log(
-      '[ServiGo] Presupuestos'
+      '[ServiGo] Presupuestos enviados:',
+      this.quotes
     );
   }
 }

@@ -3,6 +3,10 @@ const {
 } = require('firebase-admin/app');
 
 const {
+  getAuth
+} = require('firebase-admin/auth');
+
+const {
   getFirestore,
   Timestamp
 } = require('firebase-admin/firestore');
@@ -14,15 +18,19 @@ const {
  * =========================================
  *
  * Este script SOLO puede ejecutarse
- * contra Firestore Emulator.
+ * contra Firebase Emulator Suite.
  *
- * Si FIRESTORE_EMULATOR_HOST no existe,
- * cancelamos inmediatamente para evitar
- * escribir accidentalmente en producción.
- * =========================================
+ * Exigimos:
+ *
+ * - Authentication Emulator
+ * - Firestore Emulator
+ *
+ * Si falta cualquiera, cancelamos.
  */
 
-if (!process.env.FIRESTORE_EMULATOR_HOST) {
+if (
+  !process.env.FIRESTORE_EMULATOR_HOST
+) {
 
   console.error(
     '[ServiGo Seed] ERROR: FIRESTORE_EMULATOR_HOST no está definido.'
@@ -36,9 +44,31 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
 }
 
 
+if (
+  !process.env.FIREBASE_AUTH_EMULATOR_HOST
+) {
+
+  console.error(
+    '[ServiGo Seed] ERROR: FIREBASE_AUTH_EMULATOR_HOST no está definido.'
+  );
+
+  console.error(
+    '[ServiGo Seed] Ejecución cancelada para proteger Authentication real.'
+  );
+
+  process.exit(1);
+}
+
+
 console.log(
   '[ServiGo Seed] Firestore Emulator:',
   process.env.FIRESTORE_EMULATOR_HOST
+);
+
+
+console.log(
+  '[ServiGo Seed] Authentication Emulator:',
+  process.env.FIREBASE_AUTH_EMULATOR_HOST
 );
 
 
@@ -58,97 +88,163 @@ const db =
   getFirestore();
 
 
+const auth =
+  getAuth();
+
+
 /*
  * =========================================
- * SEED
+ * CONFIGURACIÓN DE USUARIOS TEST
+ * =========================================
+ */
+
+const TEST_PASSWORD =
+  'ServiGo123!';
+
+
+const CLIENT_EMAIL =
+  'cliente@servigo.test';
+
+
+const TECHNICIAN_EMAIL =
+  'tecnico@servigo.test';
+
+
+/*
+ * =========================================
+ * CREAR O RECUPERAR USUARIO AUTH
+ * =========================================
+ *
+ * Esto permite ejecutar el seed varias
+ * veces sin generar usuarios duplicados.
+ */
+
+async function ensureAuthUser(
+  email,
+  displayName
+) {
+
+
+  try {
+
+    const existingUser =
+      await auth
+        .getUserByEmail(
+          email
+        );
+
+
+    /*
+     * Aseguramos que la contraseña
+     * y nombre vuelvan al valor de test.
+     */
+
+    await auth.updateUser(
+      existingUser.uid,
+      {
+        displayName,
+        password:
+          TEST_PASSWORD
+      }
+    );
+
+
+    console.log(
+      '[ServiGo Seed] Usuario Auth existente:',
+      email,
+      existingUser.uid
+    );
+
+
+    return existingUser;
+
+
+  } catch (error) {
+
+
+    if (
+      error?.code !==
+      'auth/user-not-found'
+    ) {
+
+      throw error;
+    }
+
+
+    const newUser =
+      await auth.createUser({
+
+        email,
+
+        password:
+          TEST_PASSWORD,
+
+        displayName,
+
+        emailVerified:
+          true,
+
+        disabled:
+          false
+      });
+
+
+    console.log(
+      '[ServiGo Seed] Usuario Auth creado:',
+      email,
+      newUser.uid
+    );
+
+
+    return newUser;
+  }
+}
+
+
+/*
+ * =========================================
+ * SEED PRINCIPAL
  * =========================================
  */
 
 async function seed() {
 
 
-  /*
-   * -----------------------------------------
-   * IDENTIFICADORES
-   * -----------------------------------------
-   */
-
-  const technicianId =
-    'virgilio-test';
-
-
-  const clientId =
-    'julio-test';
-
-
-  const applicationId =
-    'application-virgilio-test';
-
-
-  /*
-   * =========================================
-   * USUARIO TÉCNICO
-   * =========================================
-   */
-
-  await db
-    .collection(
-      'users'
-    )
-    .doc(
-      technicianId
-    )
-    .set({
-
-      uid:
-        technicianId,
-
-      displayName:
-        'Virgilio Test',
-
-      email:
-        'virgilio@test.servigo.cl',
-
-      roles: [
-        'cliente',
-        'tecnico'
-      ],
-
-      status:
-        'active',
-
-      /*
-       * Técnico nuevo.
-       *
-       * Esto permite probar nuestra regla:
-       *
-       * ratingCount === 0
-       * → eligibleForPush = true
-       */
-
-      averageRating:
-        null,
-
-      ratingCount:
-        0,
-
-      createdAt:
-        Timestamp.now(),
-
-      updatedAt:
-        Timestamp.now()
-    });
-
+  console.log('');
 
   console.log(
-    '[ServiGo Seed] Técnico creado:',
-    technicianId
+    '========================================='
+  );
+
+  console.log(
+    ' SERVIGO - INICIANDO SEED LOCAL'
+  );
+
+  console.log(
+    '========================================='
   );
 
 
   /*
    * =========================================
-   * USUARIO CLIENTE
+   * 1. CREAR USUARIO CLIENTE EN AUTH
+   * =========================================
+   */
+
+  const clientAuthUser =
+    await ensureAuthUser(
+      CLIENT_EMAIL,
+      'Cliente Test'
+    );
+
+
+  const clientId =
+    clientAuthUser.uid;
+
+
+  /*
+   * =========================================
+   * 2. PERFIL CLIENTE EN FIRESTORE
    * =========================================
    */
 
@@ -159,53 +255,161 @@ async function seed() {
     .doc(
       clientId
     )
-    .set({
+    .set(
+      {
 
-      uid:
-        clientId,
+        uid:
+          clientId,
 
-      displayName:
-        'Julio Test',
+        email:
+          CLIENT_EMAIL,
 
-      email:
-        'julio@test.servigo.cl',
+        displayName:
+          'Cliente Test',
 
-      roles: [
-        'cliente'
-      ],
+        phone:
+          null,
 
-      status:
-        'active',
+        photoUrl:
+          null,
 
-      averageRating:
-        null,
+        roles: [
+          'cliente'
+        ],
 
-      ratingCount:
-        0,
+        status:
+          'active',
 
-      createdAt:
-        Timestamp.now(),
+        averageRating:
+          null,
 
-      updatedAt:
-        Timestamp.now()
-    });
+        ratingCount:
+          0,
+
+        createdAt:
+          Timestamp.now(),
+
+        updatedAt:
+          Timestamp.now(),
+
+        lastLoginAt:
+          Timestamp.now()
+      },
+      {
+        merge:
+          true
+      }
+    );
 
 
   console.log(
-    '[ServiGo Seed] Cliente creado:',
+    '[ServiGo Seed] Perfil cliente creado:',
     clientId
   );
 
 
   /*
    * =========================================
-   * POSTULACIÓN TÉCNICA APROBADA
+   * 3. CREAR TÉCNICO EN AUTH
    * =========================================
-   *
-   * Esto simula que Virgilio ya pasó
-   * por el proceso administrativo y fue
-   * aprobado como técnico.
    */
+
+  const technicianAuthUser =
+    await ensureAuthUser(
+      TECHNICIAN_EMAIL,
+      'Técnico Test'
+    );
+
+
+  const technicianId =
+    technicianAuthUser.uid;
+
+
+  /*
+   * =========================================
+   * 4. PERFIL TÉCNICO EN FIRESTORE
+   * =========================================
+   */
+
+  await db
+    .collection(
+      'users'
+    )
+    .doc(
+      technicianId
+    )
+    .set(
+      {
+
+        uid:
+          technicianId,
+
+        email:
+          TECHNICIAN_EMAIL,
+
+        displayName:
+          'Técnico Test',
+
+        phone:
+          '+56911111111',
+
+        photoUrl:
+          null,
+
+        roles: [
+          'cliente',
+          'tecnico'
+        ],
+
+        status:
+          'active',
+
+        /*
+         * Técnico nuevo.
+         *
+         * Esto mantiene nuestra regla:
+         *
+         * ratingCount === 0
+         * -> eligibleForPush = true
+         */
+
+        averageRating:
+          null,
+
+        ratingCount:
+          0,
+
+        createdAt:
+          Timestamp.now(),
+
+        updatedAt:
+          Timestamp.now(),
+
+        lastLoginAt:
+          Timestamp.now()
+      },
+      {
+        merge:
+          true
+      }
+    );
+
+
+  console.log(
+    '[ServiGo Seed] Perfil técnico creado:',
+    technicianId
+  );
+
+
+  /*
+   * =========================================
+   * 5. POSTULACIÓN TÉCNICA APROBADA
+   * =========================================
+   */
+
+  const applicationId =
+    `application-${technicianId}`;
+
 
   await db
     .collection(
@@ -214,70 +418,76 @@ async function seed() {
     .doc(
       applicationId
     )
-    .set({
+    .set(
+      {
 
-      id:
-        applicationId,
+        id:
+          applicationId,
 
-      userId:
-        technicianId,
+        userId:
+          technicianId,
 
-      fullName:
-        'Virgilio Test',
+        fullName:
+          'Técnico Test',
 
-      rut:
-        '11.111.111-1',
+        rut:
+          '11.111.111-1',
 
-      phone:
-        '+56911111111',
+        phone:
+          '+56911111111',
 
-      experienceYears:
-        5,
+        experienceYears:
+          5,
 
-      experienceDescription:
-        'Técnico de prueba para validar el motor de matching de ServiGo.',
+        experienceDescription:
+          'Técnico de prueba para validar el flujo completo de ServiGo.',
 
-      specialties: [
-        'Electricidad'
-      ],
+        specialties: [
+          'Electricidad'
+        ],
 
-      baseCommune:
-        'Puente Alto',
+        baseCommune:
+          'Puente Alto',
 
-      serviceRadiusKm:
-        10,
+        serviceRadiusKm:
+          10,
 
-      hasIdentification:
-        true,
+        hasIdentification:
+          true,
 
-      hasCertifications:
-        false,
+        hasCertifications:
+          false,
 
-      termsAccepted:
-        true,
+        termsAccepted:
+          true,
 
-      status:
-        'approved',
+        status:
+          'approved',
 
-      reviewedBy:
-        'admin-test',
+        reviewedBy:
+          'admin-test',
 
-      reviewedAt:
-        Timestamp.now(),
+        reviewedAt:
+          Timestamp.now(),
 
-      rejectionReason:
-        null,
+        rejectionReason:
+          null,
 
-      createdAt:
-        Timestamp.now(),
+        createdAt:
+          Timestamp.now(),
 
-      updatedAt:
-        Timestamp.now()
-    });
+        updatedAt:
+          Timestamp.now()
+      },
+      {
+        merge:
+          true
+      }
+    );
 
 
   console.log(
-    '[ServiGo Seed] Postulación aprobada creada:',
+    '[ServiGo Seed] Postulación técnica aprobada:',
     applicationId
   );
 
@@ -289,6 +499,7 @@ async function seed() {
    */
 
   console.log('');
+
   console.log(
     '========================================='
   );
@@ -301,27 +512,67 @@ async function seed() {
     '========================================='
   );
 
+
+  console.log('');
+
   console.log(
-    'Técnico:',
-    technicianId
+    'CLIENTE TEST'
   );
 
   console.log(
-    'Cliente:',
+    'Email:',
+    CLIENT_EMAIL
+  );
+
+  console.log(
+    'Password:',
+    TEST_PASSWORD
+  );
+
+  console.log(
+    'UID:',
     clientId
   );
+
+
+  console.log('');
+
+  console.log(
+    'TÉCNICO TEST'
+  );
+
+  console.log(
+    'Email:',
+    TECHNICIAN_EMAIL
+  );
+
+  console.log(
+    'Password:',
+    TEST_PASSWORD
+  );
+
+  console.log(
+    'UID:',
+    technicianId
+  );
+
+
+  console.log('');
 
   console.log(
     'Especialidad: Electricidad'
   );
 
   console.log(
-    'Comuna base: Puente Alto'
+    'Comuna: Puente Alto'
   );
 
   console.log(
-    'Rating: nuevo técnico (0 evaluaciones)'
+    'Rating: nuevo técnico'
   );
+
+
+  console.log('');
 
   console.log(
     '========================================='

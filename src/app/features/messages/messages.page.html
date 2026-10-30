@@ -1,12 +1,174 @@
-<ion-content class="ion-padding">
+<ion-content>
 
-  <h1>
-    Chat
-  </h1>
+  <main
+    class="messages-container"
+  >
 
-  <p>
-    Aquí aparecerán tus conversaciones
-    asociadas a servicios.
-  </p>
+    <header
+      class="messages-header"
+    >
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="messages-logo"
+      />
+
+    </header>
+
+
+    <section
+      class="messages-intro"
+    >
+
+      <span>
+        MENSAJES
+      </span>
+
+      <h1>
+        Tus conversaciones
+      </h1>
+
+      <p>
+        Coordina los detalles de tus
+        servicios directamente por ServiGo.
+      </p>
+
+    </section>
+
+
+    <div
+      class="loading-state"
+      *ngIf="
+        loading
+      "
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando conversaciones...
+      </span>
+
+    </div>
+
+
+    <div
+      class="error-state"
+      *ngIf="
+        !loading &&
+        errorMessage
+      "
+    >
+
+      {{ errorMessage }}
+
+    </div>
+
+
+    <section
+      class="empty-state"
+      *ngIf="
+        !loading &&
+        !errorMessage &&
+        conversations.length === 0
+      "
+    >
+
+      <div
+        class="empty-icon"
+      >
+
+        <ion-icon
+          name="chatbubble-ellipses-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <h2>
+        Aún no tienes conversaciones
+      </h2>
+
+
+      <p>
+        Cuando contrates un técnico
+        o un cliente acepte tu presupuesto,
+        podrás conversar desde aquí.
+      </p>
+
+    </section>
+
+
+    <section
+      class="conversation-list"
+      *ngIf="
+        !loading &&
+        conversations.length > 0
+      "
+    >
+
+      <button
+        type="button"
+        class="conversation-card"
+        *ngFor="
+          let request
+          of conversations
+        "
+        (click)="
+          openConversation(
+            request
+          )
+        "
+      >
+
+        <div
+          class="conversation-icon"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div
+          class="conversation-main"
+        >
+
+          <span>
+            SERVICIO
+          </span>
+
+          <strong>
+            {{ request.category }}
+          </strong>
+
+          <small>
+            {{ request.commune }}
+            ·
+            {{
+              getStatusLabel(
+                request.status
+              )
+            }}
+          </small>
+
+        </div>
+
+
+        <ion-icon
+          class="conversation-arrow"
+          name="chevron-forward-outline"
+        ></ion-icon>
+
+      </button>
+
+    </section>
+
+  </main>
 
 </ion-content>

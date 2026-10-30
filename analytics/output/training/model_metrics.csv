@@ -1,0 +1,3 @@
+﻿model,mae,rmse,r2,test_records,synthetic_data,mae_improvement_vs_baseline_pct,rmse_improvement_vs_baseline_pct,beats_baseline
+baseline_rolling_mean_7,0.9888,1.2402,0.4532,11040,1,0.0,0.0,0
+hist_gradient_boosting,0.9161,1.141,0.5372,11040,1,7.35,8.0,1

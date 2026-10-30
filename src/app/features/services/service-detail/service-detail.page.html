@@ -1,9 +1,13 @@
 <ion-content>
 
-  <main class="detail-container">
+  <main
+    class="detail-container"
+  >
 
 
-    <header class="detail-header">
+    <header
+      class="detail-header"
+    >
 
       <button
         type="button"
@@ -27,9 +31,15 @@
     </header>
 
 
+    <!-- ================================= -->
+    <!-- CARGANDO -->
+    <!-- ================================= -->
+
     <div
       class="loading-state"
-      *ngIf="loading"
+      *ngIf="
+        loading
+      "
     >
 
       <ion-spinner
@@ -43,6 +53,10 @@
     </div>
 
 
+    <!-- ================================= -->
+    <!-- ERROR -->
+    <!-- ================================= -->
+
     <div
       class="error-state"
       *ngIf="
@@ -50,7 +64,9 @@
         errorMessage
       "
     >
+
       {{ errorMessage }}
+
     </div>
 
 
@@ -61,22 +77,33 @@
       "
     >
 
-      <section class="request-card">
+
+      <!-- ================================= -->
+      <!-- SOLICITUD -->
+      <!-- ================================= -->
+
+      <section
+        class="request-card"
+      >
 
         <span>
           SOLICITUD
         </span>
 
+
         <h1>
           {{ service.category }}
         </h1>
+
 
         <p>
           {{ service.description }}
         </p>
 
 
-        <div class="request-info">
+        <div
+          class="request-info"
+        >
 
           <div>
 
@@ -98,11 +125,13 @@
             ></ion-icon>
 
             <span>
+
               {{
                 formatDate(
                   service.preferredDate
                 )
               }}
+
             </span>
 
           </div>
@@ -125,9 +154,489 @@
       </section>
 
 
-      <section class="quotes-section">
+      <!-- SOLICITUD CANCELADA -->
+      <section class="cancelled-card" *ngIf="service.status === 'cancelled'">
+        <ion-icon name="close-circle-outline"></ion-icon>
+        <div>
+          <span>SOLICITUD CANCELADA</span>
+          <strong>Esta solicitud fue cancelada</strong>
+          <p>Ya no requiere ninguna gestión.</p>
+        </div>
+      </section>
 
-        <div class="section-heading">
+      <!-- CANCELAR SOLICITUD -->
+      <section class="cancellation-card" *ngIf="canCancelService">
+        <ng-container *ngIf="!showCancellationForm">
+          <div class="cancellation-summary">
+            <div>
+              <span>¿CAMBIARON TUS PLANES?</span>
+              <strong>Puedes cancelar esta solicitud</strong>
+              <p>Si ya no necesitas el servicio, puedes cancelarlo antes de que comience el trabajo.</p>
+            </div>
+            <button type="button" class="open-cancellation-button" [disabled]="cancellingService" (click)="openCancellationForm()">Cancelar solicitud</button>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="showCancellationForm">
+          <div class="cancellation-form">
+            <span>CANCELAR SOLICITUD</span>
+            <h2>¿Por qué deseas cancelar?</h2>
+            <p>El motivo nos ayuda a mantener trazabilidad del servicio.</p>
+            <textarea class="cancellation-reason" [(ngModel)]="cancellationReason" maxlength="500" [disabled]="cancellingService" placeholder="Escribe el motivo de la cancelación..."></textarea>
+            <small class="cancellation-counter">{{ cancellationReason.length }} / 500</small>
+            <div class="cancellation-error" *ngIf="cancellationError">{{ cancellationError }}</div>
+            <div class="cancellation-actions">
+              <button type="button" class="cancel-back-button" [disabled]="cancellingService" (click)="closeCancellationForm()">Volver</button>
+              <button type="button" class="confirm-cancellation-button" [disabled]="cancellingService || cancellationReason.trim().length < 5" (click)="confirmCancellation()">
+                <ion-spinner *ngIf="cancellingService" name="crescent"></ion-spinner>
+                <span *ngIf="!cancellingService">Confirmar cancelación</span>
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </section>
+
+
+      <!-- ================================= -->
+      <!-- SEGUIMIENTO DEL TÉCNICO -->
+      <!-- ================================= -->
+
+      <section
+        class="tracking-card"
+        *ngIf="
+          service.status === 'en_route'
+        "
+      >
+
+        <div
+          class="tracking-header"
+        >
+
+          <div
+            class="tracking-icon"
+          >
+            <ion-icon
+              name="car-outline"
+            ></ion-icon>
+          </div>
+
+          <div>
+            <span>
+              SEGUIMIENTO EN VIVO
+            </span>
+
+            <h2>
+              Tu técnico va en camino
+            </h2>
+
+            <p>
+              Puedes seguir su llegada al domicilio.
+            </p>
+          </div>
+
+        </div>
+
+
+        <div
+          class="tracking-waiting"
+          *ngIf="
+            !trackingActive
+          "
+        >
+
+          <ion-spinner
+            name="crescent"
+          ></ion-spinner>
+
+          <div>
+            <strong>
+              Conectando con la ubicación del técnico
+            </strong>
+
+            <span>
+              El mapa aparecerá cuando recibamos su posición.
+            </span>
+          </div>
+
+        </div>
+
+
+        <ng-container
+          *ngIf="
+            trackingActive
+          "
+        >
+
+          <div
+            class="tracking-map"
+            id="servigo-tracking-map"
+            *ngIf="
+              service.latitude !== null
+              &&
+              service.longitude !== null
+            "
+          ></div>
+
+
+          <div
+            class="tracking-no-destination"
+            *ngIf="
+              service.latitude === null
+              ||
+              service.longitude === null
+            "
+          >
+            <ion-icon
+              name="location-outline"
+            ></ion-icon>
+
+            <span>
+              La ubicación del técnico está activa, pero esta solicitud no tiene coordenadas de destino para dibujar el mapa.
+            </span>
+          </div>
+
+
+          <div
+            class="tracking-stats"
+          >
+
+            <div>
+              <span>
+                DISTANCIA
+              </span>
+
+              <strong>
+                {{
+                  distanceKm !== null
+                    ? (distanceKm | number:'1.1-1') + ' km'
+                    : 'Calculando'
+                }}
+              </strong>
+            </div>
+
+
+            <div>
+              <span>
+                LLEGADA ESTIMADA
+              </span>
+
+              <strong>
+                {{
+                  estimatedMinutes !== null
+                    ? '~' + estimatedMinutes + ' min'
+                    : 'Calculando'
+                }}
+              </strong>
+            </div>
+
+          </div>
+
+
+          <div
+            class="tracking-update"
+          >
+            <ion-icon
+              name="navigate-outline"
+            ></ion-icon>
+
+            <span>
+              {{ getLocationUpdatedLabel() }}
+            </span>
+          </div>
+
+
+          <small
+            class="tracking-estimate-note"
+          >
+            Distancia en línea recta y tiempo aproximado para el MVP.
+          </small>
+
+        </ng-container>
+
+      </section>
+
+
+      <!-- ================================= -->
+      <!-- TÉCNICO LLEGÓ -->
+      <!-- ================================= -->
+
+      <section
+        class="arrival-card"
+        *ngIf="
+          service.status === 'arrived'
+        "
+      >
+
+        <ion-icon
+          name="location-outline"
+        ></ion-icon>
+
+        <div>
+          <span>
+            TU TÉCNICO HA LLEGADO
+          </span>
+
+          <strong>
+            El profesional ya está en el domicilio
+          </strong>
+
+          <p>
+            El seguimiento de ubicación finalizó por privacidad.
+          </p>
+        </div>
+
+      </section>
+
+
+      <!-- ================================= -->
+      <!-- SERVICIO EN CURSO -->
+      <!-- ================================= -->
+
+      <section
+        class="in-progress-card"
+        *ngIf="
+          service.status === 'in_progress'
+        "
+      >
+
+        <ion-icon
+          name="construct-outline"
+        ></ion-icon>
+
+        <div>
+          <span>
+            SERVICIO EN CURSO
+          </span>
+
+          <strong>
+            El técnico está realizando el trabajo
+          </strong>
+
+          <p>
+            Te avisaremos cuando el servicio sea finalizado.
+          </p>
+        </div>
+
+      </section>
+
+
+  <!-- ================================= -->
+<!-- SERVICIO FINALIZADO / PAGO PENDIENTE -->
+<!-- ================================= -->
+
+<section
+  class="service-completed-card"
+  *ngIf="
+    service.status ===
+      'completed'
+    &&
+    service.paymentStatus ===
+      'pending'
+  "
+>
+
+  <ion-icon
+    name="checkmark-circle-outline"
+  ></ion-icon>
+
+
+  <div>
+
+    <span>
+      SERVICIO FINALIZADO
+    </span>
+
+
+    <strong>
+      El técnico finalizó el trabajo
+    </strong>
+
+
+    <p>
+      Confirma el pago para cerrar
+      económicamente el servicio.
+    </p>
+
+  </div>
+
+</section>
+
+      <!-- ================================= -->
+      <!-- PAGO PENDIENTE -->
+      <!-- ================================= -->
+
+      <section
+        class="payment-card"
+        *ngIf="
+          service.status ===
+            'completed'
+          &&
+          service.paymentStatus ===
+            'pending'
+        "
+      >
+
+        <div
+          class="payment-heading"
+        >
+
+          <span>
+            PAGO DEL SERVICIO
+          </span>
+
+          <h2>
+            Total a pagar
+          </h2>
+
+        </div>
+
+
+        <div
+          class="payment-total"
+          *ngIf="
+            acceptedQuote as quote
+          "
+        >
+
+          <span>
+            TOTAL
+          </span>
+
+
+          <strong>
+
+            {{
+  formatCurrency(
+    quote.totalAmount
+  )
+}}
+
+          </strong>
+
+        </div>
+
+
+        <p
+          class="payment-copy"
+        >
+          El trabajo fue marcado como finalizado
+          por el técnico. Confirma el pago para
+          completar el servicio.
+        </p>
+
+
+        <div
+          class="payment-error"
+          *ngIf="
+            paymentError
+          "
+        >
+
+          {{ paymentError }}
+
+        </div>
+
+
+        <button
+          type="button"
+          class="payment-button"
+          [disabled]="
+            processingPayment
+            ||
+            !acceptedQuote
+          "
+          (click)="
+            payService()
+          "
+        >
+
+          <ion-spinner
+            *ngIf="
+              processingPayment
+            "
+            name="crescent"
+          ></ion-spinner>
+
+
+          <span
+            *ngIf="
+              !processingPayment
+            "
+          >
+            Pagar con Webpay
+          </span>
+
+        </button>
+
+      </section>
+
+
+      <!-- ================================= -->
+      <!-- PAGO APROBADO -->
+      <!-- ================================= -->
+
+      <section
+        class="payment-approved-card"
+        *ngIf="
+          service.status ===
+            'completed'
+          &&
+          service.paymentStatus ===
+            'paid'
+        "
+      >
+
+        <ion-icon
+          name="checkmark-circle-outline"
+        ></ion-icon>
+
+
+        <div>
+
+          <span>
+            PAGO APROBADO
+          </span>
+
+
+          <strong
+            *ngIf="
+              acceptedQuote as quote
+            "
+          >
+
+            {{
+  formatCurrency(
+    quote.totalAmount
+  )
+}}
+
+          </strong>
+
+
+          <p>
+            El pago del servicio fue
+            registrado correctamente.
+          </p>
+
+
+         
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================= -->
+      <!-- PRESUPUESTOS -->
+      <!-- ================================= -->
+
+      <section
+        class="quotes-section"
+        *ngIf="service.status !== 'cancelled'"
+      >
+
+        <div
+          class="section-heading"
+        >
 
           <div>
 
@@ -160,9 +669,11 @@
             name="document-text-outline"
           ></ion-icon>
 
+
           <strong>
             Aún no recibes presupuestos
           </strong>
+
 
           <span>
             Cuando un técnico envíe una propuesta,
@@ -210,12 +721,15 @@
             </h3>
 
             <small>
+
               Disponible
+
               {{
                 formatDate(
                   quote.availableDate
                 )
               }}
+
             </small>
 
           </div>
@@ -226,12 +740,15 @@
           >
 
             <strong>
-              $
+
               {{
-                quote.totalAmount
-                  | number:'1.0-0'
-              }}
+  formatCurrency(
+    quote.totalAmount
+  )
+}}
+
             </strong>
+
 
             <ion-icon
               name="chevron-forward-outline"
@@ -240,6 +757,215 @@
           </div>
 
         </button>
+
+      </section>
+
+
+      <!-- ================================= -->
+      <!-- EVALUACIÓN -->
+      <!-- SOLO DESPUÉS DEL PAGO -->
+      <!-- ================================= -->
+
+      <section
+        class="review-section"
+        *ngIf="
+          service.status ===
+            'completed'
+          &&
+          service.paymentStatus ===
+            'paid'
+        "
+      >
+
+
+        <div
+          class="review-heading"
+        >
+
+          <span>
+            TU EXPERIENCIA
+          </span>
+
+          <h2>
+            Evalúa al técnico
+          </h2>
+
+          <p>
+            Tu evaluación ayuda a mejorar
+            la comunidad ServiGo.
+          </p>
+
+        </div>
+
+
+        <!-- REVIEW YA EXISTENTE -->
+
+        <div
+          class="review-completed"
+          *ngIf="
+            review as existingReview
+          "
+        >
+
+          <ion-icon
+            name="checkmark-circle-outline"
+          ></ion-icon>
+
+
+          <strong>
+            Evaluación enviada
+          </strong>
+
+
+          <div
+            class="review-stars readonly"
+          >
+
+            <ion-icon
+              *ngFor="
+                let starValue
+                of ratingValues
+              "
+              [name]="
+                existingReview.rating >=
+                  starValue
+                  ? 'star'
+                  : 'star-outline'
+              "
+            ></ion-icon>
+
+          </div>
+
+
+          <p>
+            {{ existingReview.comment }}
+          </p>
+
+        </div>
+
+
+        <!-- NUEVA REVIEW -->
+
+        <ng-container
+          *ngIf="
+            !review
+          "
+        >
+
+          <div
+            class="review-stars"
+          >
+
+            <button
+              type="button"
+              *ngFor="
+                let starValue
+                of ratingValues
+              "
+              [class.active]="
+                selectedRating >=
+                starValue
+              "
+              (click)="
+                selectRating(
+                  starValue
+                )
+              "
+            >
+
+              <ion-icon
+                [name]="
+                  selectedRating >=
+                    starValue
+                    ? 'star'
+                    : 'star-outline'
+                "
+              ></ion-icon>
+
+            </button>
+
+          </div>
+
+
+          <span
+            class="rating-label"
+            *ngIf="
+              selectedRating > 0
+            "
+          >
+
+            {{ selectedRating }}
+            de 5 estrellas
+
+          </span>
+
+
+          <textarea
+            class="review-comment"
+            [(ngModel)]="
+              reviewComment
+            "
+            maxlength="500"
+            placeholder="Cuéntanos cómo fue tu experiencia con el técnico..."
+          ></textarea>
+
+
+          <div
+            class="review-error"
+            *ngIf="
+              reviewError
+            "
+          >
+
+            {{ reviewError }}
+
+          </div>
+
+
+          <div
+            class="review-success"
+            *ngIf="
+              reviewSuccess
+            "
+          >
+
+            {{ reviewSuccess }}
+
+          </div>
+
+
+          <button
+            type="button"
+            class="submit-review-button"
+            [disabled]="
+              submittingReview
+            "
+            (click)="
+              submitReview()
+            "
+          >
+
+            <ion-spinner
+              *ngIf="
+                submittingReview
+              "
+              name="crescent"
+            ></ion-spinner>
+
+
+            <span
+              *ngIf="
+                !submittingReview
+              "
+            >
+
+              Enviar evaluación
+
+            </span>
+
+          </button>
+
+        </ng-container>
 
       </section>
 

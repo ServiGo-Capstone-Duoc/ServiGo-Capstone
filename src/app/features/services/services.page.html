@@ -1,15 +1,20 @@
 <ion-content>
 
-  <main class="services-container">
+  <main
+    class="services-container"
+  >
 
 
-    <header class="services-header">
+    <header
+      class="services-header"
+    >
 
       <img
         src="assets/branding/servigo-logo-horizontal.png"
         alt="ServiGo"
         class="services-logo"
       />
+
 
       <button
         type="button"
@@ -28,7 +33,9 @@
     </header>
 
 
-    <section class="services-intro">
+    <section
+      class="services-intro"
+    >
 
       <span>
         MIS SERVICIOS
@@ -39,16 +46,84 @@
       </h1>
 
       <p>
-        Revisa el estado de tus servicios
-        y los presupuestos recibidos.
+        Revisa tus servicios activos
+        y el historial de trabajos anteriores.
       </p>
 
     </section>
 
 
+    <!-- ================================= -->
+    <!-- SELECTOR -->
+    <!-- ================================= -->
+
+    <section
+      class="services-view-switcher"
+      *ngIf="
+        !loading &&
+        !errorMessage
+      "
+    >
+
+      <button
+        type="button"
+        [class.active]="
+          selectedView ===
+          'active'
+        "
+        (click)="
+          selectView(
+            'active'
+          )
+        "
+      >
+
+        <span>
+          Activos
+        </span>
+
+        <strong>
+          {{ activeServices.length }}
+        </strong>
+
+      </button>
+
+
+      <button
+        type="button"
+        [class.active]="
+          selectedView ===
+          'history'
+        "
+        (click)="
+          selectView(
+            'history'
+          )
+        "
+      >
+
+        <span>
+          Historial
+        </span>
+
+        <strong>
+          {{ historyServices.length }}
+        </strong>
+
+      </button>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- CARGANDO -->
+    <!-- ================================= -->
+
     <div
       class="loading-state"
-      *ngIf="loading"
+      *ngIf="
+        loading
+      "
     >
 
       <ion-spinner
@@ -62,6 +137,10 @@
     </div>
 
 
+    <!-- ================================= -->
+    <!-- ERROR -->
+    <!-- ================================= -->
+
     <div
       class="error-state"
       *ngIf="
@@ -69,9 +148,15 @@
         errorMessage
       "
     >
+
       {{ errorMessage }}
+
     </div>
 
+
+    <!-- ================================= -->
+    <!-- VACÍO GENERAL -->
+    <!-- ================================= -->
 
     <section
       class="empty-state"
@@ -82,7 +167,9 @@
       "
     >
 
-      <div class="empty-icon">
+      <div
+        class="empty-icon"
+      >
 
         <ion-icon
           name="construct-outline"
@@ -90,30 +177,117 @@
 
       </div>
 
+
       <h2>
         Aún no tienes solicitudes
       </h2>
+
 
       <p>
         Cuando publiques un servicio,
         podrás seguirlo desde aquí.
       </p>
 
+
       <button
         type="button"
         (click)="newRequest()"
       >
+
         Solicitar servicio
+
       </button>
 
     </section>
 
 
+    <!-- ================================= -->
+    <!-- ACTIVO VACÍO -->
+    <!-- ================================= -->
+
+    <section
+      class="empty-state"
+      *ngIf="
+        !loading &&
+        !errorMessage &&
+        services.length > 0 &&
+        selectedView === 'active' &&
+        activeServices.length === 0
+      "
+    >
+
+      <div
+        class="empty-icon"
+      >
+
+        <ion-icon
+          name="construct-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <h2>
+        No tienes servicios activos
+      </h2>
+
+
+      <p>
+        Tus trabajos finalizados
+        permanecen disponibles en Historial.
+      </p>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- HISTORIAL VACÍO -->
+    <!-- ================================= -->
+
+    <section
+      class="empty-state"
+      *ngIf="
+        !loading &&
+        !errorMessage &&
+        services.length > 0 &&
+        selectedView === 'history' &&
+        historyServices.length === 0
+      "
+    >
+
+      <div
+        class="empty-icon"
+      >
+
+        <ion-icon
+          name="checkmark-circle-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <h2>
+        Tu historial está vacío
+      </h2>
+
+
+      <p>
+        Los servicios finalizados
+        aparecerán aquí.
+      </p>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- LISTA -->
+    <!-- ================================= -->
+
     <section
       class="services-list"
       *ngIf="
         !loading &&
-        services.length > 0
+        visibleServices.length > 0
       "
     >
 
@@ -122,7 +296,7 @@
         class="service-card"
         *ngFor="
           let item
-          of services
+          of visibleServices
         "
         (click)="
           openService(
@@ -165,12 +339,22 @@
 
           <div
             class="status-badge"
+            [class.completed]="
+              item.request.status ===
+              'completed'
+            "
+            [class.cancelled]="
+              item.request.status ===
+              'cancelled'
+            "
           >
+
             {{
               getStatusLabel(
                 item.request.status
               )
             }}
+
           </div>
 
         </div>
@@ -179,9 +363,11 @@
         <p
           class="service-description"
         >
+
           {{
             item.request.description
           }}
+
         </p>
 
 
@@ -230,14 +416,18 @@
               name="document-text-outline"
             ></ion-icon>
 
+
             <span>
+
               {{
                 item.quotes.length === 0
                   ? 'Aún no tienes presupuestos'
                   : item.quotes.length === 1
                     ? '1 presupuesto recibido'
-                    : item.quotes.length + ' presupuestos recibidos'
+                    : item.quotes.length +
+                      ' presupuestos recibidos'
               }}
+
             </span>
 
           </div>

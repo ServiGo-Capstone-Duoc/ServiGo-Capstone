@@ -1,0 +1,732 @@
+<ion-content>
+
+  <main
+    class="job-detail-container"
+  >
+
+    <header
+      class="job-detail-header"
+    >
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="detail-logo"
+      />
+
+    </header>
+
+
+    <!-- CARGANDO -->
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando trabajo...
+      </span>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="error-state"
+      *ngIf="
+        !loading &&
+        errorMessage
+      "
+    >
+
+      {{ errorMessage }}
+
+    </div>
+
+
+    <!-- TRABAJO -->
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        job as item
+      "
+    >
+
+      <section
+        class="job-summary-card"
+      >
+
+        <span>
+          {{ getStatusLabel() }}
+        </span>
+
+
+        <div
+          class="job-title"
+        >
+
+          <div
+            class="job-icon"
+          >
+
+            <ion-icon
+              name="construct-outline"
+            ></ion-icon>
+
+          </div>
+
+
+          <div>
+
+            <h1>
+              {{ item.category }}
+            </h1>
+
+            <p>
+              {{ item.description }}
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section
+        class="information-card"
+      >
+
+        <h2>
+          Información del servicio
+        </h2>
+
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="person-outline"
+          ></ion-icon>
+
+          <div>
+
+            <span>
+              Cliente
+            </span>
+
+            <strong>
+              {{ item.clientName }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+          <div>
+
+            <span>
+              Ubicación
+            </span>
+
+            <strong>
+              {{ item.commune }}
+            </strong>
+
+            <small>
+              {{ item.address }}
+            </small>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="calendar-outline"
+          ></ion-icon>
+
+          <div>
+
+            <span>
+              Fecha solicitada
+            </span>
+
+            <strong>
+
+              {{
+                formatDate(
+                  item.preferredDate
+                )
+              }}
+
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="time-outline"
+          ></ion-icon>
+
+          <div>
+
+            <span>
+              Horario
+            </span>
+
+            <strong>
+              {{ item.timeSlot }}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section
+  class="status-card"
+>
+
+  <span>
+    ESTADO DEL TRABAJO
+  </span>
+
+  <strong>
+    {{ getStatusLabel() }}
+  </strong>
+
+
+  <!-- ASIGNADO -->
+
+  <p
+    *ngIf="
+      item.status ===
+      'accepted'
+    "
+  >
+    El cliente aceptó tu presupuesto.
+    Cuando estés listo para dirigirte al domicilio,
+    inicia el viaje.
+  </p>
+
+
+  <!-- EN CAMINO -->
+
+  <p
+    *ngIf="
+      item.status ===
+      'en_route'
+    "
+  >
+    Vas en camino al domicilio del cliente.
+    Cuando llegues, registra tu llegada.
+  </p>
+
+
+  <!-- LLEGÓ -->
+
+  <p
+    *ngIf="
+      item.status ===
+      'arrived'
+    "
+  >
+    Llegaste al domicilio.
+    Ya puedes iniciar el trabajo cuando corresponda.
+  </p>
+
+
+  <!-- EN CURSO -->
+
+  <p
+    *ngIf="
+      item.status ===
+      'in_progress'
+    "
+  >
+    El trabajo se encuentra actualmente
+    en ejecución.
+  </p>
+
+
+  <!-- FINALIZADO -->
+
+  <p
+    *ngIf="
+      item.status ===
+      'completed'
+    "
+  >
+    El trabajo fue finalizado correctamente.
+    El cliente podrá continuar con el pago
+    y la evaluación.
+  </p>
+
+
+  <!-- CANCELADO -->
+
+  <p
+    *ngIf="
+      item.status ===
+      'cancelled'
+    "
+  >
+    Este trabajo fue cancelado.
+    Ya no requiere ninguna gestión.
+  </p>
+
+</section>
+
+
+<!-- ================================= -->
+<!-- CANCELAR TRABAJO -->
+<!-- ================================= -->
+
+<section
+  class="cancellation-card"
+  *ngIf="
+    canCancelJob
+  "
+>
+
+  <ng-container
+    *ngIf="
+      !showCancellationForm
+    "
+  >
+
+    <div
+      class="cancellation-summary"
+    >
+
+      <div>
+
+        <span>
+          ¿NO PUEDES CONTINUAR?
+        </span>
+
+        <strong>
+          Puedes cancelar este trabajo
+        </strong>
+
+        <p>
+          Usa esta opción solo si no podrás realizar el servicio. El cliente será notificado.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="open-cancellation-button"
+        [disabled]="
+          loadingAction
+          ||
+          cancellingJob
+        "
+        (click)="
+          openCancellationForm()
+        "
+      >
+        Cancelar trabajo
+      </button>
+
+    </div>
+
+  </ng-container>
+
+
+  <ng-container
+    *ngIf="
+      showCancellationForm
+    "
+  >
+
+    <div
+      class="cancellation-form"
+    >
+
+      <span>
+        CANCELAR TRABAJO
+      </span>
+
+      <h2>
+        ¿Por qué necesitas cancelar?
+      </h2>
+
+      <p>
+        El motivo quedará registrado y el cliente será informado.
+      </p>
+
+
+      <textarea
+        class="cancellation-reason"
+        [(ngModel)]="
+          cancellationReason
+        "
+        maxlength="500"
+        [disabled]="
+          cancellingJob
+        "
+        placeholder="Escribe el motivo de la cancelación..."
+      ></textarea>
+
+
+      <small
+        class="cancellation-counter"
+      >
+        {{ cancellationReason.length }} / 500
+      </small>
+
+
+      <div
+        class="cancellation-error"
+        *ngIf="
+          cancellationError
+        "
+      >
+        {{ cancellationError }}
+      </div>
+
+
+      <div
+        class="cancellation-actions"
+      >
+
+        <button
+          type="button"
+          class="cancel-back-button"
+          [disabled]="
+            cancellingJob
+          "
+          (click)="
+            closeCancellationForm()
+          "
+        >
+          Volver
+        </button>
+
+
+        <button
+          type="button"
+          class="confirm-cancellation-button"
+          [disabled]="
+            cancellingJob
+            ||
+            cancellationReason.trim().length < 5
+          "
+          (click)="
+            confirmCancellation()
+          "
+        >
+
+          <ion-spinner
+            *ngIf="
+              cancellingJob
+            "
+            name="crescent"
+          ></ion-spinner>
+
+          <span
+            *ngIf="
+              !cancellingJob
+            "
+          >
+            Confirmar cancelación
+          </span>
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </ng-container>
+
+</section>
+
+
+<!-- ================================= -->
+<!-- TRABAJO CANCELADO -->
+<!-- ================================= -->
+
+<section
+  class="cancelled-card"
+  *ngIf="
+    item.status ===
+    'cancelled'
+  "
+>
+
+  <ion-icon
+    name="close-circle-outline"
+  ></ion-icon>
+
+  <div>
+
+    <span>
+      TRABAJO CANCELADO
+    </span>
+
+    <strong>
+      Este servicio fue cancelado
+    </strong>
+
+    <p>
+      Ya no debes realizar ninguna acción sobre este trabajo.
+    </p>
+
+  </div>
+
+</section>
+
+
+<!-- ================================= -->
+<!-- ERROR DE ACCIÓN -->
+<!-- ================================= -->
+
+<div
+  class="error-state"
+  *ngIf="
+    actionError
+  "
+>
+  {{ actionError }}
+</div>
+
+
+<!-- ================================= -->
+<!-- IR AL DOMICILIO -->
+<!-- ================================= -->
+
+<ion-button
+  *ngIf="
+    item.status ===
+    'accepted'
+  "
+  expand="block"
+  type="button"
+  [disabled]="
+    loadingAction
+  "
+  (click)="
+    startTrip()
+  "
+>
+
+  <ion-spinner
+    *ngIf="
+      loadingAction
+    "
+    name="crescent"
+  ></ion-spinner>
+
+
+  <ion-icon
+    *ngIf="
+      !loadingAction
+    "
+    slot="start"
+    name="navigate-outline"
+  ></ion-icon>
+
+
+  <span
+    *ngIf="
+      !loadingAction
+    "
+  >
+    Ir al domicilio
+  </span>
+
+</ion-button>
+
+
+<!-- ================================= -->
+<!-- HE LLEGADO -->
+<!-- ================================= -->
+
+<ion-button
+  *ngIf="
+    item.status ===
+    'en_route'
+  "
+  expand="block"
+  type="button"
+  [disabled]="
+    loadingAction
+  "
+  (click)="
+    markArrived()
+  "
+>
+
+  <ion-spinner
+    *ngIf="
+      loadingAction
+    "
+    name="crescent"
+  ></ion-spinner>
+
+
+  <ion-icon
+    *ngIf="
+      !loadingAction
+    "
+    slot="start"
+    name="location-outline"
+  ></ion-icon>
+
+
+  <span
+    *ngIf="
+      !loadingAction
+    "
+  >
+    He llegado
+  </span>
+
+</ion-button>
+
+
+<!-- ================================= -->
+<!-- INICIAR TRABAJO -->
+<!-- ================================= -->
+
+<ion-button
+  *ngIf="
+    item.status ===
+    'arrived'
+  "
+  expand="block"
+  type="button"
+  [disabled]="
+    loadingAction
+  "
+  (click)="
+    startJob()
+  "
+>
+
+  <ion-spinner
+    *ngIf="
+      loadingAction
+    "
+    name="crescent"
+  ></ion-spinner>
+
+
+  <ion-icon
+    *ngIf="
+      !loadingAction
+    "
+    slot="start"
+    name="play-circle-outline"
+  ></ion-icon>
+
+
+  <span
+    *ngIf="
+      !loadingAction
+    "
+  >
+    Iniciar trabajo
+  </span>
+
+</ion-button>
+
+
+<!-- ================================= -->
+<!-- FINALIZAR TRABAJO -->
+<!-- ================================= -->
+
+<ion-button
+  *ngIf="
+    item.status ===
+    'in_progress'
+  "
+  expand="block"
+  type="button"
+  [disabled]="
+    loadingAction
+  "
+  (click)="
+    completeJob()
+  "
+>
+
+  <ion-spinner
+    *ngIf="
+      loadingAction
+    "
+    name="crescent"
+  ></ion-spinner>
+
+
+  <ion-icon
+    *ngIf="
+      !loadingAction
+    "
+    slot="start"
+    name="checkmark-circle-outline"
+  ></ion-icon>
+
+
+  <span
+    *ngIf="
+      !loadingAction
+    "
+  >
+    Finalizar trabajo
+  </span>
+
+</ion-button>
+
+    </ng-container>
+
+  </main>
+
+</ion-content>

@@ -1,9 +1,15 @@
 <ion-content>
 
-  <main class="quote-container">
+  <main
+    class="quote-container"
+  >
 
 
-    <header class="quote-header">
+    <!-- HEADER -->
+
+    <header
+      class="quote-header"
+    >
 
       <button
         type="button"
@@ -27,9 +33,79 @@
     </header>
 
 
+    <!-- ================================= -->
+    <!-- CARGANDO -->
+    <!-- ================================= -->
+
+    <section
+      class="form-card"
+      *ngIf="loading"
+    >
+
+      <div
+        class="quote-loading"
+      >
+
+        <ion-spinner
+          name="crescent"
+        ></ion-spinner>
+
+
+        <span>
+          Cargando solicitud...
+        </span>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- ERROR DE CARGA -->
+    <!-- ================================= -->
+
+    <section
+      class="form-card"
+      *ngIf="
+        !loading &&
+        !success &&
+        !opportunity &&
+        errorMessage
+      "
+    >
+
+      <div
+        class="form-error"
+      >
+
+        {{ errorMessage }}
+
+      </div>
+
+
+      <ion-button
+        expand="block"
+        type="button"
+        (click)="goHome()"
+      >
+
+        Volver al panel técnico
+
+      </ion-button>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- ÉXITO -->
+    <!-- ================================= -->
+
     <section
       class="success-card"
-      *ngIf="success"
+      *ngIf="
+        !loading &&
+        success
+      "
     >
 
       <ion-icon
@@ -59,32 +135,55 @@
         type="button"
         (click)="goHome()"
       >
+
         Volver al panel técnico
+
       </ion-button>
 
     </section>
 
 
+    <!-- ================================= -->
+    <!-- FORMULARIO -->
+    <!-- ================================= -->
+
     <ng-container
-      *ngIf="!success"
+      *ngIf="
+        !loading &&
+        !success &&
+        opportunity as item
+      "
     >
 
-      <section class="intro">
+
+      <!-- INTRO -->
+
+      <section
+        class="intro"
+      >
 
         <span>
           PRESUPUESTO
         </span>
 
+
         <h1>
           Cotiza el servicio
         </h1>
 
-        <p
-          *ngIf="opportunity"
-        >
-          {{ opportunity.request.category }}
+
+        <p>
+
+          {{
+            item.request.category
+          }}
+
           ·
-          {{ opportunity.request.commune }}
+
+          {{
+            item.request.commune
+          }}
+
         </p>
 
       </section>
@@ -94,7 +193,12 @@
         [formGroup]="form"
       >
 
-        <section class="form-card">
+
+        <!-- COSTOS -->
+
+        <section
+          class="form-card"
+        >
 
           <h2>
             Costos
@@ -105,6 +209,8 @@
             label="Mano de obra"
             labelPlacement="stacked"
             type="number"
+            inputmode="numeric"
+            min="0"
             formControlName="laborAmount"
           ></ion-input>
 
@@ -113,6 +219,8 @@
             label="Materiales"
             labelPlacement="stacked"
             type="number"
+            inputmode="numeric"
+            min="0"
             formControlName="materialsAmount"
           ></ion-input>
 
@@ -121,30 +229,44 @@
             label="Otros costos"
             labelPlacement="stacked"
             type="number"
+            inputmode="numeric"
+            min="0"
             formControlName="otherAmount"
           ></ion-input>
 
         </section>
 
 
-        <section class="total-card">
+        <!-- TOTAL -->
+
+        <section
+          class="total-card"
+        >
 
           <span>
             TOTAL PRESUPUESTO
           </span>
 
+
           <strong>
+
             $
+
             {{
               totalAmount
                 | number:'1.0-0'
             }}
+
           </strong>
 
         </section>
 
 
-        <section class="form-card">
+        <!-- DISPONIBILIDAD -->
+
+        <section
+          class="form-card"
+        >
 
           <h2>
             Disponibilidad
@@ -165,38 +287,54 @@
             labelPlacement="stacked"
             formControlName="comment"
             [autoGrow]="true"
+            maxlength="500"
             placeholder="Ej: El valor incluye mano de obra. Puedo asistir durante la tarde..."
           ></ion-textarea>
 
         </section>
 
 
+        <!-- ERROR -->
+
         <div
           class="form-error"
           *ngIf="errorMessage"
         >
+
           {{ errorMessage }}
+
         </div>
 
+
+        <!-- ENVIAR -->
 
         <ion-button
           expand="block"
           type="button"
           class="send-button"
-          [disabled]="sending"
+          [disabled]="
+            sending ||
+            form.invalid ||
+            totalAmount <= 0
+          "
           (click)="submit()"
         >
+
 
           <ion-spinner
             *ngIf="sending"
             name="crescent"
           ></ion-spinner>
 
+
           <span
             *ngIf="!sending"
           >
+
             Enviar presupuesto
+
           </span>
+
 
         </ion-button>
 

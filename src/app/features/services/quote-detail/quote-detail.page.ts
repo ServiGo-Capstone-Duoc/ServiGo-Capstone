@@ -5,7 +5,6 @@ import {
 import {
   ChangeDetectorRef,
   Component,
-  OnInit,
   inject
 } from '@angular/core';
 
@@ -47,7 +46,8 @@ import {
 
 
 @Component({
-  selector: 'app-quote-detail',
+  selector:
+    'app-quote-detail',
 
   templateUrl:
     './quote-detail.page.html',
@@ -56,39 +56,57 @@ import {
     './quote-detail.page.scss'
   ],
 
-  standalone: true,
+  standalone:
+    true,
 
   imports: [
     CommonModule,
-
     IonButton,
     IonContent,
     IonIcon,
     IonSpinner
   ]
 })
-export class QuoteDetailPage
-  implements OnInit {
+export class QuoteDetailPage {
 
 
   private readonly router =
-    inject(Router);
+    inject(
+      Router
+    );
+
 
   private readonly route =
-    inject(ActivatedRoute);
+    inject(
+      ActivatedRoute
+    );
+
 
   private readonly authService =
-    inject(AuthService);
+    inject(
+      AuthService
+    );
+
 
   private readonly quoteService =
-    inject(QuoteService);
+    inject(
+      QuoteService
+    );
+
 
   private readonly cdr =
-    inject(ChangeDetectorRef);
+    inject(
+      ChangeDetectorRef
+    );
 
 
   quote:
-    Quote | null = null;
+    Quote | null =
+      null;
+
+
+  loading =
+    true;
 
 
   loadingAction =
@@ -109,35 +127,73 @@ export class QuoteDetailPage
   constructor() {
 
     addIcons({
+
       arrowBackOutline,
+
       personOutline,
+
       calendarOutline,
+
       checkmarkCircleOutline,
+
       closeCircleOutline
     });
   }
 
 
-  async ngOnInit():
+  /*
+   * =========================================
+   * RECARGAR CADA VEZ QUE ENTRA
+   * =========================================
+   */
+
+  async ionViewWillEnter():
     Promise<void> {
 
-    const stateQuote =
-      history.state?.[
-        'quote'
-      ] as
-        Quote
-        | undefined;
+    await this.loadQuote();
+  }
 
 
-    if (
-      stateQuote
-    ) {
+  /*
+   * =========================================
+   * CARGAR PRESUPUESTO
+   * =========================================
+   *
+   * No dependemos de history.state.
+   *
+   * requestId y quoteId se obtienen siempre
+   * desde la URL.
+   *
+   * Esto permite:
+   *
+   * - navegación normal
+   * - refresh F5
+   * - deep links
+   * - futuras notificaciones Push
+   */
 
-      this.quote =
-        stateQuote;
+  async loadQuote():
+    Promise<void> {
 
-      return;
-    }
+
+    this.loading =
+      true;
+
+
+    this.errorMessage =
+      '';
+
+
+    this.actionResult =
+      null;
+
+
+    this.quote =
+      null;
+
+
+    this.cdr
+      .detectChanges();
 
 
     const requestId =
@@ -156,6 +212,15 @@ export class QuoteDetailPage
         );
 
 
+    console.log(
+      '[ServiGo] Cargando presupuesto:',
+      {
+        requestId,
+        quoteId
+      }
+    );
+
+
     const user =
       await this.authService
         .waitForAuthReady();
@@ -169,8 +234,17 @@ export class QuoteDetailPage
       !user
     ) {
 
+      this.loading =
+        false;
+
+
       this.errorMessage =
         'No pudimos cargar el presupuesto.';
+
+
+      this.cdr
+        .detectChanges();
+
 
       return;
     }
@@ -184,6 +258,12 @@ export class QuoteDetailPage
             requestId,
             user.uid
           );
+
+
+      console.log(
+        '[ServiGo] Presupuestos recuperados:',
+        quotes
+      );
 
 
       this.quote =
@@ -201,6 +281,16 @@ export class QuoteDetailPage
 
         this.errorMessage =
           'No encontramos este presupuesto.';
+
+
+        console.warn(
+          '[ServiGo] Quote no encontrada:',
+          {
+            requestId,
+            quoteId,
+            quotes
+          }
+        );
       }
 
 
@@ -214,6 +304,16 @@ export class QuoteDetailPage
 
       this.errorMessage =
         'No pudimos cargar el presupuesto.';
+
+
+    } finally {
+
+      this.loading =
+        false;
+
+
+      this.cdr
+        .detectChanges();
     }
   }
 
@@ -227,6 +327,7 @@ export class QuoteDetailPage
   async accept():
     Promise<void> {
 
+
     if (
       !this.quote
       ||
@@ -237,12 +338,6 @@ export class QuoteDetailPage
     }
 
 
-    /*
-     * Confirmación simple por ahora.
-     *
-     * Más adelante podemos reemplazarla
-     * por IonAlert.
-     */
     const confirmed =
       window.confirm(
         '¿Confirmas que quieres contratar a este técnico por este presupuesto?'
@@ -262,10 +357,13 @@ export class QuoteDetailPage
         .waitForAuthReady();
 
 
-    if (!user) {
+    if (
+      !user
+    ) {
 
       this.errorMessage =
         'No pudimos validar tu sesión.';
+
 
       return;
     }
@@ -274,23 +372,35 @@ export class QuoteDetailPage
     this.loadingAction =
       true;
 
+
     this.errorMessage =
       '';
 
-    this.cdr.detectChanges();
+
+    this.cdr
+      .detectChanges();
 
 
     try {
 
-      await this.quoteService
-        .acceptQuote(
-          user.uid,
-          this.quote
-        );
+      const result =
+        await this.quoteService
+          .acceptQuote(
+            user.uid,
+            this.quote
+          );
+
+
+      console.log(
+        '[ServiGo] Presupuesto aceptado:',
+        result
+      );
 
 
       this.quote = {
+
         ...this.quote,
+
         status:
           'accepted'
       };
@@ -308,21 +418,43 @@ export class QuoteDetailPage
       );
 
 
+      /*
+       * Callable Functions devuelve normalmente
+       * códigos con prefijo "functions/".
+       */
+
       if (
         error?.code ===
-        'permission-denied'
+          'functions/permission-denied'
+        ||
+        error?.code ===
+          'permission-denied'
       ) {
 
         this.errorMessage =
-          'Firestore rechazó la operación por permisos.';
+          'No tienes permisos para aceptar este presupuesto.';
+
 
       } else if (
+        error?.code ===
+          'functions/failed-precondition'
+        ||
         error?.message ===
-        'quote-not-available'
+          'quote-not-available'
       ) {
 
         this.errorMessage =
           'Este presupuesto ya no está disponible.';
+
+
+      } else if (
+        error?.code ===
+          'functions/not-found'
+      ) {
+
+        this.errorMessage =
+          'No encontramos este presupuesto.';
+
 
       } else {
 
@@ -336,7 +468,9 @@ export class QuoteDetailPage
       this.loadingAction =
         false;
 
-      this.cdr.detectChanges();
+
+      this.cdr
+        .detectChanges();
     }
   }
 
@@ -349,6 +483,7 @@ export class QuoteDetailPage
 
   async reject():
     Promise<void> {
+
 
     if (
       !this.quote
@@ -379,10 +514,13 @@ export class QuoteDetailPage
         .waitForAuthReady();
 
 
-    if (!user) {
+    if (
+      !user
+    ) {
 
       this.errorMessage =
         'No pudimos validar tu sesión.';
+
 
       return;
     }
@@ -391,10 +529,13 @@ export class QuoteDetailPage
     this.loadingAction =
       true;
 
+
     this.errorMessage =
       '';
 
-    this.cdr.detectChanges();
+
+    this.cdr
+      .detectChanges();
 
 
     try {
@@ -407,7 +548,9 @@ export class QuoteDetailPage
 
 
       this.quote = {
+
         ...this.quote,
+
         status:
           'rejected'
       };
@@ -427,11 +570,15 @@ export class QuoteDetailPage
 
       if (
         error?.code ===
-        'permission-denied'
+          'functions/permission-denied'
+        ||
+        error?.code ===
+          'permission-denied'
       ) {
 
         this.errorMessage =
-          'Firestore rechazó la operación por permisos.';
+          'No tienes permisos para rechazar este presupuesto.';
+
 
       } else {
 
@@ -445,7 +592,9 @@ export class QuoteDetailPage
       this.loadingAction =
         false;
 
-      this.cdr.detectChanges();
+
+      this.cdr
+        .detectChanges();
     }
   }
 
@@ -459,56 +608,92 @@ export class QuoteDetailPage
   async back():
     Promise<void> {
 
+
+    const requestId =
+      this.route.snapshot
+        .paramMap
+        .get(
+          'requestId'
+        );
+
+
     if (
-      this.quote
+      requestId
     ) {
 
-      await this.router.navigateByUrl(
-        `/app/services/${this.quote.requestId}`
-      );
+      await this.router
+        .navigateByUrl(
+          `/app/services/${requestId}`
+        );
+
 
       return;
     }
 
 
-    await this.router.navigateByUrl(
-      '/app/services'
-    );
+    await this.router
+      .navigateByUrl(
+        '/app/services'
+      );
   }
 
 
   async goToService():
     Promise<void> {
 
+
+    const requestId =
+      this.route.snapshot
+        .paramMap
+        .get(
+          'requestId'
+        );
+
+
     if (
-      !this.quote
+      requestId
     ) {
 
-      await this.router.navigateByUrl(
-        '/app/services'
-      );
+      await this.router
+        .navigateByUrl(
+          `/app/services/${requestId}`
+        );
+
 
       return;
     }
 
 
-    await this.router.navigateByUrl(
-      `/app/services/${this.quote.requestId}`
-    );
+    await this.router
+      .navigateByUrl(
+        '/app/services'
+      );
   }
 
 
+  /*
+   * =========================================
+   * FECHA
+   * =========================================
+   */
+
   formatDate(
-    date: Date | null
+    date:
+      Date | null
   ): string {
 
-    if (!date) {
+
+    if (
+      !date
+    ) {
+
       return 'Flexible';
     }
 
 
-    return date.toLocaleDateString(
-      'es-CL'
-    );
+    return date
+      .toLocaleDateString(
+        'es-CL'
+      );
   }
 }

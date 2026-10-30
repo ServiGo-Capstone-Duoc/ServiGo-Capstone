@@ -315,3 +315,988 @@ ion-content {
     font-size: 9px;
   }
 }
+
+/* =========================================
+ * SERVICIO FINALIZADO
+ * ========================================= */
+
+.service-completed-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-bottom: 20px;
+  padding: 20px;
+
+  border: 1px solid #caead7;
+  border-radius: 22px;
+
+  background: #f3fbf6;
+}
+
+.service-completed-card > ion-icon {
+  flex: 0 0 auto;
+
+  color: #219653;
+
+  font-size: 38px;
+}
+
+.service-completed-card span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #219653;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.service-completed-card strong {
+  display: block;
+
+  color: #202b3c;
+
+  font-size: 17px;
+}
+
+.service-completed-card p {
+  margin:
+    5px
+    0
+    0;
+
+  color: #697386;
+
+  font-size: 13px;
+}
+
+
+/* =========================================
+ * EVALUACIÓN
+ * ========================================= */
+
+.review-section {
+  margin-top: 20px;
+  padding: 24px;
+
+  border: 1px solid #e1e8f1;
+  border-radius: 24px;
+
+  background: #ffffff;
+}
+
+.review-heading > span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #0879ee;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.review-heading h2 {
+  margin:
+    0
+    0
+    5px;
+
+  color: #202b3c;
+
+  font-size: 21px;
+}
+
+.review-heading p {
+  margin:
+    0
+    0
+    20px;
+
+  color: #697386;
+
+  font-size: 13px;
+}
+
+
+/* ESTRELLAS */
+
+.review-stars {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 10px;
+}
+
+.review-stars button {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 12px;
+
+  background: #f5f7fb;
+
+  color: #a8b1bf;
+
+  font-size: 27px;
+
+  cursor: pointer;
+}
+
+.review-stars button.active {
+  background: #fff8e5;
+
+  color: #f5b301;
+}
+
+.review-stars.readonly ion-icon {
+  color: #f5b301;
+
+  font-size: 27px;
+}
+
+
+/* LABEL */
+
+.rating-label {
+  display: block;
+
+  margin-bottom: 16px;
+
+  color: #697386;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* COMENTARIO */
+
+.review-comment {
+  width: 100%;
+  min-height: 120px;
+
+  box-sizing: border-box;
+
+  padding: 14px;
+
+  border: 1px solid #dce3ec;
+  border-radius: 16px;
+
+  outline: none;
+
+  resize: vertical;
+
+  background: #f9fafc;
+
+  color: #202b3c;
+
+  font: inherit;
+
+  line-height: 1.5;
+}
+
+.review-comment:focus {
+  border-color: #0879ee;
+}
+
+
+/* MENSAJES */
+
+.review-error {
+  margin-top: 10px;
+
+  color: #c62828;
+
+  font-size: 13px;
+}
+
+.review-success {
+  margin-top: 10px;
+
+  color: #219653;
+
+  font-size: 13px;
+}
+
+
+/* BOTÓN */
+
+.submit-review-button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 50px;
+
+  margin-top: 16px;
+  padding: 13px 18px;
+
+  border: 0;
+  border-radius: 16px;
+
+  background: #0879ee;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.submit-review-button:disabled {
+  opacity: 0.6;
+
+  cursor: default;
+}
+
+
+/* REVIEW YA ENVIADA */
+
+.review-completed {
+  padding: 20px;
+
+  border-radius: 18px;
+
+  background: #f5fbf7;
+
+  text-align: center;
+}
+
+.review-completed > ion-icon {
+  color: #219653;
+
+  font-size: 38px;
+}
+
+.review-completed > strong {
+  display: block;
+
+  margin:
+    7px
+    0
+    14px;
+
+  color: #202b3c;
+}
+
+.review-completed .review-stars {
+  justify-content: center;
+}
+
+.review-completed p {
+  margin: 0;
+
+  color: #697386;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+/* ============================================================
+   PAGO DEL SERVICIO
+   ============================================================ */
+
+.payment-card,
+.payment-approved-card {
+  margin-top: 20px;
+  padding: 24px;
+
+  background: #ffffff;
+
+  border: 1px solid #e4ebf5;
+  border-radius: 22px;
+
+  box-shadow:
+    0 10px 30px
+    rgba(15, 23, 42, 0.04);
+}
+
+
+/* ============================================================
+   ENCABEZADO PAGO
+   ============================================================ */
+
+.payment-heading {
+  margin-bottom: 20px;
+}
+
+
+.payment-heading span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #0877f9;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 0.06em;
+}
+
+
+.payment-heading h2 {
+  margin: 0;
+
+  color: #202938;
+
+  font-size: 22px;
+  font-weight: 750;
+
+  line-height: 1.2;
+}
+
+
+/* ============================================================
+   TOTAL
+   ============================================================ */
+
+.payment-total {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 18px;
+  padding: 18px 20px;
+
+  background: #f6f9fd;
+
+  border: 1px solid #e5edf7;
+  border-radius: 16px;
+}
+
+
+.payment-total span {
+  color: #64748b;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 0.05em;
+}
+
+
+.payment-total strong {
+  color: #182230;
+
+  font-size: 26px;
+  font-weight: 800;
+
+  line-height: 1;
+}
+
+
+/* ============================================================
+   TEXTO EXPLICATIVO
+   ============================================================ */
+
+.payment-copy {
+  margin:
+    0
+    0
+    20px;
+
+  color: #64748b;
+
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+
+/* ============================================================
+   ERROR
+   ============================================================ */
+
+.payment-error {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+
+  color: #b42318;
+
+  background: #fff1f0;
+
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+/* ============================================================
+   BOTÓN PAGAR
+   ============================================================ */
+
+.payment-button {
+  width: 100%;
+  min-height: 52px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  padding:
+    0
+    20px;
+
+  appearance: none;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0877f9 0%,
+      #0669dd 100%
+    );
+
+  border: 0;
+  border-radius: 15px;
+
+  box-shadow:
+    0 8px 20px
+    rgba(8, 119, 249, 0.20);
+
+  font-family: inherit;
+
+  font-size: 15px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+
+.payment-button:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 11px 24px
+    rgba(8, 119, 249, 0.26);
+}
+
+
+.payment-button:active:not(:disabled) {
+  transform:
+    translateY(0);
+}
+
+
+.payment-button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+}
+
+
+.payment-button ion-spinner {
+  width: 22px;
+  height: 22px;
+
+  --color: #ffffff;
+}
+
+
+/* ============================================================
+   PAGO APROBADO
+   ============================================================ */
+
+.payment-approved-card {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 16px;
+
+  background: #f0fbf5;
+
+  border-color: #bde9cf;
+}
+
+
+.payment-approved-card > ion-icon {
+  flex:
+    0
+    0
+    auto;
+
+  width: 42px;
+  height: 42px;
+
+  color: #169b52;
+}
+
+
+.payment-approved-card > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-start;
+}
+
+
+.payment-approved-card span {
+  margin-bottom: 4px;
+
+  color: #169b52;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 0.06em;
+}
+
+
+.payment-approved-card strong {
+  margin-bottom: 8px;
+
+  color: #17251d;
+
+  font-size: 26px;
+  font-weight: 800;
+
+  line-height: 1.15;
+}
+
+
+.payment-approved-card p {
+  margin:
+    0
+    0
+    12px;
+
+  color: #52665a;
+
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+
+.payment-approved-card small {
+  display: block;
+
+  max-width: 100%;
+
+  margin-top: 4px;
+
+  color: #64748b;
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (
+  max-width: 600px
+) {
+
+  .payment-card,
+  .payment-approved-card {
+    margin-top: 16px;
+
+    padding: 18px;
+
+    border-radius: 18px;
+  }
+
+
+  .payment-heading h2 {
+    font-size: 20px;
+  }
+
+
+  .payment-total {
+    padding:
+      16px
+      17px;
+  }
+
+
+  .payment-total strong {
+    font-size: 23px;
+  }
+
+
+  .payment-approved-card > ion-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+
+  .payment-approved-card strong {
+    font-size: 23px;
+  }
+
+
+  .payment-button {
+    min-height: 50px;
+  }
+}
+
+
+/* ============================================================
+   SEGUIMIENTO EN TIEMPO REAL
+   ============================================================ */
+
+.tracking-card {
+  margin-bottom: 22px;
+  padding: 20px;
+
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(11, 115, 224, 0.14);
+
+  box-shadow:
+    0 12px 30px
+    rgba(15, 23, 42, 0.06);
+}
+
+
+.tracking-header {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 13px;
+
+  margin-bottom: 16px;
+
+  > div:last-child {
+    min-width: 0;
+  }
+
+  span {
+    color: var(--servigo-blue);
+
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+
+  h2 {
+    margin: 3px 0 4px;
+
+    color: var(--servigo-text);
+
+    font-size: 19px;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+
+    color: var(--servigo-text-secondary);
+
+    font-size: 11px;
+    line-height: 1.45;
+  }
+}
+
+
+.tracking-icon {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 42px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 14px;
+
+  background: var(--servigo-blue-light);
+
+  color: var(--servigo-blue);
+
+  ion-icon {
+    width: 23px;
+    height: 23px;
+  }
+}
+
+
+.tracking-waiting {
+  min-height: 92px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 16px;
+
+  border-radius: 16px;
+
+  background: #f7f9fc;
+
+  ion-spinner {
+    flex: 0 0 auto;
+
+    --color: var(--servigo-blue);
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+  }
+
+  strong {
+    color: var(--servigo-text);
+
+    font-size: 12px;
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+
+
+.tracking-map {
+  width: 100%;
+  height: 290px;
+
+  overflow: hidden;
+
+  border-radius: 18px;
+
+  background: #e9eef5;
+
+  border: 1px solid rgba(15, 23, 42, 0.08);
+
+  z-index: 1;
+}
+
+
+.tracking-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 10px;
+
+  margin-top: 12px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+
+    padding: 13px;
+
+    border-radius: 14px;
+
+    background: #f7f9fc;
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  strong {
+    color: var(--servigo-text);
+
+    font-size: 15px;
+  }
+}
+
+
+.tracking-update {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin-top: 12px;
+
+  color: #16834b;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  ion-icon {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+
+.tracking-estimate-note {
+  display: block;
+
+  margin-top: 8px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+
+.tracking-no-destination {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  padding: 14px;
+
+  border-radius: 14px;
+
+  background: #fff8e8;
+
+  color: #775b15;
+
+  font-size: 10px;
+  line-height: 1.45;
+
+  ion-icon {
+    flex: 0 0 auto;
+
+    width: 18px;
+    height: 18px;
+  }
+}
+
+
+/* ============================================================
+   ESTADOS OPERATIVOS DEL CLIENTE
+   ============================================================ */
+
+.arrival-card,
+.in-progress-card {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 13px;
+
+  margin-bottom: 22px;
+  padding: 18px;
+
+  border-radius: 20px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(11, 115, 224, 0.10);
+
+  > ion-icon {
+    width: 34px;
+    height: 34px;
+
+    flex: 0 0 auto;
+
+    color: var(--servigo-blue);
+  }
+
+  > div {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+  }
+
+  span {
+    color: var(--servigo-blue);
+
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  strong {
+    margin-top: 3px;
+
+    color: var(--servigo-text);
+
+    font-size: 14px;
+  }
+
+  p {
+    margin: 5px 0 0;
+
+    color: var(--servigo-text-secondary);
+
+    font-size: 10px;
+    line-height: 1.45;
+  }
+}
+
+
+.arrival-card {
+  background: #f2fbf6;
+
+  border-color: #ccebd8;
+
+  > ion-icon,
+  span {
+    color: #16834b;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .tracking-card {
+    padding: 17px;
+
+    border-radius: 19px;
+  }
+
+  .tracking-map {
+    height: 250px;
+  }
+
+  .tracking-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+
+/* CANCELACION */
+.cancellation-card,.cancelled-card{margin-top:18px;border-radius:22px}.cancellation-card{padding:22px;background:#fff;border:1px solid rgba(148,163,184,.28);box-shadow:0 12px 30px rgba(15,23,42,.06)}.cancellation-summary{display:flex;align-items:center;justify-content:space-between;gap:22px}.cancellation-summary span,.cancellation-form>span,.cancelled-card span{display:block;margin-bottom:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em}.cancellation-summary span,.cancellation-form>span{color:#64748b}.cancellation-summary strong{display:block;color:#0f172a}.cancellation-summary p,.cancellation-form p,.cancelled-card p{margin:6px 0 0;line-height:1.5}.cancellation-summary p,.cancellation-form p{color:#64748b}.open-cancellation-button,.cancel-back-button,.confirm-cancellation-button{min-height:46px;border:0;border-radius:14px;font-weight:800;cursor:pointer}.open-cancellation-button{padding:0 18px;color:#b42318;background:#fff1f0;border:1px solid rgba(180,35,24,.16)}.open-cancellation-button:disabled,.cancel-back-button:disabled,.confirm-cancellation-button:disabled{opacity:.55;cursor:not-allowed}.cancellation-form h2{margin:0;color:#0f172a;font-size:1.25rem}.cancellation-reason{width:100%;min-height:120px;margin-top:18px;padding:14px 16px;resize:vertical;border:1px solid #cbd5e1;border-radius:14px;outline:none;background:#fff;color:#0f172a;font:inherit;line-height:1.5;box-sizing:border-box}.cancellation-counter{display:block;margin-top:6px;text-align:right;color:#94a3b8}.cancellation-error{margin-top:12px;padding:11px 13px;border-radius:12px;color:#b42318;background:#fff1f0;font-size:.9rem;font-weight:700}.cancellation-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.cancel-back-button{padding:0 18px;color:#334155;background:#f1f5f9}.confirm-cancellation-button{min-width:190px;padding:0 20px;color:#fff;background:#b42318}.cancelled-card{display:flex;align-items:flex-start;gap:14px;padding:20px;color:#7f1d1d;background:#fff7f7;border:1px solid rgba(185,28,28,.18)}.cancelled-card>ion-icon{width:28px;height:28px;margin-top:2px}.cancelled-card span{color:#b42318}.cancelled-card strong{display:block;color:#7f1d1d}.cancelled-card p{color:#991b1b}@media(max-width:640px){.cancellation-summary{align-items:stretch;flex-direction:column}.open-cancellation-button{width:100%}.cancellation-actions{flex-direction:column-reverse}.cancel-back-button,.confirm-cancellation-button{width:100%}}

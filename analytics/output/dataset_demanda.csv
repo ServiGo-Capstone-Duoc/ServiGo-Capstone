@@ -1,0 +1,5 @@
+﻿creation_date,creation_year,creation_month,creation_day,creation_weekday_number,creation_weekday,creation_time_band,commune,category,demand,urgent_requests,unique_clients,is_weekend,demand_lag_1,historical_average,demand_level
+2026-10-03,2026,10,3,5,Sábado,Noche,Puente Alto,Electricidad,1,1,1,1,,3.0,Baja
+2026-10-10,2026,10,10,5,Sábado,Tarde,Puente Alto,Electricidad,1,0,1,1,,1.0,Baja
+2026-10-12,2026,10,12,0,Lunes,Noche,Puente Alto,Electricidad,5,0,1,0,1.0,3.0,Alta
+2026-10-12,2026,10,12,0,Lunes,Tarde,Puente Alto,Electricidad,1,0,1,0,1.0,1.0,Baja

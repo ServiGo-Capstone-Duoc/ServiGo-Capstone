@@ -3,6 +3,8 @@ export type ServiceRequestStatus =
   | 'matched'
   | 'quoted'
   | 'accepted'
+  | 'en_route'
+  | 'arrived'
   | 'in_progress'
   | 'completed'
   | 'cancelled';
@@ -12,6 +14,11 @@ export type ServiceUrgency =
   | 'normal'
   | 'soon'
   | 'urgent';
+
+
+export type PaymentStatus =
+  | 'pending'
+  | 'paid';
 
 
 export interface ServiceRequest {
@@ -46,6 +53,23 @@ export interface ServiceRequest {
    * Presupuesto elegido por el cliente.
    */
   acceptedQuoteId: string | null;
+
+
+  /*
+   * =========================================
+   * ESTADO ECONÓMICO
+   * =========================================
+   *
+   * Independiente del estado operacional
+   * del servicio.
+   */
+
+  paymentStatus:
+    PaymentStatus;
+
+  paymentId:
+    string | null;
+
 
   createdAt: Date | null;
   updatedAt: Date | null;

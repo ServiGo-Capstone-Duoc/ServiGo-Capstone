@@ -1,0 +1,8 @@
+﻿metric,source_column,records,average_minutes,median_minutes,minimum_minutes,maximum_minutes
+Solicitud a contratación,minutes_request_to_accept,8,59.86,21.09,0.95,263.08
+Contratación a salida,minutes_accept_to_trip,3,4.45,0.51,0.13,12.7
+Tiempo de viaje,minutes_trip,3,45.08,20.47,15.26,99.5
+Llegada a inicio,minutes_arrival_to_start,2,0.04,0.04,0.04,0.05
+Duración trabajo,minutes_execution,7,0.79,0.27,0.03,3.13
+Solicitud a término,minutes_request_to_complete,7,105.36,59.93,1.85,284.16
+Término a pago,minutes_complete_to_payment,2,2.1,2.1,0.49,3.7

@@ -1,0 +1,368 @@
+<ion-content>
+
+  <main
+    class="jobs-container"
+  >
+
+    <header
+      class="jobs-header"
+    >
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="jobs-logo"
+      />
+
+    </header>
+
+
+    <section
+      class="jobs-intro"
+    >
+
+      <span>
+        TRABAJOS
+      </span>
+
+      <h1>
+        Tus servicios
+      </h1>
+
+      <p>
+        Gestiona tus trabajos activos
+        y consulta tu historial profesional.
+      </p>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- SELECTOR -->
+    <!-- ================================= -->
+
+    <section
+      class="jobs-view-switcher"
+      *ngIf="
+        !loading &&
+        !errorMessage
+      "
+    >
+
+      <button
+        type="button"
+        [class.active]="
+          selectedView ===
+          'active'
+        "
+        (click)="
+          selectView(
+            'active'
+          )
+        "
+      >
+
+        <span>
+          Activos
+        </span>
+
+        <strong>
+          {{ activeJobs.length }}
+        </strong>
+
+      </button>
+
+
+      <button
+        type="button"
+        [class.active]="
+          selectedView ===
+          'history'
+        "
+        (click)="
+          selectView(
+            'history'
+          )
+        "
+      >
+
+        <span>
+          Historial
+        </span>
+
+        <strong>
+          {{ historyJobs.length }}
+        </strong>
+
+      </button>
+
+    </section>
+
+
+    <!-- CARGANDO -->
+
+    <div
+      class="loading-state"
+      *ngIf="
+        loading
+      "
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando trabajos...
+      </span>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="error-state"
+      *ngIf="
+        !loading &&
+        errorMessage
+      "
+    >
+
+      {{ errorMessage }}
+
+    </div>
+
+
+    <!-- ACTIVOS VACÍOS -->
+
+    <section
+      class="empty-state"
+      *ngIf="
+        !loading &&
+        !errorMessage &&
+        selectedView === 'active' &&
+        activeJobs.length === 0
+      "
+    >
+
+      <ion-icon
+        name="construct-outline"
+      ></ion-icon>
+
+
+      <h2>
+        Aún no tienes trabajos activos
+      </h2>
+
+
+      <p>
+        Cuando un cliente acepte uno
+        de tus presupuestos,
+        aparecerá aquí.
+      </p>
+
+    </section>
+
+
+    <!-- HISTORIAL VACÍO -->
+
+    <section
+      class="empty-state"
+      *ngIf="
+        !loading &&
+        !errorMessage &&
+        selectedView === 'history' &&
+        historyJobs.length === 0
+      "
+    >
+
+      <ion-icon
+        name="checkmark-circle-outline"
+      ></ion-icon>
+
+
+      <h2>
+        Tu historial está vacío
+      </h2>
+
+
+      <p>
+        Los trabajos que finalices
+        aparecerán aquí.
+      </p>
+
+    </section>
+
+
+    <!-- LISTA -->
+
+    <section
+      class="jobs-list"
+      *ngIf="
+        !loading &&
+        visibleJobs.length > 0
+      "
+    >
+
+      <button
+        type="button"
+        class="job-card"
+        *ngFor="
+          let job
+          of visibleJobs
+        "
+        (click)="
+          openJob(
+            job
+          )
+        "
+      >
+
+        <div
+          class="job-top"
+        >
+
+          <div
+            class="job-icon"
+          >
+
+            <ion-icon
+              name="construct-outline"
+            ></ion-icon>
+
+          </div>
+
+
+          <div
+            class="job-main"
+          >
+
+            <span>
+              SERVICIO
+            </span>
+
+            <h2>
+              {{ job.category }}
+            </h2>
+
+          </div>
+
+
+          <div
+            class="status-badge"
+            [class.completed]="
+              job.status ===
+              'completed'
+            "
+            [class.cancelled]="
+              job.status ===
+              'cancelled'
+            "
+          >
+
+            {{
+              getStatusLabel(
+                job.status
+              )
+            }}
+
+          </div>
+
+        </div>
+
+
+        <p
+          class="job-description"
+        >
+
+          {{ job.description }}
+
+        </p>
+
+
+        <div
+          class="job-meta"
+        >
+
+          <span>
+
+            <ion-icon
+              name="location-outline"
+            ></ion-icon>
+
+            {{ job.commune }}
+
+          </span>
+
+
+          <span>
+
+            <ion-icon
+              name="calendar-outline"
+            ></ion-icon>
+
+            {{
+              formatDate(
+                job.preferredDate
+              )
+            }}
+
+          </span>
+
+
+          <span>
+
+            <ion-icon
+              name="time-outline"
+            ></ion-icon>
+
+            {{ job.timeSlot }}
+
+          </span>
+
+        </div>
+
+
+        <div
+          class="job-footer"
+        >
+
+          <span>
+
+            {{
+              selectedView ===
+                'active'
+                ? 'Ver trabajo'
+                : 'Ver detalle'
+            }}
+
+          </span>
+
+
+          <ion-icon
+            name="chevron-forward-outline"
+          ></ion-icon>
+
+        </div>
+
+      </button>
+
+    </section>
+
+  </main>
+
+</ion-content>

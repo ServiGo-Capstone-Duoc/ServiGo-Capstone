@@ -1,3 +1,13 @@
 export const environment = {
-  production: true
+
+  production:
+    true,
+
+  /*
+   * Producción siempre utiliza
+   * los servicios reales de Firebase.
+   */
+
+  useFirebaseEmulators:
+    false
 };

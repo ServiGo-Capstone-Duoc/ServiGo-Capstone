@@ -16,6 +16,11 @@ import {
 } from 'firebase/firestore';
 
 import {
+  httpsCallable
+} from 'firebase/functions';
+
+import {
+  firebaseFunctions,
   firestore
 } from '../firebase/firebase';
 
@@ -32,10 +37,13 @@ export interface CreateQuoteData {
   clientId: string;
 
   technicianId: string;
+
   technicianName: string;
 
   laborAmount: number;
+
   materialsAmount: number;
+
   otherAmount: number;
 
   availableDate: string;
@@ -44,10 +52,96 @@ export interface CreateQuoteData {
 }
 
 
+/*
+ * =========================================
+ * RESPUESTA ACCEPT QUOTE
+ * =========================================
+ */
+
+interface AcceptQuoteResponse {
+
+  ok: boolean;
+
+  requestId: string;
+
+  quoteId: string;
+
+  technicianId: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class QuoteService {
+
+
+  /*
+   * =========================================
+   * COTIZACIONES DEL TÉCNICO
+   * =========================================
+   */
+
+  async getQuotesForTechnician(
+    technicianId: string
+  ): Promise<Quote[]> {
+
+
+    const quotesQuery =
+      query(
+        collection(
+          firestore,
+          'quotes'
+        ),
+
+        where(
+          'technicianId',
+          '==',
+          technicianId
+        )
+      );
+
+
+    const result =
+      await getDocs(
+        quotesQuery
+      );
+
+
+    return result.docs
+
+      .map(
+        snapshot =>
+          this.mapQuote(
+            snapshot.data()
+          )
+      )
+
+      .sort(
+        (
+          a,
+          b
+        ) => {
+
+
+          const dateA =
+            a.createdAt
+              ?.getTime()
+            ?? 0;
+
+
+          const dateB =
+            b.createdAt
+              ?.getTime()
+            ?? 0;
+
+
+          return (
+            dateB -
+            dateA
+          );
+        }
+      );
+  }
 
 
   /*
@@ -59,6 +153,7 @@ export class QuoteService {
   async getQuotesForClient(
     clientId: string
   ): Promise<Quote[]> {
+
 
     const quotesQuery =
       query(
@@ -82,22 +177,26 @@ export class QuoteService {
 
 
     return result.docs
+
       .map(
         snapshot =>
           this.mapQuote(
             snapshot.data()
           )
       )
+
       .sort(
         (
           a,
           b
         ) => {
 
+
           const dateA =
             a.createdAt
               ?.getTime()
             ?? 0;
+
 
           const dateB =
             b.createdAt
@@ -105,16 +204,26 @@ export class QuoteService {
             ?? 0;
 
 
-          return dateB - dateA;
+          return (
+            dateB -
+            dateA
+          );
         }
       );
   }
 
 
+  /*
+   * =========================================
+   * COTIZACIONES POR SOLICITUD
+   * =========================================
+   */
+
   async getQuotesForRequest(
     requestId: string,
     clientId: string
   ): Promise<Quote[]> {
+
 
     const quotes =
       await this.getQuotesForClient(
@@ -132,7 +241,7 @@ export class QuoteService {
 
   /*
    * =========================================
-   * VALIDAR DUPLICADO TÉCNICO
+   * VALIDAR DUPLICADO
    * =========================================
    */
 
@@ -140,6 +249,7 @@ export class QuoteService {
     requestId: string,
     technicianId: string
   ): Promise<boolean> {
+
 
     const quotesQuery =
       query(
@@ -171,14 +281,19 @@ export class QuoteService {
     return result.docs.some(
       snapshot => {
 
+
         const status =
-          snapshot.data()['status'];
+          snapshot.data()[
+            'status'
+          ];
 
 
         return (
-          status === 'sent'
+          status ===
+            'sent'
           ||
-          status === 'accepted'
+          status ===
+            'accepted'
         );
       }
     );
@@ -194,6 +309,7 @@ export class QuoteService {
   async createQuote(
     data: CreateQuoteData
   ): Promise<string> {
+
 
     if (
       data.clientId ===
@@ -228,10 +344,12 @@ export class QuoteService {
         data.laborAmount
       );
 
+
     const materialsAmount =
       this.cleanAmount(
         data.materialsAmount
       );
+
 
     const otherAmount =
       this.cleanAmount(
@@ -241,8 +359,10 @@ export class QuoteService {
 
     const totalAmount =
       laborAmount
-      + materialsAmount
-      + otherAmount;
+      +
+      materialsAmount
+      +
+      otherAmount;
 
 
     if (
@@ -286,7 +406,8 @@ export class QuoteService {
           data.technicianId,
 
         technicianName:
-          data.technicianName.trim(),
+          data.technicianName
+            .trim(),
 
         laborAmount,
 
@@ -302,7 +423,8 @@ export class QuoteService {
           ),
 
         comment:
-          data.comment.trim(),
+          data.comment
+            .trim(),
 
         status,
 
@@ -323,12 +445,41 @@ export class QuoteService {
    * =========================================
    * ACEPTAR COTIZACIÓN
    * =========================================
+   *
+   * IMPORTANTE:
+   *
+   * La contratación YA NO se ejecuta
+   * directamente desde Angular.
+   *
+   * Ahora Angular solicita la operación
+   * al backend.
+   *
+   * Firebase Authentication viaja
+   * automáticamente con la Callable.
+   *
+   * El backend valida:
+   *
+   * - usuario autenticado
+   * - propietario de solicitud
+   * - status de quote
+   * - status de request
+   *
+   * y realiza la transacción.
    */
 
   async acceptQuote(
     clientId: string,
     selectedQuote: Quote
   ): Promise<void> {
+
+
+    /*
+     * Esta comprobación solamente mejora
+     * UX local.
+     *
+     * La validación autoritativa
+     * ocurre igualmente en backend.
+     */
 
     if (
       selectedQuote.clientId !==
@@ -353,147 +504,73 @@ export class QuoteService {
 
 
     /*
-     * Recuperamos todas las cotizaciones
-     * de esta solicitud.
+     * =====================================
+     * CALLABLE FUNCTION
+     * =====================================
      */
-    const quotes =
-      await this.getQuotesForRequest(
-        selectedQuote.requestId,
-        clientId
-      );
 
-
-    const batch =
-      writeBatch(
-        firestore
-      );
-
-
-    /*
-     * Cotización seleccionada.
-     */
-    const selectedQuoteRef =
-      doc(
-        firestore,
-        'quotes',
-        selectedQuote.id
-      );
-
-
-    batch.update(
-      selectedQuoteRef,
-      {
-
-        status:
-          'accepted',
-
-        updatedAt:
-          serverTimestamp()
-      }
-    );
-
-
-    /*
-     * Rechazamos automáticamente
-     * las demás cotizaciones que
-     * todavía estén enviadas.
-     */
-    for (
-      const quote
-      of quotes
-    ) {
-
-      if (
-        quote.id ===
-        selectedQuote.id
-      ) {
-
-        continue;
-      }
-
-
-      if (
-        quote.status !==
-        'sent'
-      ) {
-
-        continue;
-      }
-
-
-      const quoteRef =
-        doc(
-          firestore,
-          'quotes',
-          quote.id
-        );
-
-
-      batch.update(
-        quoteRef,
+    const acceptQuoteFunction =
+      httpsCallable<
         {
+          quoteId: string;
+        },
+        AcceptQuoteResponse
+      >(
+        firebaseFunctions,
+        'acceptQuote'
+      );
 
-          status:
-            'rejected',
 
-          updatedAt:
-            serverTimestamp()
+    const response =
+      await acceptQuoteFunction(
+        {
+          quoteId:
+            selectedQuote.id
         }
       );
-    }
 
 
     /*
-     * Convertimos la solicitud
-     * en un servicio contratado.
+     * =====================================
+     * VALIDAR RESPUESTA
+     * =====================================
      */
-    const requestRef =
-      doc(
-        firestore,
-        'serviceRequests',
-        selectedQuote.requestId
-      );
+
+if (
+  !response.data
+    .ok
+) {
+
+  throw new Error(
+    'accept-quote-failed'
+  );
+}
 
 
-    batch.update(
-      requestRef,
-      {
-
-        status:
-          'accepted',
-
-        assignedTechnicianId:
-          selectedQuote.technicianId,
-
-        acceptedQuoteId:
-          selectedQuote.id,
-
-        updatedAt:
-          serverTimestamp()
-      }
+    console.log(
+      '[ServiGo] Presupuesto aceptado por backend:',
+      response.data
     );
-
-
-    /*
-     * Todo se confirma junto.
-     *
-     * Si una escritura falla,
-     * ninguna se aplica.
-     */
-    await batch.commit();
   }
 
 
   /*
    * =========================================
-   * RECHAZAR UNA COTIZACIÓN
+   * RECHAZAR COTIZACIÓN
    * =========================================
+   *
+   * Por ahora conservamos esta operación
+   * como estaba.
+   *
+   * Posteriormente también podemos mover
+   * el rechazo individual al backend.
    */
 
   async rejectQuote(
     clientId: string,
     quote: Quote
   ): Promise<void> {
+
 
     if (
       quote.clientId !==
@@ -550,7 +627,7 @@ export class QuoteService {
 
   /*
    * =========================================
-   * MAPEO
+   * MAPEO QUOTE
    * =========================================
    */
 
@@ -558,84 +635,130 @@ export class QuoteService {
     data: DocumentData
   ): Quote {
 
+
     return {
 
       id:
-        data['id'] ?? '',
+        data[
+          'id'
+        ]
+        ?? '',
 
       requestId:
-        data['requestId'] ?? '',
+        data[
+          'requestId'
+        ]
+        ?? '',
 
       clientId:
-        data['clientId'] ?? '',
+        data[
+          'clientId'
+        ]
+        ?? '',
 
       technicianId:
-        data['technicianId'] ?? '',
+        data[
+          'technicianId'
+        ]
+        ?? '',
 
       technicianName:
-        data['technicianName'] ?? '',
+        data[
+          'technicianName'
+        ]
+        ?? '',
 
       laborAmount:
         Number(
-          data['laborAmount']
+          data[
+            'laborAmount'
+          ]
           ?? 0
         ),
 
       materialsAmount:
         Number(
-          data['materialsAmount']
+          data[
+            'materialsAmount'
+          ]
           ?? 0
         ),
 
       otherAmount:
         Number(
-          data['otherAmount']
+          data[
+            'otherAmount'
+          ]
           ?? 0
         ),
 
       totalAmount:
         Number(
-          data['totalAmount']
+          data[
+            'totalAmount'
+          ]
           ?? 0
         ),
 
       availableDate:
         this.toDate(
-          data['availableDate']
+          data[
+            'availableDate'
+          ]
         ),
 
       comment:
-        data['comment'] ?? '',
+        data[
+          'comment'
+        ]
+        ?? '',
 
       status:
         (
-          data['status']
+          data[
+            'status'
+          ]
           ?? 'sent'
         ) as QuoteStatus,
 
       createdAt:
         this.toDate(
-          data['createdAt']
+          data[
+            'createdAt'
+          ]
         ),
 
       updatedAt:
         this.toDate(
-          data['updatedAt']
+          data[
+            'updatedAt'
+          ]
         )
     };
   }
 
 
+  /*
+   * =========================================
+   * NORMALIZAR MONTO
+   * =========================================
+   */
+
   private cleanAmount(
     value: number
   ): number {
 
+
     const result =
-      Number(value);
+      Number(
+        value
+      );
 
 
     if (
-      !Number.isFinite(result)
+      !Number.isFinite(
+        result
+      )
       ||
       result < 0
     ) {
@@ -650,11 +773,21 @@ export class QuoteService {
   }
 
 
+  /*
+   * =========================================
+   * FECHA
+   * =========================================
+   */
+
   private parseDate(
     value: string
   ): Timestamp | null {
 
-    if (!value) {
+
+    if (
+      !value
+    ) {
+
       return null;
     }
 
@@ -665,8 +798,12 @@ export class QuoteService {
       day
     ] =
       value
-        .split('-')
-        .map(Number);
+        .split(
+          '-'
+        )
+        .map(
+          Number
+        );
 
 
     if (
@@ -694,9 +831,16 @@ export class QuoteService {
   }
 
 
+  /*
+   * =========================================
+   * TIMESTAMP -> DATE
+   * =========================================
+   */
+
   private toDate(
     value: unknown
   ): Date | null {
+
 
     if (
       value instanceof Timestamp

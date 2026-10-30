@@ -8,14 +8,15 @@
     "
   >
 
+    <!-- ===================================== -->
     <!-- INICIO -->
+    <!-- ===================================== -->
 
     <ion-tab-button
-      tab="home"
-      [href]="
-        mode === 'tecnico'
-          ? '/app/technician/home'
-          : '/app/home'
+      (click)="
+        openHome(
+          mode
+        )
       "
     >
 
@@ -30,11 +31,16 @@
     </ion-tab-button>
 
 
+    <!-- ===================================== -->
     <!-- SERVICIOS / TRABAJOS -->
+    <!-- ===================================== -->
 
     <ion-tab-button
-      tab="services"
-      href="/app/services"
+      (click)="
+        openServices(
+          mode
+        )
+      "
     >
 
       <ion-icon
@@ -52,11 +58,14 @@
     </ion-tab-button>
 
 
+    <!-- ===================================== -->
     <!-- CHAT -->
+    <!-- ===================================== -->
 
     <ion-tab-button
-      tab="messages"
-      href="/app/messages"
+      (click)="
+        openMessages()
+      "
     >
 
       <ion-icon
@@ -70,11 +79,14 @@
     </ion-tab-button>
 
 
+    <!-- ===================================== -->
     <!-- PERFIL -->
+    <!-- ===================================== -->
 
     <ion-tab-button
-      tab="profile"
-      href="/app/profile"
+      (click)="
+        openProfile()
+      "
     >
 
       <ion-icon

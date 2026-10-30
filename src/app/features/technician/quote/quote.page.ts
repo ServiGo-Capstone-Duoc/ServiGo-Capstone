@@ -40,6 +40,12 @@ import {
 } from 'ionicons/icons';
 
 import {
+  firstValueFrom,
+  filter,
+  take
+} from 'rxjs';
+
+import {
   AuthService
 } from '../../../core/services/auth.service';
 
@@ -48,17 +54,18 @@ import {
 } from '../../../core/services/profile.service';
 
 import {
-  MatchingService,
-  TechnicianOpportunity
-} from '../../../core/services/matching.service';
-
-import {
   QuoteService
 } from '../../../core/services/quote.service';
 
+import {
+  TechnicianOpportunityService,
+  TechnicianOpportunityView
+} from '../../../core/services/technician-opportunity.service';
+
 
 @Component({
-  selector: 'app-quote',
+  selector:
+    'app-quote',
 
   templateUrl:
     './quote.page.html',
@@ -67,7 +74,8 @@ import {
     './quote.page.scss'
   ],
 
-  standalone: true,
+  standalone:
+    true,
 
   imports: [
     CommonModule,
@@ -85,46 +93,76 @@ export class QuotePage
   implements OnInit {
 
 
+  /*
+   * =========================================
+   * SERVICIOS
+   * =========================================
+   */
+
   private readonly fb =
     inject(FormBuilder);
+
 
   private readonly router =
     inject(Router);
 
+
   private readonly route =
     inject(ActivatedRoute);
+
 
   private readonly authService =
     inject(AuthService);
 
+
   private readonly profileService =
     inject(ProfileService);
 
-  private readonly matchingService =
-    inject(MatchingService);
 
   private readonly quoteService =
     inject(QuoteService);
+
+
+  private readonly opportunityService =
+    inject(
+      TechnicianOpportunityService
+    );
+
 
   private readonly cdr =
     inject(ChangeDetectorRef);
 
 
+  /*
+   * =========================================
+   * ESTADO
+   * =========================================
+   */
+
   opportunity:
-    TechnicianOpportunity | null = null;
+    TechnicianOpportunityView | null =
+      null;
+
+
+  requestId =
+    '';
 
 
   loading =
     true;
 
+
   sending =
     false;
+
 
   success =
     false;
 
+
   errorMessage =
     '';
+
 
   quoteId =
     '';
@@ -133,6 +171,12 @@ export class QuotePage
   readonly today =
     this.getTodayString();
 
+
+  /*
+   * =========================================
+   * FORMULARIO
+   * =========================================
+   */
 
   form =
     this.fb.nonNullable.group({
@@ -179,45 +223,45 @@ export class QuotePage
   constructor() {
 
     addIcons({
+
       arrowBackOutline,
+
       checkmarkCircle,
+
       documentTextOutline
     });
   }
 
 
+  /*
+   * =========================================
+   * INIT
+   * =========================================
+   */
+
   async ngOnInit():
     Promise<void> {
 
-    const navigation =
-      this.router
-        .getCurrentNavigation();
+
+    this.loading =
+      true;
 
 
-    const stateOpportunity =
-      navigation
-        ?.extras
-        ?.state
-        ?.[
-          'opportunity'
-        ] as
-          TechnicianOpportunity
-          | undefined;
+    this.errorMessage =
+      '';
 
 
-    if (
-      stateOpportunity
-    ) {
-
-      this.opportunity =
-        stateOpportunity;
-
-      this.loading =
-        false;
-
-      return;
-    }
-
+    /*
+     * =====================================
+     * REQUEST ID DESDE URL
+     * =====================================
+     *
+     * Ya no utilizamos router.state.
+     *
+     * Ejemplo:
+     *
+     * /app/technician/quote/ABC123
+     */
 
     const requestId =
       this.route.snapshot
@@ -227,52 +271,104 @@ export class QuotePage
         );
 
 
+    if (
+      !requestId
+    ) {
+
+      this.errorMessage =
+        'No pudimos identificar la solicitud.';
+
+
+      this.loading =
+        false;
+
+
+      this.cdr.detectChanges();
+
+      return;
+    }
+
+
+    this.requestId =
+      requestId;
+
+
+    /*
+     * =====================================
+     * SESIÓN
+     * =====================================
+     */
+
     const user =
       await this.authService
         .waitForAuthReady();
 
 
     if (
-      !requestId
-      ||
       !user
     ) {
 
       this.errorMessage =
-        'No pudimos cargar la oportunidad.';
+        'No existe una sesión válida.';
+
 
       this.loading =
         false;
+
+
+      this.cdr.detectChanges();
 
       return;
     }
 
 
+    /*
+     * =====================================
+     * CARGAR OPORTUNIDAD
+     * =====================================
+     */
+
     try {
 
-      const opportunities =
-        await this.matchingService
-          .getOpportunitiesForTechnician(
-            user.uid
+      const result =
+        await this.opportunityService
+          .getOpportunityByRequestId(
+            user.uid,
+            requestId
           );
 
 
-      this.opportunity =
-        opportunities.find(
-          item =>
-            item.request.id ===
-            requestId
-        )
-        ?? null;
-
-
       if (
-        !this.opportunity
+        !result
       ) {
 
         this.errorMessage =
           'Esta oportunidad ya no está disponible.';
+
+        return;
       }
+
+
+      this.opportunity =
+        result;
+
+
+      console.log(
+        '[ServiGo] Oportunidad cargada para cotización:',
+        result
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo] Error cargando oportunidad para cotizar:',
+        error
+      );
+
+
+      this.errorMessage =
+        'No pudimos cargar la oportunidad.';
 
 
     } finally {
@@ -280,50 +376,87 @@ export class QuotePage
       this.loading =
         false;
 
+
       this.cdr.detectChanges();
     }
   }
 
 
+  /*
+   * =========================================
+   * TOTAL PRESUPUESTO
+   * =========================================
+   */
+
   get totalAmount():
     number {
+
 
     const values =
       this.form.getRawValue();
 
 
-    return (
+    const laborAmount =
       Number(
         values.laborAmount
-      )
-      +
+      ) || 0;
+
+
+    const materialsAmount =
       Number(
         values.materialsAmount
-      )
-      +
+      ) || 0;
+
+
+    const otherAmount =
       Number(
         values.otherAmount
-      )
+      ) || 0;
+
+
+    return (
+      laborAmount
+      +
+      materialsAmount
+      +
+      otherAmount
     );
   }
 
 
+  /*
+   * =========================================
+   * ENVIAR PRESUPUESTO
+   * =========================================
+   */
+
   async submit():
     Promise<void> {
+
 
     if (
       this.sending
       ||
       !this.opportunity
     ) {
+
       return;
     }
 
 
-    this.errorMessage = '';
+    this.errorMessage =
+      '';
 
-    this.form.markAllAsTouched();
 
+    this.form
+      .markAllAsTouched();
+
+
+    /*
+     * =====================================
+     * VALIDAR FORMULARIO
+     * =====================================
+     */
 
     if (
       this.form.invalid
@@ -336,6 +469,11 @@ export class QuotePage
     }
 
 
+    /*
+     * Al menos uno de los conceptos
+     * debe contener un monto.
+     */
+
     if (
       this.totalAmount <= 0
     ) {
@@ -347,19 +485,77 @@ export class QuotePage
     }
 
 
+    /*
+     * =====================================
+     * VALIDAR SESIÓN
+     * =====================================
+     */
+
     const user =
       await this.authService
         .waitForAuthReady();
 
 
-    const profile =
+    if (
+      !user
+    ) {
+
+      this.errorMessage =
+        'No pudimos validar tu sesión.';
+
+      return;
+    }
+
+
+    /*
+     * =====================================
+     * PERFIL DEL TÉCNICO
+     * =====================================
+     *
+     * currentProfile puede todavía no
+     * estar disponible si la pantalla fue
+     * abierta directamente desde una URL.
+     */
+
+    let profile =
       this.profileService
         .currentProfile;
 
 
     if (
-      !user
-      ||
+      !profile
+    ) {
+
+      try {
+
+        profile =
+          await firstValueFrom(
+
+            this.profileService
+              .profile$
+              .pipe(
+
+                filter(
+                  value =>
+                    value !== null
+                ),
+
+                take(1)
+              )
+          );
+
+
+      } catch (error) {
+
+        console.error(
+          '[ServiGo] Error obteniendo perfil técnico:',
+          error
+        );
+      }
+    }
+
+
+    if (
       !profile
     ) {
 
@@ -370,11 +566,39 @@ export class QuotePage
     }
 
 
+    /*
+     * Protección adicional.
+     *
+     * El técnico no puede cotizar
+     * una solicitud propia.
+     */
+
+    if (
+      this.opportunity
+        .request
+        .clientId ===
+      user.uid
+    ) {
+
+      this.errorMessage =
+        'No puedes cotizar tu propia solicitud.';
+
+      return;
+    }
+
+
     this.sending =
       true;
 
+
     this.cdr.detectChanges();
 
+
+    /*
+     * =====================================
+     * CREAR QUOTE
+     * =====================================
+     */
 
     try {
 
@@ -387,10 +611,14 @@ export class QuotePage
           .createQuote({
 
             requestId:
-              this.opportunity.request.id,
+              this.opportunity
+                .request
+                .id,
 
             clientId:
-              this.opportunity.request.clientId,
+              this.opportunity
+                .request
+                .clientId,
 
             technicianId:
               user.uid,
@@ -399,20 +627,32 @@ export class QuotePage
               profile.displayName,
 
             laborAmount:
-              values.laborAmount,
+              Number(
+                values.laborAmount
+              ),
 
             materialsAmount:
-              values.materialsAmount,
+              Number(
+                values.materialsAmount
+              ),
 
             otherAmount:
-              values.otherAmount,
+              Number(
+                values.otherAmount
+              ),
 
             availableDate:
               values.availableDate,
 
             comment:
-              values.comment
+              values.comment.trim()
           });
+
+
+      console.log(
+        '[ServiGo] Presupuesto creado:',
+        this.quoteId
+      );
 
 
       this.success =
@@ -435,6 +675,7 @@ export class QuotePage
         this.errorMessage =
           'Ya enviaste un presupuesto para esta solicitud.';
 
+
       } else if (
         error?.message ===
         'cannot-quote-own-request'
@@ -443,6 +684,7 @@ export class QuotePage
         this.errorMessage =
           'No puedes cotizar tu propia solicitud.';
 
+
       } else if (
         error?.code ===
         'permission-denied'
@@ -450,6 +692,7 @@ export class QuotePage
 
         this.errorMessage =
           'Firestore rechazó el presupuesto por permisos.';
+
 
       } else {
 
@@ -463,29 +706,39 @@ export class QuotePage
       this.sending =
         false;
 
+
       this.cdr.detectChanges();
     }
   }
 
 
+  /*
+   * =========================================
+   * VOLVER
+   * =========================================
+   */
+
   async back():
     Promise<void> {
 
+
+    /*
+     * Si conocemos requestId,
+     * siempre volvemos al detalle
+     * reconstruible desde Firestore.
+     *
+     * No usamos router.state.
+     */
+
     if (
-      this.opportunity
+      this.requestId
     ) {
 
       await this.router.navigate(
         [
           '/app/technician/opportunity',
-          this.opportunity.request.id
-        ],
-        {
-          state: {
-            opportunity:
-              this.opportunity
-          }
-        }
+          this.requestId
+        ]
       );
 
       return;
@@ -498,8 +751,15 @@ export class QuotePage
   }
 
 
+  /*
+   * =========================================
+   * HOME TÉCNICO
+   * =========================================
+   */
+
   async goHome():
     Promise<void> {
+
 
     await this.router.navigateByUrl(
       '/app/technician/home'
@@ -507,8 +767,15 @@ export class QuotePage
   }
 
 
+  /*
+   * =========================================
+   * FECHA LOCAL YYYY-MM-DD
+   * =========================================
+   */
+
   private getTodayString():
     string {
+
 
     const today =
       new Date();
@@ -538,6 +805,8 @@ export class QuotePage
         );
 
 
-    return `${year}-${month}-${day}`;
+    return (
+      `${year}-${month}-${day}`
+    );
   }
 }

@@ -7,7 +7,10 @@
     "
   >
 
+
+    <!-- ================================= -->
     <!-- MARCA -->
+    <!-- ================================= -->
 
     <header
       class="technician-header"
@@ -19,6 +22,7 @@
         class="technician-logo"
       />
 
+
       <span>
         Modo profesional
       </span>
@@ -26,7 +30,9 @@
     </header>
 
 
-    <!-- SELECTOR -->
+    <!-- ================================= -->
+    <!-- SELECTOR DE MODO -->
+    <!-- ================================= -->
 
     <app-mode-switcher
       *ngIf="
@@ -36,7 +42,9 @@
     ></app-mode-switcher>
 
 
+    <!-- ================================= -->
     <!-- BIENVENIDA -->
+    <!-- ================================= -->
 
     <section
       class="professional-welcome"
@@ -48,24 +56,35 @@
         PANEL TÉCNICO
       </span>
 
+
       <h1>
+
         Hola,
         {{ profile.displayName }}
+
       </h1>
 
+
       <p>
+
         Gestiona tus oportunidades,
         trabajos y reputación profesional.
+
       </p>
 
     </section>
 
 
+    <!-- ================================= -->
     <!-- KPIs -->
+    <!-- ================================= -->
 
     <section
       class="metrics-grid"
     >
+
+
+      <!-- OPORTUNIDADES -->
 
       <button
         type="button"
@@ -85,11 +104,13 @@
 
 
         <strong>
+
           {{
             loadingOpportunities
               ? '…'
               : opportunities.length
           }}
+
         </strong>
 
 
@@ -99,6 +120,8 @@
 
       </button>
 
+
+      <!-- TRABAJOS ACTIVOS -->
 
       <button
         type="button"
@@ -118,11 +141,13 @@
 
 
         <strong>
+
           {{
             loadingActiveJobs
               ? '…'
               : activeJobs.length
           }}
+
         </strong>
 
 
@@ -132,6 +157,8 @@
 
       </button>
 
+
+      <!-- PRESUPUESTOS -->
 
       <button
         type="button"
@@ -151,7 +178,13 @@
 
 
         <strong>
-          0
+
+          {{
+            loadingQuotes
+              ? '…'
+              : quotes.length
+          }}
+
         </strong>
 
 
@@ -161,6 +194,8 @@
 
       </button>
 
+
+      <!-- REPUTACIÓN -->
 
       <div
         class="metric-card rating-card"
@@ -178,11 +213,13 @@
 
 
         <strong>
+
           {{
             profile.averageRating !== null
               ? profile.averageRating.toFixed(1)
               : '—'
           }}
+
         </strong>
 
 
@@ -195,7 +232,443 @@
     </section>
 
 
+    <!-- ================================= -->
+    <!-- DEMANDA RECOMENDADA -->
+    <!-- ================================= -->
+
+    <section
+      class="demand-section"
+    >
+
+      <div
+        class="section-heading"
+      >
+
+        <div>
+
+          <h2>
+            Demanda recomendada
+          </h2>
+
+
+          <span>
+
+            Explora dónde existen
+            mayores oportunidades
+
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================================= -->
+      <!-- CARGANDO ANALYTICS -->
+      <!-- ================================= -->
+
+      <div
+        class="demand-loading"
+        *ngIf="
+          loadingDemandAnalytics
+        "
+      >
+
+        <ion-spinner
+          name="crescent"
+        ></ion-spinner>
+
+
+        <span>
+          Analizando demanda...
+        </span>
+
+      </div>
+
+
+      <!-- ================================= -->
+      <!-- ERROR ANALYTICS -->
+      <!-- ================================= -->
+
+      <div
+        class="demand-error"
+        *ngIf="
+          !loadingDemandAnalytics &&
+          demandAnalyticsError
+        "
+      >
+
+        {{ demandAnalyticsError }}
+
+      </div>
+
+
+      <!-- ================================= -->
+      <!-- CONTROLES ANALYTICS -->
+      <!-- ================================= -->
+
+      <div
+        class="demand-filters"
+        *ngIf="
+          !loadingDemandAnalytics &&
+          !demandAnalyticsError &&
+          demandCategories.length > 0
+        "
+      >
+
+
+        <!-- CATEGORÍA -->
+
+        <label
+          class="demand-filter"
+        >
+
+          <span>
+            Categoría
+          </span>
+
+
+          <div
+            class="demand-select-wrapper"
+          >
+
+            <select
+              [value]="selectedDemandCategory"
+              (change)="
+                onDemandCategoryChange(
+                  $any($event.target).value
+                )
+              "
+            >
+
+              <option
+                *ngFor="
+                  let category
+                  of demandCategories
+                "
+                [value]="category"
+              >
+
+                {{ category }}
+
+              </option>
+
+            </select>
+
+          </div>
+
+        </label>
+
+
+        <!-- FRANJA -->
+
+        <label
+          class="demand-filter"
+        >
+
+          <span>
+            Franja
+          </span>
+
+
+          <div
+            class="demand-select-wrapper"
+          >
+
+            <select
+              [value]="selectedDemandTimeBand"
+              (change)="
+                onDemandTimeBandChange(
+                  $any($event.target).value
+                )
+              "
+            >
+
+              <option
+                *ngFor="
+                  let timeBand
+                  of demandTimeBands
+                "
+                [value]="timeBand"
+              >
+
+                {{ timeBand }}
+
+              </option>
+
+            </select>
+
+          </div>
+
+        </label>
+
+      </div>
+
+
+      <!-- ================================= -->
+      <!-- SIN RECOMENDACIONES -->
+      <!-- ================================= -->
+
+      <div
+        class="demand-empty"
+        *ngIf="
+          !loadingDemandAnalytics &&
+          !demandAnalyticsError &&
+          demandPredictions.length === 0
+        "
+      >
+
+        <div
+          class="demand-empty-icon"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div>
+
+          <strong>
+
+            Aún no hay recomendaciones
+            disponibles
+
+          </strong>
+
+
+          <span>
+
+            Cuando exista información
+            analítica disponible,
+            podrás ver aquí las zonas
+            con mayor demanda estimada.
+
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================================= -->
+      <!-- COMBINACIÓN SIN RESULTADO -->
+      <!-- ================================= -->
+
+      <div
+        class="demand-empty"
+        *ngIf="
+          !loadingDemandAnalytics &&
+          !demandAnalyticsError &&
+          demandPredictions.length > 0 &&
+          !demandAnalytics
+        "
+      >
+
+        <div
+          class="demand-empty-icon"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div>
+
+          <strong>
+            Sin información para esta selección
+          </strong>
+
+
+          <span>
+
+            Prueba con otra categoría
+            o franja horaria.
+
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================================= -->
+      <!-- RESULTADO ANALYTICS -->
+      <!-- ================================= -->
+
+      <article
+        class="demand-card"
+        *ngIf="
+          !loadingDemandAnalytics &&
+          !demandAnalyticsError &&
+          demandAnalytics as analytics
+        "
+      >
+
+
+        <!-- CABECERA -->
+
+        <div
+          class="demand-header"
+        >
+
+          <div>
+
+            <span
+              class="demand-eyebrow"
+            >
+              DEMANDA ESTIMADA
+            </span>
+
+
+            <h3>
+
+              {{ analytics.category }}
+
+            </h3>
+
+
+            <p>
+
+              {{ analytics.timeBand }}
+
+
+              <ng-container
+                *ngIf="
+                  demandPredictionDateLabel
+                "
+              >
+
+                ·
+                {{ demandPredictionDateLabel }}
+
+              </ng-container>
+
+            </p>
+
+          </div>
+
+
+          <div
+            class="demand-icon"
+          >
+
+            <ion-icon
+              name="location-outline"
+            ></ion-icon>
+
+          </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- TOP 3 -->
+        <!-- ================================= -->
+
+        <div
+          class="demand-ranking"
+        >
+
+          <div
+            class="demand-row"
+            *ngFor="
+              let item
+              of topDemandRecommendations
+            "
+          >
+
+            <div
+              class="demand-position"
+            >
+
+              {{ item.ranking }}
+
+            </div>
+
+
+            <div
+              class="demand-place"
+            >
+
+              <strong>
+
+                {{ item.commune }}
+
+              </strong>
+
+
+              <span>
+
+                Demanda estimada:
+                {{
+                  item.predictedDemand
+                    | number:'1.1-2'
+                }}
+
+              </span>
+
+            </div>
+
+
+            <div
+              class="demand-level"
+              [ngClass]="
+                getDemandLevelClass(
+                  item.level
+                )
+              "
+            >
+
+              {{ item.level }}
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- MODELO EXPERIMENTAL -->
+        <!-- ================================= -->
+
+        <div
+          class="demand-experimental"
+          *ngIf="
+            analytics.experimental ||
+            analytics.isSynthetic
+          "
+        >
+
+          <strong>
+            Modelo experimental
+          </strong>
+
+
+          <span>
+
+            Recomendaciones generadas
+            con datos sintéticos para
+            demostración analítica.
+
+          </span>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <!-- ================================= -->
     <!-- OPORTUNIDADES -->
+    <!-- ================================= -->
 
     <section
       class="opportunities-section"
@@ -211,9 +684,12 @@
             Oportunidades cercanas
           </h2>
 
+
           <span>
+
             Solicitudes compatibles
             con tus especialidades
+
           </span>
 
         </div>
@@ -223,13 +699,17 @@
           type="button"
           (click)="openOpportunities()"
         >
+
           Ver todas
+
         </button>
 
       </div>
 
 
+      <!-- ================================= -->
       <!-- CARGANDO -->
+      <!-- ================================= -->
 
       <div
         class="opportunity-loading"
@@ -242,6 +722,7 @@
           name="crescent"
         ></ion-spinner>
 
+
         <span>
           Cargando oportunidades...
         </span>
@@ -249,7 +730,9 @@
       </div>
 
 
+      <!-- ================================= -->
       <!-- ERROR -->
+      <!-- ================================= -->
 
       <div
         class="opportunity-error"
@@ -258,11 +741,15 @@
           opportunitiesError
         "
       >
+
         {{ opportunitiesError }}
+
       </div>
 
 
+      <!-- ================================= -->
       <!-- VACÍO -->
+      <!-- ================================= -->
 
       <div
         class="empty-opportunities"
@@ -289,15 +776,20 @@
         >
 
           <strong>
+
             Aún no hay oportunidades
             disponibles
+
           </strong>
 
+
           <span>
+
             Cuando el sistema encuentre
             una solicitud compatible con
             tu perfil profesional,
             aparecerá aquí.
+
           </span>
 
         </div>
@@ -305,7 +797,9 @@
       </div>
 
 
+      <!-- ================================= -->
       <!-- OPORTUNIDADES BACKEND -->
+      <!-- ================================= -->
 
       <button
         type="button"
@@ -346,10 +840,13 @@
                 OPORTUNIDAD
               </span>
 
+
               <h3>
+
                 {{
                   item.request.category
                 }}
+
               </h3>
 
             </div>
@@ -360,22 +857,32 @@
           <div
             class="match-badge"
           >
+
             {{
-              item.opportunity.matchScore
+              item
+                .opportunity
+                .matchScore
             }}%
+
           </div>
 
         </div>
 
 
+        <!-- DESCRIPCIÓN -->
+
         <p
           class="opportunity-description"
         >
+
           {{
             item.request.description
           }}
+
         </p>
 
+
+        <!-- META -->
 
         <div
           class="opportunity-meta"
@@ -386,6 +893,7 @@
             <ion-icon
               name="location-outline"
             ></ion-icon>
+
 
             {{
               item.request.commune
@@ -400,6 +908,7 @@
               name="time-outline"
             ></ion-icon>
 
+
             {{
               item.request.timeSlot
             }}
@@ -409,6 +918,8 @@
         </div>
 
 
+        <!-- MATCH -->
+
         <div
           class="match-reasons"
         >
@@ -416,14 +927,20 @@
           <span
             *ngFor="
               let reason
-              of item.opportunity.matchReasons
+              of item
+                .opportunity
+                .matchReasons
             "
           >
+
             {{ reason }}
+
           </span>
 
         </div>
 
+
+        <!-- FOOTER -->
 
         <div
           class="opportunity-footer"
@@ -456,6 +973,7 @@
 
             Ver solicitud
 
+
             <ion-icon
               name="chevron-forward-outline"
             ></ion-icon>
@@ -469,7 +987,9 @@
     </section>
 
 
-    <!-- ESTADO -->
+    <!-- ================================= -->
+    <!-- ESTADO PROFESIONAL -->
+    <!-- ================================= -->
 
     <section
       class="professional-status"
@@ -480,6 +1000,7 @@
         <span>
           ESTADO PROFESIONAL
         </span>
+
 
         <strong>
           Técnico activo

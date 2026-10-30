@@ -384,14 +384,40 @@ assignedTechnicianId:
   data['assignedTechnicianId']
   ?? null,
 
+
 acceptedQuoteId:
   data['acceptedQuoteId']
   ?? null,
+
+
+/*
+ * =====================================
+ * ESTADO ECONÓMICO
+ * =====================================
+ *
+ * Compatibilidad con solicitudes
+ * creadas antes del módulo de pagos.
+ */
+
+paymentStatus:
+  data['paymentStatus'] ===
+    'paid'
+      ? 'paid'
+      : 'pending',
+
+
+paymentId:
+  typeof data['paymentId'] ===
+    'string'
+      ? data['paymentId']
+      : null,
+
 
 createdAt:
   this.toDate(
     data['createdAt']
   ),
+
 
 updatedAt:
   this.toDate(

@@ -1,0 +1,9 @@
+﻿prediction_date,commune,category,time_band,predicted_demand,predicted_demand_rounded,history_records,demand_lag_1,demand_lag_7,rolling_mean_7,rolling_mean_28,data_source,is_synthetic,demand_level,ranking
+2026-10-28,Puente Alto,Electrodomésticos,Noche,2.53,3,638,2.0,2.0,2.0,2.57,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Electrodomésticos,Noche,2.06,2,638,1.0,3.0,1.86,2.04,synthetic_model,1,Alta,2
+2026-10-28,Maipú,Electrodomésticos,Noche,2.03,2,638,3.0,5.0,2.29,2.11,synthetic_model,1,Alta,3
+2026-10-28,San Bernardo,Electrodomésticos,Noche,1.93,2,638,4.0,3.0,2.86,1.86,synthetic_model,1,Media,4
+2026-10-28,Las Condes,Electrodomésticos,Noche,1.76,2,638,2.0,1.0,1.43,1.89,synthetic_model,1,Media,5
+2026-10-28,La Florida,Electrodomésticos,Noche,1.74,2,638,0.0,3.0,2.14,1.68,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Electrodomésticos,Noche,1.7,2,638,1.0,3.0,1.86,1.82,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Electrodomésticos,Noche,1.59,2,638,1.0,1.0,1.57,1.68,synthetic_model,1,Baja,8

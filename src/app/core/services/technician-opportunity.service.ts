@@ -594,12 +594,36 @@ async getOpportunityByRequestId(
         ) as ServiceRequestStatus,
 
       assignedTechnicianId:
-        data['assignedTechnicianId']
-        ?? null,
+  data['assignedTechnicianId']
+  ?? null,
 
-      acceptedQuoteId:
-        data['acceptedQuoteId']
-        ?? null,
+
+acceptedQuoteId:
+  data['acceptedQuoteId']
+  ?? null,
+
+
+/*
+ * =====================================
+ * ESTADO ECONÓMICO
+ * =====================================
+ *
+ * Las solicitudes antiguas se consideran
+ * pendientes mientras no exista un pago.
+ */
+
+paymentStatus:
+  data['paymentStatus'] ===
+    'paid'
+      ? 'paid'
+      : 'pending',
+
+
+paymentId:
+  typeof data['paymentId'] ===
+    'string'
+      ? data['paymentId']
+      : null,
 
       createdAt:
         this.toDate(

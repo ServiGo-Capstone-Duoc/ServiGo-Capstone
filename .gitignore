@@ -103,3 +103,10 @@ Thumbs.dbgit fetch origin
 
 # Firebase Android local configuration
 android/app/google-services.json
+
+# Firebase Emulator local data
+emulator-data/
+
+.firebase/
+firebase-debug.log
+firebase-debug.*.log

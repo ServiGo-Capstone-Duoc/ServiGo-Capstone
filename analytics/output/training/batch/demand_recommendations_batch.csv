@@ -1,0 +1,121 @@
+﻿prediction_date,commune,category,time_band,predicted_demand,predicted_demand_rounded,history_records,demand_lag_1,demand_lag_7,rolling_mean_7,rolling_mean_28,data_source,is_synthetic,demand_level,ranking
+2026-10-28,Puente Alto,Electricidad,Mañana,4.98,5,638,5.0,7.0,4.71,4.96,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Electricidad,Mañana,4.91,5,638,8.0,7.0,5.29,4.96,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Electricidad,Mañana,4.54,5,638,4.0,4.0,4.86,5.04,synthetic_model,1,Alta,3
+2026-10-28,Maipú,Electricidad,Mañana,4.35,4,638,4.0,3.0,5.29,5.07,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Electricidad,Mañana,4.35,4,638,5.0,5.0,4.43,4.54,synthetic_model,1,Media,5
+2026-10-28,Ñuñoa,Electricidad,Mañana,3.66,4,638,3.0,5.0,3.29,3.79,synthetic_model,1,Baja,6
+2026-10-28,Las Condes,Electricidad,Mañana,3.46,3,638,4.0,4.0,3.71,3.46,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Electricidad,Mañana,3.41,3,638,4.0,6.0,3.43,3.43,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Electricidad,Tarde,4.32,4,638,5.0,3.0,4.14,4.21,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Electricidad,Tarde,4.14,4,638,5.0,5.0,4.0,4.04,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Electricidad,Tarde,4.03,4,638,5.0,4.0,4.86,4.18,synthetic_model,1,Alta,3
+2026-10-28,Maipú,Electricidad,Tarde,3.86,4,638,6.0,4.0,4.14,3.96,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Electricidad,Tarde,3.86,4,638,3.0,2.0,3.29,3.71,synthetic_model,1,Media,5
+2026-10-28,Ñuñoa,Electricidad,Tarde,3.25,3,638,4.0,5.0,3.14,3.18,synthetic_model,1,Baja,6
+2026-10-28,Providencia,Electricidad,Tarde,2.91,3,638,3.0,3.0,3.0,2.82,synthetic_model,1,Baja,7
+2026-10-28,Las Condes,Electricidad,Tarde,2.89,3,638,3.0,3.0,2.86,3.0,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Electricidad,Noche,3.31,3,638,6.0,4.0,3.43,3.25,synthetic_model,1,Alta,1
+2026-10-28,La Florida,Electricidad,Noche,2.89,3,638,3.0,5.0,3.0,2.93,synthetic_model,1,Alta,2
+2026-10-28,Maipú,Electricidad,Noche,2.8,3,638,1.0,4.0,2.14,2.64,synthetic_model,1,Alta,3
+2026-10-28,Santiago,Electricidad,Noche,2.78,3,638,3.0,5.0,2.86,2.61,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Electricidad,Noche,2.45,2,638,2.0,3.0,2.43,2.29,synthetic_model,1,Media,5
+2026-10-28,Ñuñoa,Electricidad,Noche,2.32,2,638,3.0,1.0,2.14,2.43,synthetic_model,1,Baja,6
+2026-10-28,Las Condes,Electricidad,Noche,2.06,2,638,0.0,2.0,1.57,2.04,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Electricidad,Noche,1.93,2,638,1.0,1.0,1.71,2.11,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Gasfitería,Mañana,4.58,5,638,7.0,5.0,5.57,5.21,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Gasfitería,Mañana,4.54,5,638,5.0,5.0,4.71,4.89,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Gasfitería,Mañana,4.36,4,638,4.0,3.0,4.0,4.25,synthetic_model,1,Alta,3
+2026-10-28,San Bernardo,Gasfitería,Mañana,4.33,4,638,4.0,4.0,4.14,4.29,synthetic_model,1,Media,4
+2026-10-28,Maipú,Gasfitería,Mañana,3.95,4,638,3.0,4.0,3.29,4.0,synthetic_model,1,Media,5
+2026-10-28,Las Condes,Gasfitería,Mañana,3.54,4,638,4.0,3.0,3.71,3.61,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Gasfitería,Mañana,3.44,3,638,3.0,3.0,3.29,3.57,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Gasfitería,Mañana,3.35,3,638,3.0,4.0,3.29,3.39,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Gasfitería,Tarde,4.34,4,638,5.0,7.0,5.0,4.39,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Gasfitería,Tarde,4.1,4,638,2.0,5.0,4.0,4.07,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Gasfitería,Tarde,3.8,4,638,4.0,4.0,3.86,3.75,synthetic_model,1,Alta,3
+2026-10-28,Maipú,Gasfitería,Tarde,3.59,4,638,4.0,4.0,3.43,3.54,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Gasfitería,Tarde,3.54,4,638,3.0,2.0,3.29,3.5,synthetic_model,1,Media,5
+2026-10-28,Ñuñoa,Gasfitería,Tarde,3.02,3,638,4.0,5.0,3.0,3.0,synthetic_model,1,Baja,6
+2026-10-28,Las Condes,Gasfitería,Tarde,2.96,3,638,2.0,3.0,2.43,2.96,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Gasfitería,Tarde,2.94,3,638,4.0,1.0,2.0,2.86,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Gasfitería,Noche,3.05,3,638,3.0,5.0,2.86,3.04,synthetic_model,1,Alta,1
+2026-10-28,San Bernardo,Gasfitería,Noche,2.82,3,638,4.0,4.0,3.14,2.93,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Gasfitería,Noche,2.77,3,638,4.0,4.0,3.0,2.75,synthetic_model,1,Alta,3
+2026-10-28,Santiago,Gasfitería,Noche,2.77,3,638,2.0,4.0,3.43,2.61,synthetic_model,1,Alta,4
+2026-10-28,Maipú,Gasfitería,Noche,2.66,3,638,1.0,3.0,2.86,2.64,synthetic_model,1,Media,5
+2026-10-28,Ñuñoa,Gasfitería,Noche,2.21,2,638,1.0,0.0,1.71,2.07,synthetic_model,1,Baja,6
+2026-10-28,Providencia,Gasfitería,Noche,1.82,2,638,2.0,3.0,1.71,2.0,synthetic_model,1,Baja,7
+2026-10-28,Las Condes,Gasfitería,Noche,1.77,2,638,2.0,1.0,1.86,1.64,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Cerrajería,Mañana,4.07,4,638,3.0,5.0,3.86,3.96,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Cerrajería,Mañana,3.36,3,638,5.0,3.0,3.57,3.46,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Cerrajería,Mañana,3.19,3,638,5.0,5.0,3.43,3.14,synthetic_model,1,Alta,3
+2026-10-28,Maipú,Cerrajería,Mañana,3.02,3,638,6.0,3.0,3.29,3.36,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Cerrajería,Mañana,2.99,3,638,2.0,3.0,2.71,2.93,synthetic_model,1,Media,5
+2026-10-28,Providencia,Cerrajería,Mañana,2.72,3,638,2.0,3.0,3.14,2.64,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Cerrajería,Mañana,2.6,3,638,5.0,3.0,2.71,2.75,synthetic_model,1,Baja,7
+2026-10-28,Las Condes,Cerrajería,Mañana,2.47,2,638,2.0,2.0,2.0,2.25,synthetic_model,1,Baja,8
+2026-10-28,Santiago,Cerrajería,Tarde,2.96,3,638,5.0,1.0,2.43,3.21,synthetic_model,1,Alta,1
+2026-10-28,La Florida,Cerrajería,Tarde,2.77,3,638,2.0,2.0,3.0,2.96,synthetic_model,1,Alta,2
+2026-10-28,Puente Alto,Cerrajería,Tarde,2.76,3,638,1.0,4.0,3.0,2.82,synthetic_model,1,Alta,3
+2026-10-28,San Bernardo,Cerrajería,Tarde,2.67,3,638,3.0,3.0,2.14,2.54,synthetic_model,1,Media,4
+2026-10-28,Maipú,Cerrajería,Tarde,2.37,2,638,3.0,3.0,2.71,2.43,synthetic_model,1,Media,5
+2026-10-28,Las Condes,Cerrajería,Tarde,2.24,2,638,2.0,3.0,2.43,2.29,synthetic_model,1,Baja,6
+2026-10-28,Providencia,Cerrajería,Tarde,2.15,2,638,2.0,2.0,2.14,2.29,synthetic_model,1,Baja,7
+2026-10-28,Ñuñoa,Cerrajería,Tarde,2.11,2,638,3.0,2.0,1.86,2.04,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Cerrajería,Noche,2.15,2,638,4.0,2.0,2.14,2.29,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Cerrajería,Noche,1.84,2,638,2.0,2.0,1.57,1.64,synthetic_model,1,Alta,2
+2026-10-28,Maipú,Cerrajería,Noche,1.8,2,638,2.0,2.0,1.43,1.68,synthetic_model,1,Alta,3
+2026-10-28,San Bernardo,Cerrajería,Noche,1.8,2,638,1.0,2.0,1.43,1.86,synthetic_model,1,Alta,4
+2026-10-28,La Florida,Cerrajería,Noche,1.74,2,638,1.0,3.0,1.43,2.0,synthetic_model,1,Media,5
+2026-10-28,Providencia,Cerrajería,Noche,1.68,2,638,3.0,0.0,1.57,1.79,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Cerrajería,Noche,1.48,1,638,0.0,2.0,1.86,1.43,synthetic_model,1,Baja,7
+2026-10-28,Las Condes,Cerrajería,Noche,1.42,1,638,2.0,1.0,2.14,1.43,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Climatización,Mañana,3.22,3,638,4.0,5.0,2.86,3.04,synthetic_model,1,Alta,1
+2026-10-28,Maipú,Climatización,Mañana,3.11,3,638,4.0,3.0,2.57,2.82,synthetic_model,1,Alta,2
+2026-10-28,Santiago,Climatización,Mañana,3.0,3,638,4.0,5.0,3.86,3.0,synthetic_model,1,Alta,3
+2026-10-28,La Florida,Climatización,Mañana,2.98,3,638,3.0,3.0,3.29,3.0,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Climatización,Mañana,2.95,3,638,5.0,1.0,3.29,2.89,synthetic_model,1,Media,5
+2026-10-28,Las Condes,Climatización,Mañana,2.54,3,638,4.0,3.0,2.86,2.5,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Climatización,Mañana,2.22,2,638,1.0,3.0,2.0,2.21,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Climatización,Mañana,2.19,2,638,3.0,3.0,2.57,2.0,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Climatización,Tarde,2.69,3,638,2.0,3.0,2.86,2.75,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Climatización,Tarde,2.62,3,638,1.0,4.0,2.43,2.68,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Climatización,Tarde,2.61,3,638,3.0,4.0,2.43,2.71,synthetic_model,1,Alta,3
+2026-10-28,Maipú,Climatización,Tarde,2.53,3,638,3.0,3.0,3.0,2.68,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Climatización,Tarde,2.23,2,638,1.0,3.0,1.43,2.04,synthetic_model,1,Media,5
+2026-10-28,Las Condes,Climatización,Tarde,2.1,2,638,2.0,3.0,3.0,2.21,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Climatización,Tarde,1.97,2,638,2.0,2.0,1.86,1.96,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Climatización,Tarde,1.88,2,638,2.0,5.0,1.71,1.89,synthetic_model,1,Baja,8
+2026-10-28,Santiago,Climatización,Noche,1.82,2,638,2.0,2.0,2.0,1.96,synthetic_model,1,Alta,1
+2026-10-28,San Bernardo,Climatización,Noche,1.75,2,638,2.0,0.0,1.43,1.79,synthetic_model,1,Alta,2
+2026-10-28,Puente Alto,Climatización,Noche,1.73,2,638,1.0,3.0,2.14,1.86,synthetic_model,1,Alta,3
+2026-10-28,La Florida,Climatización,Noche,1.72,2,638,1.0,2.0,1.29,1.89,synthetic_model,1,Media,4
+2026-10-28,Maipú,Climatización,Noche,1.59,2,638,2.0,2.0,1.29,1.5,synthetic_model,1,Media,5
+2026-10-28,Ñuñoa,Climatización,Noche,1.51,2,638,0.0,2.0,1.86,1.71,synthetic_model,1,Baja,6
+2026-10-28,Las Condes,Climatización,Noche,1.27,1,638,1.0,2.0,1.14,1.21,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Climatización,Noche,1.27,1,638,2.0,1.0,1.0,1.21,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Electrodomésticos,Mañana,3.81,4,638,3.0,3.0,3.86,3.68,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Electrodomésticos,Mañana,3.57,4,638,3.0,5.0,4.29,4.0,synthetic_model,1,Alta,2
+2026-10-28,La Florida,Electrodomésticos,Mañana,3.48,3,638,2.0,4.0,3.14,3.5,synthetic_model,1,Alta,3
+2026-10-28,Maipú,Electrodomésticos,Mañana,3.46,3,638,2.0,2.0,2.86,3.39,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Electrodomésticos,Mañana,3.16,3,638,1.0,5.0,2.71,3.07,synthetic_model,1,Media,5
+2026-10-28,Ñuñoa,Electrodomésticos,Mañana,2.84,3,638,4.0,3.0,2.71,2.79,synthetic_model,1,Baja,6
+2026-10-28,Las Condes,Electrodomésticos,Mañana,2.39,2,638,2.0,2.0,1.57,1.96,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Electrodomésticos,Mañana,2.39,2,638,1.0,3.0,2.43,2.46,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Electrodomésticos,Tarde,3.27,3,638,3.0,4.0,3.43,3.25,synthetic_model,1,Alta,1
+2026-10-28,La Florida,Electrodomésticos,Tarde,3.03,3,638,2.0,2.0,2.86,3.04,synthetic_model,1,Alta,2
+2026-10-28,Santiago,Electrodomésticos,Tarde,2.98,3,638,5.0,5.0,3.57,3.04,synthetic_model,1,Alta,3
+2026-10-28,Maipú,Electrodomésticos,Tarde,2.85,3,638,1.0,2.0,3.29,2.82,synthetic_model,1,Media,4
+2026-10-28,San Bernardo,Electrodomésticos,Tarde,2.68,3,638,1.0,4.0,2.29,2.75,synthetic_model,1,Media,5
+2026-10-28,Las Condes,Electrodomésticos,Tarde,2.54,3,638,3.0,3.0,2.86,2.54,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Electrodomésticos,Tarde,2.42,2,638,2.0,2.0,2.43,2.54,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Electrodomésticos,Tarde,1.92,2,638,1.0,1.0,1.71,1.93,synthetic_model,1,Baja,8
+2026-10-28,Puente Alto,Electrodomésticos,Noche,2.53,3,638,2.0,2.0,2.0,2.57,synthetic_model,1,Alta,1
+2026-10-28,Santiago,Electrodomésticos,Noche,2.06,2,638,1.0,3.0,1.86,2.04,synthetic_model,1,Alta,2
+2026-10-28,Maipú,Electrodomésticos,Noche,2.03,2,638,3.0,5.0,2.29,2.11,synthetic_model,1,Alta,3
+2026-10-28,San Bernardo,Electrodomésticos,Noche,1.93,2,638,4.0,3.0,2.86,1.86,synthetic_model,1,Media,4
+2026-10-28,Las Condes,Electrodomésticos,Noche,1.76,2,638,2.0,1.0,1.43,1.89,synthetic_model,1,Media,5
+2026-10-28,La Florida,Electrodomésticos,Noche,1.74,2,638,0.0,3.0,2.14,1.68,synthetic_model,1,Baja,6
+2026-10-28,Ñuñoa,Electrodomésticos,Noche,1.7,2,638,1.0,3.0,1.86,1.82,synthetic_model,1,Baja,7
+2026-10-28,Providencia,Electrodomésticos,Noche,1.59,2,638,1.0,1.0,1.57,1.68,synthetic_model,1,Baja,8

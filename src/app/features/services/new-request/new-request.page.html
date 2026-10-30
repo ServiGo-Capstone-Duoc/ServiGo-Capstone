@@ -375,51 +375,118 @@
           <button
             type="button"
             class="location-button"
-            [disabled]="locating"
-            (click)="
-              useCurrentLocation()
+            [disabled]="
+              geocoding ||
+              form.controls.address.invalid ||
+              form.controls.commune.invalid
             "
+            (click)="searchAddress()"
           >
 
             <ion-icon
-              name="navigate-outline"
+              name="location-outline"
             ></ion-icon>
 
-
             <span
-              *ngIf="!locating"
+              *ngIf="!geocoding"
             >
-              {{
-                latitude !== null
-                  ? 'Ubicación obtenida'
-                  : 'Usar mi ubicación actual'
-              }}
+              Buscar dirección
             </span>
 
-
             <span
-              *ngIf="locating"
+              *ngIf="geocoding"
             >
-              Obteniendo ubicación...
+              Buscando dirección...
             </span>
 
           </button>
 
 
           <div
-            class="location-confirmed"
+            class="location-error"
+            *ngIf="locationError"
+          >
+            {{ locationError }}
+          </div>
+
+
+          <section
+            class="location-preview"
             *ngIf="
               latitude !== null &&
               longitude !== null
             "
           >
 
+            <div
+              class="location-preview-heading"
+            >
+              <div>
+                <span>UBICACIÓN ENCONTRADA</span>
+                <h3>¿Es aquí donde necesitas el servicio?</h3>
+              </div>
+
+              <ion-icon
+                name="location-outline"
+              ></ion-icon>
+            </div>
+
+            <p
+              class="geocoded-address"
+              *ngIf="geocodedDisplayName"
+            >
+              {{ geocodedDisplayName }}
+            </p>
+
+            <div
+              id="new-request-location-map"
+              class="location-map"
+            ></div>
+
+            <p
+              class="location-help"
+            >
+              Si el punto no está exactamente en el domicilio,
+              arrastra el marcador 🏠 hasta la ubicación correcta.
+            </p>
+
+            <button
+              type="button"
+              class="confirm-location-button"
+              [class.confirmed]="locationConfirmed"
+              (click)="confirmLocation()"
+            >
+              <ion-icon
+                [name]="
+                  locationConfirmed
+                    ? 'checkmark-circle'
+                    : 'location-outline'
+                "
+              ></ion-icon>
+
+              <span>
+                {{
+                  locationConfirmed
+                    ? 'Ubicación confirmada'
+                    : 'Confirmar ubicación'
+                }}
+              </span>
+            </button>
+
+          </section>
+
+
+          <div
+            class="location-confirmed"
+            *ngIf="locationConfirmed"
+          >
+
             <ion-icon
               name="checkmark-circle"
             ></ion-icon>
 
-            Coordenadas guardadas para
-            buscar técnicos cercanos.
+            Domicilio confirmado. Esta será la ubicación
+            utilizada para buscar técnicos y mostrar el seguimiento.
 
           </div>
 

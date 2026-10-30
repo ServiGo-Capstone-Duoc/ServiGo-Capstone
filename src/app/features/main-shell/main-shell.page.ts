@@ -8,6 +8,10 @@ import {
 } from '@angular/core';
 
 import {
+  Router
+} from '@angular/router';
+
+import {
   combineLatest,
   map
 } from 'rxjs';
@@ -42,7 +46,8 @@ import {
 
 
 @Component({
-  selector: 'app-main-shell',
+  selector:
+    'app-main-shell',
 
   templateUrl:
     './main-shell.page.html',
@@ -51,7 +56,8 @@ import {
     './main-shell.page.scss'
   ],
 
-  standalone: true,
+  standalone:
+    true,
 
   imports: [
     CommonModule,
@@ -65,11 +71,23 @@ import {
 })
 export class MainShellPage {
 
+
+  private readonly router =
+    inject(
+      Router
+    );
+
+
   private readonly profileService =
-    inject(ProfileService);
+    inject(
+      ProfileService
+    );
+
 
   private readonly modeService =
-    inject(AppModeService);
+    inject(
+      AppModeService
+    );
 
 
   readonly navigationMode$ =
@@ -86,18 +104,22 @@ export class MainShellPage {
             ]
           ): ServiGoMode => {
 
+
             const isTechnician =
               profile?.roles
                 ?.includes(
                   'tecnico'
-                ) ?? false;
+                )
+              ?? false;
 
 
             if (
-              requestedMode === 'tecnico'
+              requestedMode ===
+                'tecnico'
               &&
               isTechnician
             ) {
+
               return 'tecnico';
             }
 
@@ -111,10 +133,128 @@ export class MainShellPage {
   constructor() {
 
     addIcons({
+
       homeOutline,
+
       constructOutline,
+
       chatbubbleEllipsesOutline,
+
       personOutline
     });
+  }
+
+
+  /*
+   * =========================================
+   * INICIO
+   * =========================================
+   */
+
+  async openHome(
+    mode:
+      ServiGoMode
+  ): Promise<void> {
+
+
+    console.log(
+      '[ServiGo Navigation] Inicio:',
+      mode
+    );
+
+
+    if (
+      mode ===
+      'tecnico'
+    ) {
+
+      await this.router
+        .navigateByUrl(
+          '/app/technician/home'
+        );
+
+
+      return;
+    }
+
+
+    await this.router
+      .navigateByUrl(
+        '/app/home'
+      );
+  }
+
+
+  /*
+   * =========================================
+   * SERVICIOS / TRABAJOS
+   * =========================================
+   */
+
+  async openServices(
+    mode:
+      ServiGoMode
+  ): Promise<void> {
+
+
+    console.log(
+      '[ServiGo Navigation] Servicios/Trabajos:',
+      mode
+    );
+
+
+    if (
+      mode ===
+      'tecnico'
+    ) {
+
+      await this.router
+        .navigateByUrl(
+          '/app/technician/jobs'
+        );
+
+
+      return;
+    }
+
+
+    await this.router
+      .navigateByUrl(
+        '/app/services'
+      );
+  }
+
+
+  /*
+   * =========================================
+   * CHAT
+   * =========================================
+   */
+
+  async openMessages():
+    Promise<void> {
+
+
+    await this.router
+      .navigateByUrl(
+        '/app/messages'
+      );
+  }
+
+
+  /*
+   * =========================================
+   * PERFIL
+   * =========================================
+   */
+
+  async openProfile():
+    Promise<void> {
+
+
+    await this.router
+      .navigateByUrl(
+        '/app/profile'
+      );
   }
 }

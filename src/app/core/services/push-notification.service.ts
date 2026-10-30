@@ -34,17 +34,22 @@ import {
 
 
 @Injectable({
-  providedIn: 'root'
+  providedIn:
+    'root'
 })
 export class PushNotificationService {
 
 
   private readonly authService =
-    inject(AuthService);
+    inject(
+      AuthService
+    );
 
 
   private readonly router =
-    inject(Router);
+    inject(
+      Router
+    );
 
 
   private initialized =
@@ -63,10 +68,6 @@ export class PushNotificationService {
 
     /*
      * Push nativo solamente.
-     *
-     * ionic serve corre como web,
-     * por lo que no intentamos registrar
-     * PushNotifications ahí.
      */
 
     if (
@@ -94,15 +95,59 @@ export class PushNotificationService {
 
 
     /*
-     * Registramos listeners ANTES
-     * de llamar register().
+     * =====================================
+     * LISTENERS
+     * =====================================
+     *
+     * Se registran antes de solicitar
+     * registro FCM.
      */
 
     await this.registerListeners();
 
 
     /*
-     * Consultamos permiso actual.
+     * =====================================
+     * CANAL ANDROID
+     * =====================================
+     *
+     * Debe coincidir EXACTAMENTE con
+     * Functions:
+     *
+     * channelId: servigo_general
+     */
+
+    await PushNotifications.createChannel({
+
+      id:
+        'servigo_general',
+
+      name:
+        'ServiGo',
+
+      description:
+        'Notificaciones de servicios, trabajos y oportunidades.',
+
+      importance:
+        5,
+
+      visibility:
+        1,
+
+      vibration:
+        true
+    });
+
+
+    console.log(
+      '[ServiGo Push] Canal Android servigo_general creado.'
+    );
+
+
+    /*
+     * =====================================
+     * PERMISOS
+     * =====================================
      */
 
     let permissionStatus =
@@ -117,7 +162,7 @@ export class PushNotificationService {
 
     if (
       permissionStatus.receive ===
-      'prompt'
+        'prompt'
     ) {
 
       permissionStatus =
@@ -128,7 +173,7 @@ export class PushNotificationService {
 
     if (
       permissionStatus.receive !==
-      'granted'
+        'granted'
     ) {
 
       console.warn(
@@ -140,7 +185,9 @@ export class PushNotificationService {
 
 
     /*
-     * Solicita el token de registro.
+     * =====================================
+     * REGISTRO FCM
+     * =====================================
      */
 
     await PushNotifications
@@ -164,15 +211,19 @@ export class PushNotificationService {
 
 
     /*
-     * Firebase/Android entrega el token.
+     * =====================================
+     * TOKEN FCM
+     * =====================================
      */
 
     await PushNotifications.addListener(
       'registration',
 
       async (
-        token: Token
+        token:
+          Token
       ) => {
+
 
         console.log(
           '[ServiGo Push] Token recibido:',
@@ -199,7 +250,9 @@ export class PushNotificationService {
 
 
     /*
-     * Error durante registro.
+     * =====================================
+     * ERROR DE REGISTRO
+     * =====================================
      */
 
     await PushNotifications.addListener(
@@ -216,8 +269,12 @@ export class PushNotificationService {
 
 
     /*
-     * Notificación recibida mientras
-     * ServiGo está abierta.
+     * =====================================
+     * NOTIFICACIÓN RECIBIDA
+     * =====================================
+     *
+     * Se ejecuta cuando ServiGo está
+     * abierta y Android entrega el Push.
      */
 
     await PushNotifications.addListener(
@@ -228,6 +285,7 @@ export class PushNotificationService {
           PushNotificationSchema
       ) => {
 
+
         console.log(
           '[ServiGo Push] Notificación recibida:',
           notification
@@ -237,7 +295,9 @@ export class PushNotificationService {
 
 
     /*
-     * Usuario toca la notificación.
+     * =====================================
+     * NOTIFICACIÓN PULSADA
+     * =====================================
      */
 
     await PushNotifications.addListener(
@@ -248,39 +308,208 @@ export class PushNotificationService {
           ActionPerformed
       ) => {
 
+
         console.log(
           '[ServiGo Push] Notificación pulsada:',
           action
         );
 
 
-        const requestId =
+        const data =
           action.notification
-            .data?.['requestId'];
+            .data
+          ?? {};
+
+
+        const requestId =
+          data[
+            'requestId'
+          ];
+
+
+        const type =
+          data[
+            'type'
+          ];
 
 
         if (
           typeof requestId !==
-          'string'
+            'string'
           ||
           !requestId
         ) {
+
+          console.warn(
+            '[ServiGo Push] Notificación sin requestId.'
+          );
 
           return;
         }
 
 
         /*
-         * La notificación abre directamente
-         * la oportunidad correspondiente.
+         * =================================
+         * NUEVA OPORTUNIDAD
+         * =================================
          */
 
-        await this.router.navigate(
-          [
-            '/app/technician/opportunity',
-            requestId
-          ]
+        if (
+          type ===
+            'technician_opportunity'
+        ) {
+
+          await this.router.navigate(
+            [
+              '/app/technician/opportunity',
+              requestId
+            ]
+          );
+
+
+          return;
+        }
+
+
+        /*
+         * =================================
+         * PRESUPUESTO ACEPTADO
+         * =================================
+         */
+
+        if (
+          type ===
+            'technician_quote_accepted'
+        ) {
+
+          await this.router.navigate(
+            [
+              '/app/technician/jobs',
+              requestId
+            ]
+          );
+
+
+          return;
+        }
+
+
+        /*
+         * =================================
+         * SERVICIO CANCELADO POR CLIENTE
+         * =================================
+         *
+         * El destinatario es el técnico.
+         *
+         * Abrimos el detalle del trabajo,
+         * donde verá el estado cancelado.
+         */
+
+        if (
+          type ===
+            'technician_service_cancelled'
+        ) {
+
+          await this.router.navigate(
+            [
+              '/app/technician/jobs',
+              requestId
+            ]
+          );
+
+
+          return;
+        }
+/*
+ * =================================
+ * NUEVO MENSAJE DE CHAT
+ * =================================
+ *
+ * Tanto cliente como técnico abren
+ * directamente la conversación
+ * asociada al servicio.
+ */
+
+if (
+  type ===
+    'client_new_message'
+  ||
+  type ===
+    'technician_new_message'
+) {
+
+  await this.router.navigate(
+    [
+      '/app/messages',
+      requestId
+    ]
+  );
+
+
+  return;
+}
+
+        /*
+         * =================================
+         * EVENTOS CLIENTE
+         * =================================
+         *
+         * Todos estos eventos corresponden
+         * a una solicitud propiedad del
+         * cliente.
+         *
+         * Abrimos directamente el detalle
+         * del servicio.
+         */
+
+        if (
+          type ===
+            'client_new_quote'
+          ||
+          type ===
+            'client_technician_en_route'
+          ||
+          type ===
+            'client_technician_arrived'
+          ||
+          type ===
+            'client_job_started'
+          ||
+          type ===
+            'client_job_completed'
+          ||
+          type ===
+            'client_service_cancelled'
+        ) {
+
+          await this.router.navigate(
+            [
+              '/app/services',
+              requestId
+            ]
+          );
+
+
+          return;
+        }
+
+
+        /*
+         * =================================
+         * FALLBACK
+         * =================================
+         */
+
+        console.warn(
+          '[ServiGo Push] Tipo de notificación desconocido:',
+          type
         );
+
+
+        await this.router
+          .navigateByUrl(
+            '/app/home'
+          );
       }
     );
   }
@@ -293,7 +522,8 @@ export class PushNotificationService {
    */
 
   private async saveToken(
-    token: string
+    token:
+      string
   ): Promise<void> {
 
 
@@ -302,7 +532,9 @@ export class PushNotificationService {
         .waitForAuthReady();
 
 
-    if (!user) {
+    if (
+      !user
+    ) {
 
       throw new Error(
         'push-user-not-authenticated'
@@ -311,16 +543,8 @@ export class PushNotificationService {
 
 
     /*
-     * No usamos el token directamente
-     * como ID porque puede contener
-     * caracteres poco convenientes.
-     *
-     * Para este MVP utilizamos UID_android.
-     *
-     * Un usuario tendrá un registro Android.
-     *
-     * Más adelante soportaremos varios
-     * dispositivos por usuario.
+     * Actualmente mantenemos un dispositivo
+     * Android activo por usuario.
      */
 
     const tokenDocumentId =
