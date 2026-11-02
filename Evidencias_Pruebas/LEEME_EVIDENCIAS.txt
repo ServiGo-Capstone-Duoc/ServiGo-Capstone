@@ -1,0 +1,17 @@
+SERVIGO - GUIA DE EVIDENCIAS DE PRUEBAS
+========================================
+
+1. Copiar la carpeta evidencias-pruebas dentro de C:\Dev\ServiGo si se desea mantenerla junto al proyecto.
+2. Levantar Firebase Emulators antes de ejecutar las pruebas de seguridad/integración.
+3. Ejecutar desde PowerShell:
+
+   powershell -ExecutionPolicy Bypass -File .\evidencias-pruebas\Ejecutar_Pruebas_y_Guardar_Evidencia.ps1 -Executor "NOMBRE APELLIDO"
+
+4. El script ejecuta las unitarias de Functions y las baterías existentes de security-tests, guardando la salida en 10_Logs_Automatizados con fecha/hora.
+5. Para pruebas visuales, usar los IDs definidos en el Excel para nombrar PNG/MP4/TXT.
+6. Completar en el Excel: Fecha ejecución, Ejecutor, Resultado obtenido y Estado.
+7. No marcar Aprobado solo porque el resultado esperado exista: debe existir evidencia que demuestre el resultado obtenido.
+8. Transbank: utilizar únicamente sandbox/integración; nunca datos de tarjeta real.
+9. Push: si PUSH_ENABLED=false, el log de Functions puede demostrar que el push fue preparado/omitido por configuración; para demostrar recepción real se requiere dispositivo/emulador con FCM habilitado.
+
+IMPORTANTE: Los casos que ya fueron validados durante el desarrollo aparecen como 'Pendiente' hasta que su evidencia formal sea archivada. Esto evita declarar como respaldado algo que todavía no está dentro del paquete de entrega.

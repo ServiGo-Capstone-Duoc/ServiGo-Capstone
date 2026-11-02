@@ -52,6 +52,11 @@ import {
   WebpayPlus
 } from 'transbank-sdk';
 
+import {
+  getNextJobStatus,
+  isValidJobAction,
+  type JobStatus
+} from './domain/job-status';
 
 initializeApp();
 
@@ -3750,20 +3755,16 @@ export const updateJobStatus =
        */
 
       if (
-        action !== 'start_trip'
-        &&
-        action !== 'arrive'
-        &&
-        action !== 'start'
-        &&
-        action !== 'complete'
-      ) {
+  !isValidJobAction(
+    action
+  )
+) {
 
-        throw new HttpsError(
-          'invalid-argument',
-          'La acción debe ser start_trip, arrive, start o complete.'
-        );
-      }
+  throw new HttpsError(
+    'invalid-argument',
+    'La acción debe ser start_trip, arrive, start o complete.'
+  );
+}
 
 
       /*
@@ -3838,6 +3839,33 @@ export const updateJobStatus =
                       'status'
                     ]
                   : '';
+
+
+              /*
+               * =================================
+               * REGLA CENTRAL DE TRANSICION
+               * =================================
+               *
+               * Usa la misma logica cubierta por
+               * las pruebas unitarias job-status.
+               */
+
+              const nextStatus =
+                getNextJobStatus(
+                  currentStatus as JobStatus,
+                  action
+                );
+
+
+              if (
+                !nextStatus
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'La transicion de estado solicitada no esta permitida.'
+                );
+              }
 
 
               const clientId =
