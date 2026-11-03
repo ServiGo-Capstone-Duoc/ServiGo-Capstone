@@ -5,6 +5,7 @@ import {
 import {
   ChangeDetectorRef,
   Component,
+  OnDestroy,
   OnInit,
   inject
 } from '@angular/core';
@@ -31,12 +32,20 @@ import {
   locationOutline,
   timeOutline,
   calendarOutline,
-  flashOutline
+  flashOutline,
+  imagesOutline,
+  closeOutline,
+  chevronBackOutline,
+  chevronForwardOutline
 } from 'ionicons/icons';
 
 import {
   AuthService
 } from '../../../core/services/auth.service';
+
+import {
+  MediaStorageService
+} from '../../../core/services/media-storage.service';
 
 import {
   TechnicianOpportunityService,
@@ -68,7 +77,7 @@ import {
   ]
 })
 export class OpportunityDetailPage
-  implements OnInit {
+  implements OnInit, OnDestroy {
 
 
   /*
@@ -99,6 +108,10 @@ export class OpportunityDetailPage
     inject(ChangeDetectorRef);
 
 
+  private readonly mediaStorage =
+    inject(MediaStorageService);
+
+
   /*
    * =========================================
    * ESTADO
@@ -118,6 +131,17 @@ export class OpportunityDetailPage
     '';
 
 
+  photoUrls: string[] = [];
+
+  photosLoading = false;
+
+  photosError = '';
+
+  viewerOpen = false;
+
+  viewerIndex = 0;
+
+
   constructor() {
 
     addIcons({
@@ -132,7 +156,11 @@ export class OpportunityDetailPage
 
       calendarOutline,
 
-      flashOutline
+      flashOutline,
+      imagesOutline,
+      closeOutline,
+      chevronBackOutline,
+      chevronForwardOutline
     });
   }
 
@@ -262,6 +290,11 @@ export class OpportunityDetailPage
         result;
 
 
+      await this.loadRequestPhotos(
+        result.request.photoPaths
+      );
+
+
       /*
        * =====================================
        * MARCAR COMO VISTA
@@ -337,6 +370,79 @@ export class OpportunityDetailPage
 
       this.cdr.detectChanges();
     }
+  }
+
+
+  ngOnDestroy(): void {
+    this.releasePhotoUrls();
+  }
+
+
+  private async loadRequestPhotos(
+    paths: string[]
+  ): Promise<void> {
+
+    this.releasePhotoUrls();
+    this.photosError = '';
+
+    if (!Array.isArray(paths) || paths.length === 0) {
+      return;
+    }
+
+    this.photosLoading = true;
+    this.cdr.detectChanges();
+
+    try {
+      const results = await Promise.allSettled(
+        paths.map(path => this.mediaStorage.loadImageObjectUrl(path))
+      );
+
+      this.photoUrls = results
+        .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
+        .map(result => result.value);
+
+      if (this.photoUrls.length !== paths.length) {
+        this.photosError = 'Algunas imágenes no pudieron cargarse.';
+      }
+    } catch (error) {
+      console.error('[ServiGo] Error cargando fotos de la oportunidad:', error);
+      this.photosError = 'No pudimos cargar las fotos del problema.';
+    } finally {
+      this.photosLoading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+
+  private releasePhotoUrls(): void {
+    for (const url of this.photoUrls) {
+      this.mediaStorage.revokeObjectUrl(url);
+    }
+    this.photoUrls = [];
+  }
+
+
+  openPhoto(index: number): void {
+    if (!this.photoUrls[index]) return;
+    this.viewerIndex = index;
+    this.viewerOpen = true;
+  }
+
+
+  closePhotoViewer(): void {
+    this.viewerOpen = false;
+  }
+
+
+  previousPhoto(): void {
+    if (this.photoUrls.length <= 1) return;
+    this.viewerIndex = (this.viewerIndex - 1 + this.photoUrls.length) % this.photoUrls.length;
+  }
+
+
+  nextPhoto(): void {
+    if (this.photoUrls.length <= 1) return;
+    this.viewerIndex = (this.viewerIndex + 1) % this.photoUrls.length;
   }
 
 

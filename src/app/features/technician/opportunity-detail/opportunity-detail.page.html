@@ -141,6 +141,56 @@
       </section>
 
 
+      <!-- FOTOS DEL PROBLEMA -->
+
+      <section
+        class="detail-card photo-card"
+        *ngIf="
+          item.request.photoPaths.length > 0
+        "
+      >
+
+        <div class="photo-card-heading">
+          <div>
+            <span class="photo-eyebrow">EVIDENCIA DEL CLIENTE</span>
+            <h2>Fotos del problema</h2>
+            <p>Revísalas antes de preparar tu cotización.</p>
+          </div>
+
+          <div class="photo-count">
+            <ion-icon name="images-outline"></ion-icon>
+            {{ item.request.photoPaths.length }}
+          </div>
+        </div>
+
+        <div class="photo-loading" *ngIf="photosLoading">
+          <ion-spinner name="crescent"></ion-spinner>
+          <span>Cargando imágenes...</span>
+        </div>
+
+        <div class="photo-error" *ngIf="!photosLoading && photosError">
+          {{ photosError }}
+        </div>
+
+        <div class="photo-grid" *ngIf="!photosLoading && photoUrls.length > 0">
+          <button
+            type="button"
+            class="photo-thumb"
+            *ngFor="let photoUrl of photoUrls; let i = index"
+            (click)="openPhoto(i)"
+            [attr.aria-label]="'Abrir foto ' + (i + 1)"
+          >
+            <img [src]="photoUrl" [alt]="'Foto del problema ' + (i + 1)" />
+            <span>{{ i + 1 }}</span>
+          </button>
+        </div>
+
+        <p class="photo-hint" *ngIf="photoUrls.length > 0">
+          Toca una imagen para verla en tamaño completo.
+        </p>
+
+      </section>
+
       <!-- INFORMACIÓN DEL SERVICIO -->
 
       <section
@@ -318,5 +368,42 @@
     </ng-container>
 
   </main>
+
+  <div
+    class="photo-viewer"
+    *ngIf="viewerOpen && photoUrls.length > 0"
+    (click)="closePhotoViewer()"
+  >
+    <div class="photo-viewer-toolbar" (click)="$event.stopPropagation()">
+      <span>Foto {{ viewerIndex + 1 }} de {{ photoUrls.length }}</span>
+      <button type="button" (click)="closePhotoViewer()" aria-label="Cerrar imagen">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+
+    <div class="photo-viewer-stage" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="viewer-nav viewer-nav-left"
+        *ngIf="photoUrls.length > 1"
+        (click)="previousPhoto()"
+        aria-label="Foto anterior"
+      >
+        <ion-icon name="chevron-back-outline"></ion-icon>
+      </button>
+
+      <img [src]="photoUrls[viewerIndex]" alt="Foto ampliada del problema" />
+
+      <button
+        type="button"
+        class="viewer-nav viewer-nav-right"
+        *ngIf="photoUrls.length > 1"
+        (click)="nextPhoto()"
+        aria-label="Foto siguiente"
+      >
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
 
 </ion-content>

@@ -18,6 +18,11 @@ import {
 } from 'firebase/functions';
 
 import {
+  connectStorageEmulator,
+  getStorage
+} from 'firebase/storage';
+
+import {
   Capacitor
 } from '@capacitor/core';
 
@@ -86,6 +91,18 @@ export const firebaseFunctions =
 
 /*
  * =========================================
+ * FIREBASE STORAGE
+ * =========================================
+ */
+
+export const firebaseStorage =
+  getStorage(
+    firebaseApp
+  );
+
+
+/*
+ * =========================================
  * FIREBASE EMULATORS
  * =========================================
  */
@@ -143,6 +160,13 @@ if (
   );
 
 
+  connectStorageEmulator(
+    firebaseStorage,
+    emulatorHost,
+    9199
+  );
+
+
   console.log(
     '[ServiGo] Firebase Emulator Suite activo'
   );
@@ -163,5 +187,11 @@ if (
   console.log(
     '[ServiGo] Functions Emulator:',
     `${emulatorHost}:5001`
+  );
+
+
+  console.log(
+    '[ServiGo] Storage Emulator:',
+    `${emulatorHost}:9199`
   );
 }

@@ -74,6 +74,10 @@ import {
 } from '../../../core/services/service-request.service';
 
 import {
+  MediaStorageService
+} from '../../../core/services/media-storage.service';
+
+import {
   ServiceUrgency
 } from '../../../core/models/service-request.model';
 
@@ -168,6 +172,12 @@ export class NewRequestPage
     );
 
 
+  private readonly mediaStorageService =
+    inject(
+      MediaStorageService
+    );
+
+
   loading =
     false;
 
@@ -202,6 +212,16 @@ export class NewRequestPage
 
   errorMessage =
     '';
+
+
+  photoError =
+    '';
+
+
+  selectedPhotos: {
+    file: File;
+    previewUrl: string;
+  }[] = [];
 
 
   requestId =
@@ -511,6 +531,7 @@ export class NewRequestPage
 
 
     this.destroyMap();
+    this.clearPhotoPreviews();
   }
 
 
@@ -565,6 +586,112 @@ export class NewRequestPage
       .setValue(
         urgency
       );
+  }
+
+
+  /*
+   * =========================================
+   * FOTOS DEL PROBLEMA
+   * =========================================
+   */
+
+  onPhotosSelected(
+    event: Event
+  ): void {
+
+    const input =
+      event.target as HTMLInputElement;
+
+    const files =
+      Array.from(
+        input.files
+        ?? []
+      );
+
+    this.photoError = '';
+
+    for (
+      const file of files
+    ) {
+
+      if (
+        this.selectedPhotos.length >=
+        this.mediaStorageService.maxFiles
+      ) {
+        this.photoError =
+          'Puedes adjuntar hasta 5 fotos por solicitud.';
+        break;
+      }
+
+      const validationError =
+        this.mediaStorageService
+          .validateImage(
+            file
+          );
+
+      if (
+        validationError
+      ) {
+        this.photoError =
+          validationError;
+        continue;
+      }
+
+      this.selectedPhotos.push({
+        file,
+        previewUrl:
+          URL.createObjectURL(
+            file
+          )
+      });
+    }
+
+    input.value = '';
+    this.cdr.detectChanges();
+  }
+
+
+  removePhoto(
+    index: number
+  ): void {
+
+    const photo =
+      this.selectedPhotos[
+        index
+      ];
+
+    if (
+      !photo
+    ) {
+      return;
+    }
+
+    URL.revokeObjectURL(
+      photo.previewUrl
+    );
+
+    this.selectedPhotos.splice(
+      index,
+      1
+    );
+
+    this.photoError = '';
+  }
+
+
+  private clearPhotoPreviews():
+    void {
+
+    for (
+      const photo of
+      this.selectedPhotos
+    ) {
+      URL.revokeObjectURL(
+        photo.previewUrl
+      );
+    }
+
+    this.selectedPhotos = [];
   }
 
 
@@ -1445,20 +1572,61 @@ const container =
       }
 
 
-      this.requestId =
-        await this.requestService
-          .createRequest(
-            user.uid,
-            profile.displayName,
-            {
+      const requestId =
+        this.requestService
+          .createRequestId();
 
-              ...values,
 
-              latitude,
+      let photoPaths:
+        string[] = [];
 
-              longitude
-            }
-          );
+
+      try {
+
+        if (
+          this.selectedPhotos.length > 0
+        ) {
+
+          photoPaths =
+            await this.mediaStorageService
+              .uploadRequestImages(
+                requestId,
+                user.uid,
+                this.selectedPhotos.map(
+                  photo =>
+                    photo.file
+                )
+              );
+        }
+
+
+        this.requestId =
+          await this.requestService
+            .createRequest(
+              user.uid,
+              profile.displayName,
+              {
+                ...values,
+                latitude,
+                longitude,
+                requestId,
+                photoPaths
+              }
+            );
+
+      } catch (error) {
+
+        if (
+          photoPaths.length > 0
+        ) {
+          await this.mediaStorageService
+            .deletePaths(
+              photoPaths
+            );
+        }
+
+        throw error;
+      }
 
 
       console.log(
@@ -1471,6 +1639,7 @@ const container =
         true;
 
 
+      this.clearPhotoPreviews();
       this.destroyMap();
 
 

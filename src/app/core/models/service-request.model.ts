@@ -45,6 +45,8 @@ export interface ServiceRequest {
 
   photoUrls: string[];
 
+  photoPaths: string[];
+
   status: ServiceRequestStatus;
 
   assignedTechnicianId: string | null;

@@ -50,6 +50,10 @@ export interface CreateServiceRequest {
   timeSlot: string;
 
   urgency: ServiceUrgency;
+
+  photoPaths?: string[];
+
+  requestId?: string;
 }
 
 
@@ -77,6 +81,16 @@ interface UpdateJobStatusResponse {
   providedIn: 'root'
 })
 export class ServiceRequestService {
+
+
+  createRequestId(): string {
+    return doc(
+      collection(
+        firestore,
+        'serviceRequests'
+      )
+    ).id;
+  }
 
 
   /*
@@ -667,12 +681,18 @@ private async updateJobStatus(
   ): Promise<string> {
 
     const requestRef =
-      doc(
-        collection(
-          firestore,
-          'serviceRequests'
-        )
-      );
+      data.requestId
+        ? doc(
+            firestore,
+            'serviceRequests',
+            data.requestId
+          )
+        : doc(
+            collection(
+              firestore,
+              'serviceRequests'
+            )
+          );
 
 
     const preferredDate =
@@ -720,6 +740,10 @@ private async updateJobStatus(
           data.urgency,
 
         photoUrls: [],
+
+        photoPaths:
+          data.photoPaths
+          ?? [],
 
         status:
           'published',
@@ -819,6 +843,13 @@ updatedAt:
           data['photoUrls']
         )
           ? data['photoUrls']
+          : [],
+
+      photoPaths:
+        Array.isArray(
+          data['photoPaths']
+        )
+          ? data['photoPaths']
           : [],
 
       status:

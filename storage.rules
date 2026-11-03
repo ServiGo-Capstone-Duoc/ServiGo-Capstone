@@ -1,0 +1,58 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validImage() {
+      return request.resource != null
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    function requestDoc(requestId) {
+      return firestore.get(/databases/(default)/documents/serviceRequests/$(requestId));
+    }
+
+    function opportunityId(requestId) {
+      return request.auth.uid + '_' + requestId;
+    }
+
+    function hasTechnicianOpportunity(requestId) {
+      return signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/technicianOpportunities/$(opportunityId(requestId))
+        );
+    }
+
+    function canReadRequestImage(requestId, clientId) {
+      return signedIn()
+        && (
+          request.auth.uid == clientId
+          || hasTechnicianOpportunity(requestId)
+          || (
+            firestore.exists(/databases/(default)/documents/serviceRequests/$(requestId))
+            && requestDoc(requestId).data.assignedTechnicianId == request.auth.uid
+          )
+        );
+    }
+
+    match /service-request-images/{requestId}/{clientId}/{fileName} {
+      allow create: if signedIn()
+        && request.auth.uid == clientId
+        && validImage();
+
+      allow read: if canReadRequestImage(requestId, clientId);
+
+      allow delete: if signedIn()
+        && request.auth.uid == clientId;
+
+      allow update: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

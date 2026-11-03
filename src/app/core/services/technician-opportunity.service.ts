@@ -587,6 +587,23 @@ async getOpportunityByRequestId(
           ? data['photoUrls']
           : [],
 
+
+photoPaths:
+  Array.isArray(
+    data['photoPaths']
+  )
+    ? data['photoPaths']
+        .filter(
+          (
+            value
+          ): value is string =>
+            typeof value ===
+              'string'
+            &&
+            value.length >
+              0
+        )
+    : [],
       status:
         (
           data['status']

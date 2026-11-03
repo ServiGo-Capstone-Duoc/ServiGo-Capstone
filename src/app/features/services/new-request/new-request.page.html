@@ -268,33 +268,87 @@
           </div>
 
 
-          <!-- FOTOS PREPARADAS -->
+          <!-- FOTOS DEL PROBLEMA -->
 
           <div
-            class="photo-placeholder"
+            class="photo-upload"
           >
 
             <div
-              class="photo-icon"
+              class="photo-upload-heading"
             >
+              <div>
+                <strong>Fotos del problema</strong>
+                <span>Ayuda al técnico a evaluar mejor el trabajo.</span>
+              </div>
 
+              <span
+                class="photo-counter"
+              >
+                {{ selectedPhotos.length }}/5
+              </span>
+            </div>
+
+            <div
+              class="photo-grid"
+              *ngIf="selectedPhotos.length > 0"
+            >
+              <div
+                class="photo-preview"
+                *ngFor="let photo of selectedPhotos; let i = index"
+              >
+                <img
+                  [src]="photo.previewUrl"
+                  alt="Foto del problema"
+                />
+
+                <button
+                  type="button"
+                  class="photo-remove"
+                  aria-label="Eliminar foto"
+                  (click)="removePhoto(i)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <label
+              class="photo-add-button"
+              [class.disabled]="selectedPhotos.length >= 5"
+            >
               <ion-icon
                 name="camera-outline"
               ></ion-icon>
 
-            </div>
-
-            <div>
-
-              <strong>
-                Fotos del problema
-              </strong>
-
               <span>
-                La carga de imágenes
-                se habilitará posteriormente.
+                {{
+                  selectedPhotos.length === 0
+                    ? 'Agregar fotos'
+                    : 'Agregar otra foto'
+                }}
               </span>
 
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                [disabled]="selectedPhotos.length >= 5"
+                (change)="onPhotosSelected($event)"
+              />
+            </label>
+
+            <p
+              class="photo-help"
+            >
+              JPG, PNG o WEBP · Máx. 5 MB por foto · Hasta 5 imágenes
+            </p>
+
+            <div
+              class="field-error"
+              *ngIf="photoError"
+            >
+              {{ photoError }}
             </div>
 
           </div>
