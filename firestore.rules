@@ -313,9 +313,24 @@ service cloud.firestore {
           if canWriteMessage()
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.requestId == requestId
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 1000;
+          && (
+            (
+              (!('type' in request.resource.data) || request.resource.data.type == 'text')
+              && request.resource.data.text is string
+              && request.resource.data.text.size() > 0
+              && request.resource.data.text.size() <= 1000
+            )
+            ||
+            (
+              request.resource.data.type == 'image'
+              && request.resource.data.text is string
+              && request.resource.data.text.size() == 0
+              && request.resource.data.imagePath is string
+              && request.resource.data.imagePath.matches(
+                'chat-images/' + requestId + '/' + request.auth.uid + '/' + messageId + '/.*'
+              )
+            )
+          );
 
 
         /*

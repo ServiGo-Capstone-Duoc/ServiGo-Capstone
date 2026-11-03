@@ -37,6 +37,22 @@ export class MediaStorageService {
   }
 
 
+  async uploadChatImage(
+    requestId: string,
+    senderId: string,
+    messageId: string,
+    file: File
+  ): Promise<string> {
+    const validationError = this.validateImage(file);
+    if (validationError) throw new Error(validationError);
+
+    const extension = this.extensionFor(file);
+    const path = `chat-images/${requestId}/${senderId}/${messageId}/image.${extension}`;
+    await uploadBytes(ref(firebaseStorage, path), file, { contentType: file.type });
+    return path;
+  }
+
+
   async loadImageObjectUrl(path: string): Promise<string> {
     const blob = await getBlob(ref(firebaseStorage, path));
     return URL.createObjectURL(blob);

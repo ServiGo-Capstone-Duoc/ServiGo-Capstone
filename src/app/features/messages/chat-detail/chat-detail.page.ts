@@ -31,7 +31,9 @@ import {
 import {
   arrowBackOutline,
   sendOutline,
-  constructOutline
+  constructOutline,
+  cameraOutline,
+  closeOutline
 } from 'ionicons/icons';
 
 import {
@@ -53,6 +55,10 @@ import {
 import {
   ServiceRequest
 } from '../../../core/models/service-request.model';
+
+import {
+  MediaStorageService
+} from '../../../core/services/media-storage.service';
 
 
 @Component({
@@ -110,6 +116,11 @@ export class ChatDetailPage
       ProfileService
     );
 
+  private readonly mediaStorageService =
+    inject(
+      MediaStorageService
+    );
+
 
   private readonly cdr =
     inject(
@@ -150,6 +161,11 @@ export class ChatDetailPage
   errorMessage =
     '';
 
+  selectedImageFile: File | null = null;
+  selectedImagePreview = '';
+  imageUrls: Record<string, string> = {};
+  viewerUrl = '';
+
 
   private unsubscribeMessages:
     (() => void)
@@ -165,7 +181,9 @@ export class ChatDetailPage
 
       sendOutline,
 
-      constructOutline
+      constructOutline,
+      cameraOutline,
+      closeOutline
     });
   }
 
@@ -181,6 +199,8 @@ export class ChatDetailPage
     void {
 
     this.stopListening();
+    this.clearSelectedImage();
+    this.clearLoadedImages();
   }
 
 
@@ -188,6 +208,8 @@ export class ChatDetailPage
     void {
 
     this.stopListening();
+    this.clearSelectedImage();
+    this.clearLoadedImages();
   }
 
 
@@ -290,6 +312,7 @@ export class ChatDetailPage
               this.messages =
                 messages;
 
+              void this.syncImageUrls(messages);
 
               this.cdr
                 .detectChanges();
@@ -430,6 +453,107 @@ if (
       this.cdr
         .detectChanges();
     }
+  }
+
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+
+    const validationError = this.mediaStorageService.validateImage(file);
+    if (validationError) {
+      this.errorMessage = validationError;
+      return;
+    }
+
+    this.clearSelectedImage();
+    this.selectedImageFile = file;
+    this.selectedImagePreview = URL.createObjectURL(file);
+    this.errorMessage = '';
+  }
+
+  clearSelectedImage(): void {
+    if (this.selectedImagePreview) {
+      URL.revokeObjectURL(this.selectedImagePreview);
+    }
+    this.selectedImagePreview = '';
+    this.selectedImageFile = null;
+  }
+
+  async sendSelectedImage(): Promise<void> {
+    if (!this.request || !this.currentUserId || !this.selectedImageFile || this.sending || this.isReadOnly) return;
+
+    this.sending = true;
+    this.errorMessage = '';
+    let uploadedPath = '';
+
+    try {
+      const messageId = this.chatService.createMessageId(this.request.id);
+      uploadedPath = await this.mediaStorageService.uploadChatImage(
+        this.request.id,
+        this.currentUserId,
+        messageId,
+        this.selectedImageFile
+      );
+
+      await this.chatService.sendImageMessage(
+        this.request.id,
+        this.currentUserId,
+        this.currentUserName,
+        messageId,
+        uploadedPath
+      );
+
+      this.clearSelectedImage();
+    } catch (error) {
+      console.error('[ServiGo Chat] Error enviando imagen:', error);
+      if (uploadedPath) {
+        await this.mediaStorageService.deletePaths([uploadedPath]);
+      }
+      this.errorMessage = 'No pudimos enviar la imagen.';
+    } finally {
+      this.sending = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  openImage(url: string): void {
+    this.viewerUrl = url;
+  }
+
+  closeImage(): void {
+    this.viewerUrl = '';
+  }
+
+  private async syncImageUrls(messages: ChatMessage[]): Promise<void> {
+    const validIds = new Set(messages.filter(m => m.type === 'image' && m.imagePath).map(m => m.id));
+
+    for (const [id, url] of Object.entries(this.imageUrls)) {
+      if (!validIds.has(id)) {
+        this.mediaStorageService.revokeObjectUrl(url);
+        delete this.imageUrls[id];
+      }
+    }
+
+    for (const message of messages) {
+      if (message.type !== 'image' || !message.imagePath || this.imageUrls[message.id]) continue;
+      try {
+        this.imageUrls[message.id] = await this.mediaStorageService.loadImageObjectUrl(message.imagePath);
+        this.cdr.detectChanges();
+      } catch (error) {
+        console.error('[ServiGo Chat] Error cargando imagen:', error);
+      }
+    }
+  }
+
+  private clearLoadedImages(): void {
+    for (const url of Object.values(this.imageUrls)) {
+      this.mediaStorageService.revokeObjectUrl(url);
+    }
+    this.imageUrls = {};
+    this.viewerUrl = '';
   }
 
 

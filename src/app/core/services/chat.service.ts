@@ -213,6 +213,13 @@ export class ChatService {
   }
 
 
+  createMessageId(requestId: string): string {
+    return doc(
+      collection(firestore, 'serviceRequests', requestId, 'messages')
+    ).id;
+  }
+
+
   /*
    * =========================================
    * ENVIAR MENSAJE
@@ -300,13 +307,46 @@ export class ChatService {
           ||
           'Usuario ServiGo',
 
+        type:
+          'text',
+
         text:
           cleanText,
+
+        imagePath:
+          null,
 
         createdAt:
           serverTimestamp()
       }
     );
+  }
+
+
+  async sendImageMessage(
+    requestId: string,
+    senderId: string,
+    senderName: string,
+    messageId: string,
+    imagePath: string
+  ): Promise<void> {
+    const request = await this.getConversationRequest(requestId, senderId);
+    if (!request) throw new Error('chat-not-available');
+
+    const expectedPrefix = `chat-images/${requestId}/${senderId}/${messageId}/`;
+    if (!imagePath.startsWith(expectedPrefix)) throw new Error('invalid-image-path');
+
+    const messageRef = doc(firestore, 'serviceRequests', requestId, 'messages', messageId);
+    await setDoc(messageRef, {
+      id: messageId,
+      requestId,
+      senderId,
+      senderName: senderName.trim() || 'Usuario ServiGo',
+      type: 'image',
+      text: '',
+      imagePath,
+      createdAt: serverTimestamp()
+    });
   }
 
 
@@ -337,9 +377,19 @@ export class ChatService {
         data['senderName']
         ?? 'Usuario ServiGo',
 
+      type:
+        data['type'] === 'image'
+          ? 'image'
+          : 'text',
+
       text:
         data['text']
         ?? '',
+
+      imagePath:
+        typeof data['imagePath'] === 'string'
+          ? data['imagePath']
+          : null,
 
       createdAt:
         this.toDate(

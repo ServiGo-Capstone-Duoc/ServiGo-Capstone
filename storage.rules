@@ -51,6 +51,38 @@ service firebase.storage {
       allow update: if false;
     }
 
+
+    function isChatParticipant(requestId) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/serviceRequests/$(requestId))
+        && (
+          requestDoc(requestId).data.clientId == request.auth.uid
+          || requestDoc(requestId).data.assignedTechnicianId == request.auth.uid
+        );
+    }
+
+    function chatWritable(requestId) {
+      return isChatParticipant(requestId)
+        && (
+          requestDoc(requestId).data.status == 'accepted'
+          || requestDoc(requestId).data.status == 'en_route'
+          || requestDoc(requestId).data.status == 'arrived'
+          || requestDoc(requestId).data.status == 'in_progress'
+          || requestDoc(requestId).data.status == 'completed'
+        );
+    }
+
+    match /chat-images/{requestId}/{senderId}/{messageId}/{fileName} {
+      allow create: if chatWritable(requestId)
+        && request.auth.uid == senderId
+        && validImage();
+
+      allow read: if isChatParticipant(requestId);
+
+      allow delete: if signedIn() && request.auth.uid == senderId;
+      allow update: if false;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

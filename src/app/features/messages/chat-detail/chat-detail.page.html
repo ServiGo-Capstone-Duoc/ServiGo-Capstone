@@ -144,9 +144,31 @@
             </span>
 
 
-            <p>
+            <p
+              *ngIf="message.type === 'text'"
+            >
               {{ message.text }}
             </p>
+
+            <button
+              type="button"
+              class="message-image-button"
+              *ngIf="message.type === 'image' && imageUrls[message.id] as imageUrl"
+              (click)="openImage(imageUrl)"
+            >
+              <img
+                [src]="imageUrl"
+                alt="Imagen compartida en el chat"
+              />
+            </button>
+
+            <div
+              class="message-image-loading"
+              *ngIf="message.type === 'image' && !imageUrls[message.id]"
+            >
+              <ion-spinner name="crescent"></ion-spinner>
+              <span>Cargando imagen...</span>
+            </div>
 
 
             <small>
@@ -185,11 +207,43 @@
 
 </section>
       <section
+        class="chat-image-preview"
+        *ngIf="selectedImagePreview && !isReadOnly"
+      >
+        <img [src]="selectedImagePreview" alt="Vista previa de la imagen" />
+        <div class="chat-image-preview__actions">
+          <button type="button" class="preview-cancel" (click)="clearSelectedImage()">Cancelar</button>
+          <button type="button" class="preview-send" [disabled]="sending" (click)="sendSelectedImage()">
+            <ion-spinner *ngIf="sending" name="crescent"></ion-spinner>
+            <span *ngIf="!sending">Enviar foto</span>
+          </button>
+        </div>
+      </section>
+
+      <section
   class="composer"
   *ngIf="
     !isReadOnly
   "
 >
+
+        <input
+          #chatImageInput
+          type="file"
+          class="chat-image-input"
+          accept="image/jpeg,image/png,image/webp"
+          (change)="onImageSelected($event)"
+        />
+
+        <button
+          type="button"
+          class="attach-button"
+          [disabled]="sending"
+          (click)="chatImageInput.click()"
+          aria-label="Adjuntar imagen"
+        >
+          <ion-icon name="camera-outline"></ion-icon>
+        </button>
 
         <textarea
           [(ngModel)]="
@@ -236,6 +290,17 @@
       </section>
 
     </ng-container>
+
+    <div
+      class="chat-image-viewer"
+      *ngIf="viewerUrl"
+      (click)="closeImage()"
+    >
+      <button type="button" class="viewer-close" (click)="closeImage(); $event.stopPropagation()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+      <img [src]="viewerUrl" alt="Imagen del chat ampliada" (click)="$event.stopPropagation()" />
+    </div>
 
   </main>
 
