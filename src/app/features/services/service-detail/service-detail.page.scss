@@ -1300,3 +1300,31 @@ ion-content {
 
 /* CANCELACION */
 .cancellation-card,.cancelled-card{margin-top:18px;border-radius:22px}.cancellation-card{padding:22px;background:#fff;border:1px solid rgba(148,163,184,.28);box-shadow:0 12px 30px rgba(15,23,42,.06)}.cancellation-summary{display:flex;align-items:center;justify-content:space-between;gap:22px}.cancellation-summary span,.cancellation-form>span,.cancelled-card span{display:block;margin-bottom:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em}.cancellation-summary span,.cancellation-form>span{color:#64748b}.cancellation-summary strong{display:block;color:#0f172a}.cancellation-summary p,.cancellation-form p,.cancelled-card p{margin:6px 0 0;line-height:1.5}.cancellation-summary p,.cancellation-form p{color:#64748b}.open-cancellation-button,.cancel-back-button,.confirm-cancellation-button{min-height:46px;border:0;border-radius:14px;font-weight:800;cursor:pointer}.open-cancellation-button{padding:0 18px;color:#b42318;background:#fff1f0;border:1px solid rgba(180,35,24,.16)}.open-cancellation-button:disabled,.cancel-back-button:disabled,.confirm-cancellation-button:disabled{opacity:.55;cursor:not-allowed}.cancellation-form h2{margin:0;color:#0f172a;font-size:1.25rem}.cancellation-reason{width:100%;min-height:120px;margin-top:18px;padding:14px 16px;resize:vertical;border:1px solid #cbd5e1;border-radius:14px;outline:none;background:#fff;color:#0f172a;font:inherit;line-height:1.5;box-sizing:border-box}.cancellation-counter{display:block;margin-top:6px;text-align:right;color:#94a3b8}.cancellation-error{margin-top:12px;padding:11px 13px;border-radius:12px;color:#b42318;background:#fff1f0;font-size:.9rem;font-weight:700}.cancellation-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.cancel-back-button{padding:0 18px;color:#334155;background:#f1f5f9}.confirm-cancellation-button{min-width:190px;padding:0 20px;color:#fff;background:#b42318}.cancelled-card{display:flex;align-items:flex-start;gap:14px;padding:20px;color:#7f1d1d;background:#fff7f7;border:1px solid rgba(185,28,28,.18)}.cancelled-card>ion-icon{width:28px;height:28px;margin-top:2px}.cancelled-card span{color:#b42318}.cancelled-card strong{display:block;color:#7f1d1d}.cancelled-card p{color:#991b1b}@media(max-width:640px){.cancellation-summary{align-items:stretch;flex-direction:column}.open-cancellation-button{width:100%}.cancellation-actions{flex-direction:column-reverse}.cancel-back-button,.confirm-cancellation-button{width:100%}}
+
+/* =========================================
+ * SERVIGO DESIGN SYSTEM V1 - DETALLE SERVICIO
+ * ========================================= */
+.detail-container { max-width: var(--servigo-page-max); padding: 18px 20px calc(var(--servigo-tabbar-height) + 40px); }
+.detail-header { min-height: 48px; margin-bottom: 22px; }
+.detail-logo { width: 104px; }
+.back-button { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--servigo-border); box-shadow: none; }
+.request-card, .cancelled-card, .cancellation-card, .tracking-card, .arrival-card, .in-progress-card, .service-completed-card, .payment-card, .payment-approved-card, .review-section {
+  border-color: var(--servigo-border); border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card);
+}
+.request-card { padding: 18px; margin-bottom: 16px; }
+.request-card > span { font-size: 11px; letter-spacing: .06em; }
+.request-card h1 { font-size: 22px; line-height: 1.15; }
+.request-info { font-size: 13px; line-height: 1.5; }
+.tracking-header h2, .payment-heading h2, .review-heading h2, .quotes-section .section-heading h2 { font-size: 18px; }
+.tracking-header p, .payment-copy, .review-heading p { font-size: 13px; line-height: 1.5; }
+.tracking-stats { gap: 10px; }
+.tracking-stats > div { border-radius: var(--servigo-radius-md); }
+.quote-card { border-color: var(--servigo-border); border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card); }
+.quote-main h3 { font-size: 15px; }
+.quote-main span, .quote-main p { font-size: 12px; line-height: 1.45; }
+.quote-price { font-size: 16px; }
+.payment-button, .submit-review-button, .confirm-cancellation-button { min-height: 50px; border-radius: var(--servigo-radius-md); font-size: 14px; box-shadow: 0 10px 22px rgba(11,115,224,.16); }
+.open-cancellation-button, .cancel-back-button { min-height: 44px; border-radius: var(--servigo-radius-md); font-size: 13px; }
+.review-stars button { min-width: 44px; min-height: 44px; }
+.review-comment { font-size: 14px; }
+.loading-state, .error-state, .empty-quotes { font-size: 13px; }

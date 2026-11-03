@@ -478,7 +478,18 @@ export const routes: Routes = [
             )
       },
 
+{
+  path:
+    'security',
 
+  loadComponent: () =>
+    import(
+      './features/security/security.page'
+    )
+      .then(
+        m => m.SecurityPage
+      )
+},
       /*
        * -------------------------------------
        * ADMINISTRACIÓN

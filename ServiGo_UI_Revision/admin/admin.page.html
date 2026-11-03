@@ -1,0 +1,489 @@
+<ion-content>
+
+  <main class="admin-container">
+
+    <header class="admin-header">
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="admin-logo"
+      />
+
+      <div>
+
+        <span>
+          Administración
+        </span>
+
+        <h1>
+          Validación de técnicos
+        </h1>
+
+      </div>
+
+    </header>
+
+
+    <!-- MENSAJES -->
+
+    <div
+      class="admin-message success"
+      *ngIf="successMessage"
+    >
+      {{ successMessage }}
+    </div>
+
+
+    <div
+      class="admin-message error"
+      *ngIf="errorMessage"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <!-- CARGANDO -->
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando postulaciones...
+      </span>
+
+    </div>
+
+
+    <!-- LISTADO -->
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        !selectedApplication
+      "
+    >
+
+      <div
+        class="admin-toolbar"
+      >
+
+        <div>
+
+          <strong>
+            Postulaciones pendientes
+          </strong>
+
+          <span>
+            {{ applications.length }}
+            por revisar
+          </span>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="refresh-button"
+          (click)="loadApplications()"
+        >
+
+          <ion-icon
+            name="refresh-outline"
+          ></ion-icon>
+
+        </button>
+
+      </div>
+
+
+      <div
+        class="empty-state"
+        *ngIf="
+          applications.length === 0
+        "
+      >
+
+        <ion-icon
+          name="checkmark-circle-outline"
+        ></ion-icon>
+
+        <h2>
+          Todo al día
+        </h2>
+
+        <p>
+          No existen postulaciones
+          pendientes de revisión.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="application-card"
+        *ngFor="
+          let application
+          of applications
+        "
+        (click)="
+          openApplication(
+            application
+          )
+        "
+      >
+
+        <div
+          class="application-avatar"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div
+          class="application-summary"
+        >
+
+          <strong>
+            {{ application.fullName }}
+          </strong>
+
+          <span>
+            {{ application.baseCommune }}
+            ·
+            {{ application.experienceYears }}
+            años de experiencia
+          </span>
+
+
+          <div
+            class="specialty-summary"
+          >
+
+            <span
+              *ngFor="
+                let specialty
+                of application.specialties
+              "
+            >
+              {{ specialty }}
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="pending-label"
+        >
+          Pendiente
+        </div>
+
+      </button>
+
+    </ng-container>
+
+
+    <!-- DETALLE -->
+
+    <section
+      class="application-detail"
+      *ngIf="
+        selectedApplication
+        as application
+      "
+    >
+
+      <button
+        type="button"
+        class="back-list-button"
+        (click)="closeApplication()"
+      >
+        ← Volver a postulaciones
+      </button>
+
+
+      <div
+        class="detail-header"
+      >
+
+        <div
+          class="application-avatar large"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            POSTULANTE
+          </span>
+
+          <h2>
+            {{ application.fullName }}
+          </h2>
+
+          <p>
+            {{ application.rut }}
+            ·
+            {{ application.phone }}
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="detail-card"
+      >
+
+        <div
+          class="detail-title"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+          <strong>
+            Especialidades
+          </strong>
+
+        </div>
+
+
+        <div
+          class="specialty-summary"
+        >
+
+          <span
+            *ngFor="
+              let specialty
+              of application.specialties
+            "
+          >
+            {{ specialty }}
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="detail-card"
+      >
+
+        <div
+          class="detail-title"
+        >
+
+          <ion-icon
+            name="document-text-outline"
+          ></ion-icon>
+
+          <strong>
+            Experiencia
+          </strong>
+
+        </div>
+
+
+        <p>
+          <strong>
+            {{ application.experienceYears }}
+            años
+          </strong>
+        </p>
+
+        <p>
+          {{
+            application
+              .experienceDescription
+          }}
+        </p>
+
+      </div>
+
+
+      <div
+        class="detail-card"
+      >
+
+        <div
+          class="detail-title"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+          <strong>
+            Cobertura
+          </strong>
+
+        </div>
+
+
+        <p>
+          {{
+            application.baseCommune
+          }}
+        </p>
+
+        <p>
+          Radio de atención:
+          {{
+            application.serviceRadiusKm
+          }}
+          km
+        </p>
+
+      </div>
+
+
+      <div
+        class="detail-card"
+      >
+
+        <strong>
+          Documentación declarada
+        </strong>
+
+
+        <div
+          class="document-status"
+        >
+
+          <span>
+            Identificación vigente
+          </span>
+
+          <strong>
+            {{
+              application.hasIdentification
+                ? 'Sí'
+                : 'No'
+            }}
+          </strong>
+
+        </div>
+
+
+        <div
+          class="document-status"
+        >
+
+          <span>
+            Certificaciones
+          </span>
+
+          <strong>
+            {{
+              application.hasCertifications
+                ? 'Sí'
+                : 'No'
+            }}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <!-- RECHAZO -->
+
+      <div
+        class="detail-card reject-card"
+      >
+
+        <ion-textarea
+          label="Motivo de rechazo"
+          labelPlacement="stacked"
+          [value]="rejectionReason"
+          (ionInput)="
+            rejectionReason =
+              $any($event.target).value ?? ''
+          "
+          placeholder="Indica qué debe corregir el postulante..."
+          [autoGrow]="true"
+        ></ion-textarea>
+
+      </div>
+
+
+      <!-- ACCIONES -->
+
+      <div
+        class="admin-actions"
+      >
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="danger"
+          [disabled]="actionLoading"
+          (click)="reject()"
+        >
+
+          <ion-icon
+            slot="start"
+            name="close-circle-outline"
+          ></ion-icon>
+
+          Rechazar
+
+        </ion-button>
+
+
+        <ion-button
+          expand="block"
+          [disabled]="actionLoading"
+          (click)="approve()"
+        >
+
+          <ion-spinner
+            *ngIf="actionLoading"
+            name="crescent"
+          ></ion-spinner>
+
+          <ng-container
+            *ngIf="!actionLoading"
+          >
+
+            <ion-icon
+              slot="start"
+              name="checkmark-circle-outline"
+            ></ion-icon>
+
+            Aprobar técnico
+
+          </ng-container>
+
+        </ion-button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</ion-content>

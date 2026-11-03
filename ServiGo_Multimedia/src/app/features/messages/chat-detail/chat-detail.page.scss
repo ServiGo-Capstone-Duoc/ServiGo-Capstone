@@ -1,0 +1,380 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background: #f5f7fb;
+}
+
+.chat-container {
+  width: 100%;
+  max-width: 760px;
+
+  min-height: 100%;
+
+  margin: 0 auto;
+
+  padding:
+    20px
+    18px
+    120px;
+}
+
+.chat-header {
+  display: grid;
+
+  grid-template-columns:
+    48px
+    46px
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 11px;
+
+  margin-bottom: 20px;
+}
+
+.back-button {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 15px;
+
+  background: #ffffff;
+
+  color: #0879ee;
+
+  font-size: 23px;
+
+  cursor: pointer;
+}
+
+.chat-service-icon {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: #eaf4ff;
+
+  color: #0879ee;
+
+  font-size: 22px;
+}
+
+.chat-title {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-title strong {
+  overflow: hidden;
+
+  color: #202b3c;
+
+  font-size: 17px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-title span {
+  color: #697386;
+
+  font-size: 11px;
+}
+
+.loading-state,
+.error-state {
+  min-height: 180px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  border: 1px solid #e1e8f1;
+  border-radius: 22px;
+
+  background: #ffffff;
+}
+
+.error-state {
+  color: #c62828;
+}
+
+.messages-area {
+  min-height: 440px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  padding:
+    18px
+    0;
+}
+
+.chat-empty {
+  flex: 1;
+
+  min-height: 300px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  color: #697386;
+
+  text-align: center;
+}
+
+.chat-empty strong {
+  color: #202b3c;
+}
+
+.chat-empty span {
+  font-size: 13px;
+}
+
+.message-row {
+  display: flex;
+
+  justify-content: flex-start;
+}
+
+.message-row.own {
+  justify-content: flex-end;
+}
+
+.message-bubble {
+  max-width: 78%;
+
+  padding:
+    10px
+    13px;
+
+  border: 1px solid #e1e8f1;
+  border-radius:
+    5px
+    17px
+    17px
+    17px;
+
+  background: #ffffff;
+}
+
+.message-row.own .message-bubble {
+  border-color: #0879ee;
+
+  border-radius:
+    17px
+    5px
+    17px
+    17px;
+
+  background: #0879ee;
+
+  color: #ffffff;
+}
+
+.message-author {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #0879ee;
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.message-bubble p {
+  margin: 0;
+
+  font-size: 14px;
+  line-height: 1.4;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.message-bubble small {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #8a94a4;
+
+  font-size: 9px;
+
+  text-align: right;
+}
+
+.message-row.own .message-bubble small {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.72
+    );
+}
+
+.composer {
+  position: sticky;
+
+  bottom: 76px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    48px;
+
+  gap: 9px;
+
+  padding: 10px;
+
+  border: 1px solid #dfe7f0;
+  border-radius: 20px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 -5px 20px
+    rgba(30, 50, 80, 0.06);
+}
+
+.composer textarea {
+  width: 100%;
+
+  min-height: 44px;
+  max-height: 110px;
+
+  box-sizing: border-box;
+
+  padding:
+    11px
+    12px;
+
+  border: 0;
+  outline: 0;
+
+  resize: none;
+
+  background: transparent;
+
+  color: #202b3c;
+
+  font: inherit;
+
+  line-height: 1.4;
+}
+
+.composer button {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  align-self: end;
+
+  border: 0;
+  border-radius: 15px;
+
+  background: #0879ee;
+
+  color: #ffffff;
+
+  font-size: 21px;
+
+  cursor: pointer;
+}
+
+.composer button:disabled {
+  opacity: 0.45;
+}
+
+@media (
+  max-width: 600px
+) {
+
+  .chat-container {
+    padding:
+      16px
+      14px
+      110px;
+  }
+
+  .message-bubble {
+    max-width: 84%;
+  }
+}
+/*
+ * =========================================
+ * CHAT SOLO LECTURA
+ * =========================================
+ */
+
+.chat-readonly {
+  margin-top: 14px;
+  padding: 16px 18px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  border-radius: 16px;
+
+  background:
+    #f8fafc;
+
+  border:
+    1px solid #e2e8f0;
+
+  text-align: center;
+}
+
+
+.chat-readonly strong {
+  color:
+    #334155;
+
+  font-size:
+    0.9rem;
+
+  font-weight:
+    700;
+}
+
+
+.chat-readonly span {
+  color:
+    #64748b;
+
+  font-size:
+    0.82rem;
+
+  line-height:
+    1.45;
+}

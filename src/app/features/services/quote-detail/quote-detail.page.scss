@@ -475,3 +475,25 @@ ion-content {
       1fr;
   }
 }
+/* =========================================
+ * SERVIGO DESIGN SYSTEM V1 - COTIZACION
+ * ========================================= */
+.quote-detail-container { max-width: var(--servigo-page-max); padding: 18px 20px calc(var(--servigo-tabbar-height) + 36px); }
+.quote-detail-header { min-height: 48px; margin-bottom: 22px; }
+.detail-logo { width: 104px; }
+.back-button { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--servigo-border); box-shadow: none; }
+.technician-card, .price-card, .information-card, .next-step-card, .decision-card {
+  margin-bottom: 14px; padding: 18px; border-color: var(--servigo-border);
+  border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card);
+}
+.technician-card { gap: 14px; }
+.avatar { width: 52px; height: 52px; }
+.price-card h2, .information-card h2, .decision-card h2 { font-size: 17px; }
+.price-row { min-height: 42px; font-size: 13px; }
+.price-total { font-size: 18px; }
+.info-row { padding: 13px 0; font-size: 13px; line-height: 1.45; }
+.comment-box { padding: 14px; border-radius: var(--servigo-radius-md); font-size: 13px; line-height: 1.5; }
+.decision-copy p { font-size: 13px; line-height: 1.5; }
+.decision-actions button { min-height: 48px; border-radius: var(--servigo-radius-md); font-size: 13px; }
+.current-status { border-radius: var(--servigo-radius-md); font-size: 13px; }
+.loading-state, .error-state { font-size: 13px; }

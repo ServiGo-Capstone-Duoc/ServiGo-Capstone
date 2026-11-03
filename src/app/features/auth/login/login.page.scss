@@ -131,3 +131,33 @@ ion-button[type='submit'] {
 
   font-size: 12px;
 }
+
+.mfa-shield {
+  display: grid;
+  place-items: center;
+
+  width: 54px;
+  height: 54px;
+
+  margin:
+    0 auto
+    16px;
+
+  border-radius:
+    18px;
+
+  background:
+    rgba(
+      var(--ion-color-success-rgb),
+      0.12
+    );
+
+  color:
+    var(--ion-color-success);
+
+  font-size:
+    1.6rem;
+
+  font-weight:
+    900;
+}

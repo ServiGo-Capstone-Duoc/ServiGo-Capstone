@@ -1,0 +1,362 @@
+<ion-content [fullscreen]="true">
+
+  <main class="security-container">
+
+
+    <header class="security-header">
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()"
+      >
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+      </button>
+
+
+      <div>
+
+        <span>
+          SEGURIDAD
+        </span>
+
+        <h1>
+          Protege tu cuenta
+        </h1>
+
+      </div>
+
+    </header>
+
+
+    <section
+      class="loading-card"
+      *ngIf="loading"
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Consultando seguridad...
+      </span>
+
+    </section>
+
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        status
+      "
+    >
+
+
+      <section class="security-card">
+
+        <div class="security-icon">
+
+          <ion-icon
+            name="shield-checkmark-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div class="security-copy">
+
+          <span class="eyebrow">
+            AUTENTICACIÓN EN DOS PASOS
+          </span>
+
+          <h2>
+            Aplicación Authenticator
+          </h2>
+
+          <p>
+            Agrega una segunda capa de seguridad a tu cuenta
+            mediante códigos temporales de seis dígitos.
+          </p>
+
+
+          <div
+            class="status-pill enabled"
+            *ngIf="status.enrolled"
+          >
+            MFA activado
+          </div>
+
+
+          <div
+            class="status-pill disabled"
+            *ngIf="!status.enrolled"
+          >
+            MFA desactivado
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <div
+        class="message success"
+        *ngIf="successMessage"
+      >
+        {{ successMessage }}
+      </div>
+
+
+      <div
+        class="message error"
+        *ngIf="errorMessage"
+      >
+        {{ errorMessage }}
+      </div>
+
+
+      <!-- EMAIL NO VERIFICADO -->
+
+      <section
+        class="setup-card"
+        *ngIf="
+          !status.emailVerified
+        "
+      >
+
+        <ion-icon
+          name="mail-outline"
+        ></ion-icon>
+
+        <h2>
+          Verifica tu correo
+        </h2>
+
+        <p>
+          Por seguridad, Firebase exige que tu correo
+          esté verificado antes de registrar un segundo
+          factor de autenticación.
+        </p>
+
+
+        <ion-button
+          expand="block"
+          (click)="sendVerification()"
+          [disabled]="actionLoading"
+        >
+          Enviar correo de verificación
+        </ion-button>
+
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          (click)="refreshVerification()"
+          [disabled]="actionLoading"
+        >
+          Ya verifiqué mi correo
+        </ion-button>
+
+      </section>
+
+
+      <!-- MFA NO CONFIGURADO -->
+
+      <section
+        class="setup-card"
+        *ngIf="
+          status.emailVerified &&
+          !status.enrolled &&
+          !enrollmentStarted
+        "
+      >
+
+        <ion-icon
+          name="key-outline"
+        ></ion-icon>
+
+        <h2>
+          Activar MFA
+        </h2>
+
+        <p>
+          Confirma tu identidad ingresando tu contraseña
+          actual. Luego podrás vincular Google Authenticator,
+          Microsoft Authenticator u otra aplicación TOTP.
+        </p>
+
+
+        <ion-input
+          label="Contraseña actual"
+          labelPlacement="stacked"
+          type="password"
+          autocomplete="current-password"
+          [(ngModel)]="password"
+        ></ion-input>
+
+
+        <ion-button
+          expand="block"
+          (click)="startEnrollment()"
+          [disabled]="actionLoading || !password"
+        >
+
+          <ion-spinner
+            *ngIf="actionLoading"
+            name="crescent"
+          ></ion-spinner>
+
+          <span *ngIf="!actionLoading">
+            Configurar autenticador
+          </span>
+
+        </ion-button>
+
+      </section>
+
+
+      <!-- QR -->
+
+      <section
+        class="setup-card qr-card"
+        *ngIf="enrollmentStarted"
+      >
+
+        <span class="step">
+          PASO 1
+        </span>
+
+        <h2>
+          Escanea el código QR
+        </h2>
+
+        <p>
+          Abre tu aplicación Authenticator y agrega una
+          nueva cuenta escaneando este código.
+        </p>
+
+
+        <div class="qr-container">
+
+          <img
+            [src]="qrCodeUrl"
+            alt="Código QR MFA ServiGo"
+          />
+
+        </div>
+
+
+        <span class="manual-label">
+          También puedes ingresar esta clave manualmente:
+        </span>
+
+
+        <div class="secret-box">
+
+          <code>
+            {{ secretKey }}
+          </code>
+
+          <button
+            type="button"
+            (click)="copySecret()"
+          >
+
+            <ion-icon
+              name="copy-outline"
+            ></ion-icon>
+
+          </button>
+
+        </div>
+
+
+        <span class="step second">
+          PASO 2
+        </span>
+
+        <h2>
+          Confirma el código
+        </h2>
+
+
+        <ion-input
+          label="Código de 6 dígitos"
+          labelPlacement="stacked"
+          inputmode="numeric"
+          maxlength="6"
+          [(ngModel)]="verificationCode"
+          placeholder="000000"
+        ></ion-input>
+
+
+        <ion-button
+          expand="block"
+          (click)="confirmEnrollment()"
+          [disabled]="
+            actionLoading ||
+            verificationCode.length !== 6
+          "
+        >
+          Activar autenticación en dos pasos
+        </ion-button>
+
+
+        <ion-button
+          expand="block"
+          fill="clear"
+          (click)="cancelEnrollment()"
+          [disabled]="actionLoading"
+        >
+          Cancelar
+        </ion-button>
+
+      </section>
+
+
+      <!-- MFA ACTIVO -->
+
+      <section
+        class="setup-card active-card"
+        *ngIf="status.enrolled"
+      >
+
+        <ion-icon
+          name="checkmark-circle-outline"
+        ></ion-icon>
+
+        <h2>
+          Tu cuenta está protegida
+        </h2>
+
+        <p>
+          La autenticación en dos pasos está activa.
+          En próximos inicios de sesión se solicitará
+          un código generado por tu aplicación Authenticator.
+        </p>
+
+
+        <div class="factor-info">
+
+          <strong>
+            Factores registrados
+          </strong>
+
+          <span>
+            {{ status.factors.length }}
+          </span>
+
+        </div>
+
+      </section>
+
+
+    </ng-container>
+
+
+  </main>
+
+</ion-content>

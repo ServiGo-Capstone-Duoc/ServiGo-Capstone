@@ -1,0 +1,383 @@
+<ion-content>
+
+  <main
+    class="webpay-return"
+  >
+
+
+    <!-- ================================= -->
+    <!-- PROCESANDO -->
+    <!-- ================================= -->
+
+    <section
+      class="payment-result processing"
+      *ngIf="
+        state === 'processing'
+      "
+    >
+
+      <div
+        class="result-icon"
+      >
+
+        <ion-spinner
+          name="crescent"
+        ></ion-spinner>
+
+      </div>
+
+
+      <span
+        class="eyebrow"
+      >
+        WEBPAY PLUS
+      </span>
+
+
+      <h1>
+        Confirmando tu pago
+      </h1>
+
+
+      <p>
+
+        Estamos verificando la operación
+        directamente con Transbank.
+
+      </p>
+
+
+      <div
+        class="security-message"
+      >
+
+        No cierres esta pantalla
+        mientras confirmamos el resultado.
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- APROBADO -->
+    <!-- ================================= -->
+
+    <section
+      class="payment-result approved"
+      *ngIf="
+        state === 'approved'
+      "
+    >
+
+      <div
+        class="result-icon success"
+      >
+
+        <ion-icon
+          name="checkmark-circle-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <span
+        class="eyebrow"
+      >
+        PAGO CONFIRMADO
+      </span>
+
+
+      <h1>
+        Pago realizado
+      </h1>
+
+
+      <p>
+
+        Transbank confirmó correctamente
+        el pago de tu servicio.
+
+      </p>
+
+
+      <div
+        class="payment-summary"
+        *ngIf="
+          result as payment
+        "
+      >
+
+        <div>
+
+          <span>
+            Monto
+          </span>
+
+
+          <strong>
+
+            {{
+              payment.amount
+                | currency:
+                    'CLP':
+                    'symbol-narrow':
+                    '1.0-0'
+            }}
+
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Estado
+          </span>
+
+
+          <strong>
+            Aprobado
+          </strong>
+
+        </div>
+
+
+        <div
+          *ngIf="
+            payment.authorizationCode
+          "
+        >
+
+          <span>
+            Autorización
+          </span>
+
+
+          <strong>
+
+            {{
+              payment.authorizationCode
+            }}
+
+          </strong>
+
+        </div>
+
+
+        <div
+          *ngIf="
+            payment.cardLast4
+          "
+        >
+
+          <span>
+            Tarjeta
+          </span>
+
+
+          <strong>
+
+            ••••
+            {{ payment.cardLast4 }}
+
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="primary-action"
+        (click)="continueToService()"
+      >
+
+        Volver al servicio
+
+        <ion-icon
+          name="arrow-forward-outline"
+        ></ion-icon>
+
+      </button>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- RECHAZADO -->
+    <!-- ================================= -->
+
+    <section
+      class="payment-result rejected"
+      *ngIf="
+        state === 'rejected'
+      "
+    >
+
+      <div
+        class="result-icon error"
+      >
+
+        <ion-icon
+          name="close-circle-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <span
+        class="eyebrow"
+      >
+        PAGO NO AUTORIZADO
+      </span>
+
+
+      <h1>
+        No pudimos completar el pago
+      </h1>
+
+
+      <p>
+
+        {{ errorMessage }}
+
+      </p>
+
+
+      <button
+        type="button"
+        class="primary-action"
+        (click)="continueToService()"
+      >
+
+        Volver al servicio
+
+      </button>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- ABORTADO -->
+    <!-- ================================= -->
+
+    <section
+      class="payment-result aborted"
+      *ngIf="
+        state === 'aborted'
+      "
+    >
+
+      <div
+        class="result-icon neutral"
+      >
+
+        <ion-icon
+          name="card-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <span
+        class="eyebrow"
+      >
+        OPERACIÓN INTERRUMPIDA
+      </span>
+
+
+      <h1>
+        Pago no completado
+      </h1>
+
+
+      <p>
+
+        {{ errorMessage }}
+
+      </p>
+
+
+      <button
+        type="button"
+        class="primary-action"
+        (click)="continueToService()"
+      >
+
+        Volver a mis servicios
+
+      </button>
+
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- ERROR -->
+    <!-- ================================= -->
+
+    <section
+      class="payment-result error-state"
+      *ngIf="
+        state === 'error'
+      "
+    >
+
+      <div
+        class="result-icon error"
+      >
+
+        <ion-icon
+          name="close-circle-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <span
+        class="eyebrow"
+      >
+        VERIFICACIÓN PENDIENTE
+      </span>
+
+
+      <h1>
+        No pudimos confirmar el pago
+      </h1>
+
+
+      <p>
+
+        {{ errorMessage }}
+
+      </p>
+
+
+      <div
+        class="security-message"
+      >
+
+        Por seguridad, revisa el estado
+        del servicio antes de intentar
+        realizar un nuevo pago.
+
+      </div>
+
+
+      <button
+        type="button"
+        class="primary-action"
+        (click)="continueToService()"
+      >
+
+        Revisar mis servicios
+
+      </button>
+
+    </section>
+
+  </main>
+
+</ion-content>

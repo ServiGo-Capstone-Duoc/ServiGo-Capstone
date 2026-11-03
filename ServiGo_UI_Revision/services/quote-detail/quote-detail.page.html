@@ -1,0 +1,529 @@
+<ion-content>
+
+  <main
+    class="quote-detail-container"
+  >
+
+
+    <!-- ===================================== -->
+    <!-- HEADER -->
+    <!-- ===================================== -->
+
+    <header
+      class="quote-detail-header"
+    >
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="detail-logo"
+      />
+
+    </header>
+
+
+    <!-- ===================================== -->
+    <!-- CARGANDO -->
+    <!-- ===================================== -->
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando presupuesto...
+      </span>
+
+    </div>
+
+
+    <!-- ===================================== -->
+    <!-- ERROR -->
+    <!-- ===================================== -->
+
+    <div
+      class="error-state"
+      *ngIf="
+        !loading &&
+        errorMessage
+      "
+    >
+
+      {{ errorMessage }}
+
+    </div>
+
+
+    <!-- ===================================== -->
+    <!-- RESULTADO ACEPTADO -->
+    <!-- ===================================== -->
+
+    <section
+      class="action-success accepted"
+      *ngIf="
+        !loading &&
+        actionResult === 'accepted'
+      "
+    >
+
+      <ion-icon
+        name="checkmark-circle-outline"
+      ></ion-icon>
+
+
+      <span>
+        SERVICIO CONFIRMADO
+      </span>
+
+
+      <h1>
+        Contrataste a
+        {{ quote?.technicianName }}
+      </h1>
+
+
+      <p>
+        El técnico ya fue asignado
+        a tu solicitud.
+      </p>
+
+
+      <ion-button
+        expand="block"
+        type="button"
+        (click)="goToService()"
+      >
+
+        Ver mi servicio
+
+      </ion-button>
+
+    </section>
+
+
+    <!-- ===================================== -->
+    <!-- RESULTADO RECHAZADO -->
+    <!-- ===================================== -->
+
+    <section
+      class="action-success rejected"
+      *ngIf="
+        !loading &&
+        actionResult === 'rejected'
+      "
+    >
+
+      <ion-icon
+        name="close-circle-outline"
+      ></ion-icon>
+
+
+      <span>
+        PRESUPUESTO RECHAZADO
+      </span>
+
+
+      <h1>
+        Propuesta descartada
+      </h1>
+
+
+      <p>
+        Puedes revisar otras propuestas
+        disponibles para esta solicitud.
+      </p>
+
+
+      <ion-button
+        expand="block"
+        type="button"
+        (click)="goToService()"
+      >
+
+        Ver otros presupuestos
+
+      </ion-button>
+
+    </section>
+
+
+    <!-- ===================================== -->
+    <!-- PRESUPUESTO -->
+    <!-- ===================================== -->
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        quote as item
+      "
+    >
+
+      <ng-container
+        *ngIf="
+          !actionResult
+        "
+      >
+
+
+        <!-- ================================= -->
+        <!-- TÉCNICO -->
+        <!-- ================================= -->
+
+        <section
+          class="technician-card"
+        >
+
+          <div
+            class="avatar"
+          >
+
+            <ion-icon
+              name="person-outline"
+            ></ion-icon>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              PRESUPUESTO DE
+            </span>
+
+
+            <h1>
+              {{ item.technicianName }}
+            </h1>
+
+
+            <p>
+              Técnico ServiGo
+            </p>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================================= -->
+        <!-- PRECIOS -->
+        <!-- ================================= -->
+
+        <section
+          class="price-card"
+        >
+
+          <div
+            class="price-row"
+          >
+
+            <span>
+              Mano de obra
+            </span>
+
+
+            <strong>
+              $
+              {{
+                item.laborAmount
+                  | number:'1.0-0'
+              }}
+            </strong>
+
+          </div>
+
+
+          <div
+            class="price-row"
+          >
+
+            <span>
+              Materiales
+            </span>
+
+
+            <strong>
+              $
+              {{
+                item.materialsAmount
+                  | number:'1.0-0'
+              }}
+            </strong>
+
+          </div>
+
+
+          <div
+            class="price-row"
+          >
+
+            <span>
+              Otros costos
+            </span>
+
+
+            <strong>
+              $
+              {{
+                item.otherAmount
+                  | number:'1.0-0'
+              }}
+            </strong>
+
+          </div>
+
+
+          <div
+            class="price-total"
+          >
+
+            <span>
+              TOTAL
+            </span>
+
+
+            <strong>
+              $
+              {{
+                item.totalAmount
+                  | number:'1.0-0'
+              }}
+            </strong>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================================= -->
+        <!-- INFORMACIÓN -->
+        <!-- ================================= -->
+
+        <section
+          class="information-card"
+        >
+
+          <div
+            class="info-row"
+          >
+
+            <ion-icon
+              name="calendar-outline"
+            ></ion-icon>
+
+
+            <div>
+
+              <span>
+                Fecha disponible
+              </span>
+
+
+              <strong>
+                {{
+                  formatDate(
+                    item.availableDate
+                  )
+                }}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="comment-box"
+          >
+
+            <span>
+              MENSAJE DEL TÉCNICO
+            </span>
+
+
+            <p>
+              {{
+                item.comment ||
+                'El técnico no agregó un mensaje.'
+              }}
+            </p>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================================= -->
+        <!-- ACCIONES -->
+        <!-- SOLO CUANDO STATUS = SENT -->
+        <!-- ================================= -->
+
+        <section
+          class="decision-card"
+          *ngIf="
+            item.status === 'sent'
+          "
+        >
+
+          <div
+            class="decision-copy"
+          >
+
+            <strong>
+              ¿Quieres contratar
+              a este técnico?
+            </strong>
+
+
+            <span>
+              Al aceptar,
+              {{ item.technicianName }}
+              quedará asignado
+              a este servicio.
+            </span>
+
+          </div>
+
+
+          <div
+            class="decision-actions"
+          >
+
+            <ion-button
+              expand="block"
+              fill="outline"
+              color="danger"
+              type="button"
+              [disabled]="loadingAction"
+              (click)="reject()"
+            >
+
+              <span
+                *ngIf="
+                  !loadingAction
+                "
+              >
+                Rechazar
+              </span>
+
+            </ion-button>
+
+
+            <ion-button
+              expand="block"
+              type="button"
+              [disabled]="loadingAction"
+              (click)="accept()"
+            >
+
+              <ion-spinner
+                *ngIf="
+                  loadingAction
+                "
+                name="crescent"
+              ></ion-spinner>
+
+
+              <span
+                *ngIf="
+                  !loadingAction
+                "
+              >
+                Aceptar presupuesto
+              </span>
+
+            </ion-button>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================================= -->
+        <!-- YA ACEPTADO -->
+        <!-- ================================= -->
+
+        <section
+          class="current-status accepted"
+          *ngIf="
+            item.status === 'accepted'
+          "
+        >
+
+          <ion-icon
+            name="checkmark-circle-outline"
+          ></ion-icon>
+
+
+          <div>
+
+            <strong>
+              Presupuesto aceptado
+            </strong>
+
+
+            <span>
+              Este técnico fue contratado.
+            </span>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================================= -->
+        <!-- YA RECHAZADO -->
+        <!-- ================================= -->
+
+        <section
+          class="current-status rejected"
+          *ngIf="
+            item.status === 'rejected'
+          "
+        >
+
+          <ion-icon
+            name="close-circle-outline"
+          ></ion-icon>
+
+
+          <div>
+
+            <strong>
+              Presupuesto rechazado
+            </strong>
+
+
+            <span>
+              Esta propuesta ya no está activa.
+            </span>
+
+          </div>
+
+        </section>
+
+      </ng-container>
+
+    </ng-container>
+
+  </main>
+
+</ion-content>

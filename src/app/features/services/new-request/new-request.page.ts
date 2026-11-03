@@ -910,33 +910,75 @@ export class NewRequestPage
    * =========================================
    */
 
-  private scheduleMapInitialization():
-    void {
+  private scheduleMapInitialization(
+  attempt = 0
+): void {
 
 
-    if (
+  if (
+    this.mapInitializationTimer
+  ) {
+
+    clearTimeout(
       this.mapInitializationTimer
-    ) {
-
-      clearTimeout(
-        this.mapInitializationTimer
-      );
-    }
-
-
-    this.mapInitializationTimer =
-      setTimeout(
-        () => {
-
-          this.mapInitializationTimer =
-            null;
-
-          this.initializeMap();
-        },
-        100
-      );
+    );
   }
 
+
+  this.mapInitializationTimer =
+    setTimeout(
+      () => {
+
+        this.mapInitializationTimer =
+          null;
+
+
+        const container =
+          document.getElementById(
+            'new-request-location-map'
+          );
+
+
+        /*
+         * Angular todavía puede estar
+         * renderizando el *ngIf.
+         *
+         * Reintentamos durante un periodo
+         * corto en vez de asumir que el DOM
+         * ya existe.
+         */
+
+        if (
+          !container
+        ) {
+
+          if (
+            attempt < 10
+          ) {
+
+            this.scheduleMapInitialization(
+              attempt + 1
+            );
+
+
+            return;
+          }
+
+
+          console.warn(
+            '[ServiGo] No fue posible inicializar el mapa: contenedor no disponible.'
+          );
+
+
+          return;
+        }
+
+
+        this.initializeMap();
+      },
+      100
+    );
+}
 
   private initializeMap():
     void {
@@ -954,10 +996,10 @@ export class NewRequestPage
     }
 
 
-    const container =
-      document.getElementById(
-        'request-location-map'
-      );
+const container =
+  document.getElementById(
+    'new-request-location-map'
+  );
 
 
     if (

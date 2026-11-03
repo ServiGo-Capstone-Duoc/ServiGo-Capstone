@@ -1,11 +1,18 @@
-import { Injectable } from '@angular/core';
+import {
+  Injectable
+} from '@angular/core';
 
 import {
+  MultiFactorError,
+  MultiFactorResolver,
+  TotpMultiFactorGenerator,
   User,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
+  getMultiFactorResolver,
   onAuthStateChanged,
+  sendEmailVerification,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
@@ -24,34 +31,58 @@ import {
   firestore
 } from '../firebase/firebase';
 
+
+export type LoginResult =
+  | {
+      status:
+        'authenticated';
+
+      user:
+        User;
+    }
+  | {
+      status:
+        'mfa-required';
+
+      factorCount:
+        number;
+    };
+
+
 @Injectable({
-  providedIn: 'root'
+  providedIn:
+    'root'
 })
 export class AuthService {
 
-  /**
-   * Configuración de persistencia local.
-   */
+
   private readonly persistenceReady =
     setPersistence(
       firebaseAuth,
       browserLocalPersistence
     );
 
-  /**
-   * Esta promesa SOLO espera a que Firebase determine
-   * cuál es la sesión inicial.
+
+  private readonly initializationReady:
+    Promise<void>;
+
+
+  /*
+   * Resolver MFA temporal.
    *
-   * Importante:
-   * NO guarda para siempre el usuario inicial.
+   * Existe solamente mientras se completa
+   * el segundo factor del login.
    */
-  private readonly initializationReady: Promise<void>;
+  private pendingMfaResolver:
+    MultiFactorResolver | null =
+      null;
+
 
   constructor() {
 
     this.initializationReady =
       new Promise<void>(
-        async (resolve) => {
+        async resolve => {
 
           try {
 
@@ -63,8 +94,8 @@ export class AuthService {
               'Error configurando persistencia Firebase:',
               error
             );
-
           }
+
 
           const unsubscribe =
             onAuthStateChanged(
@@ -80,24 +111,41 @@ export class AuthService {
       );
   }
 
-  /**
-   * Espera a que Firebase restaure la sesión inicial
-   * y luego devuelve SIEMPRE el usuario actual.
+
+  /*
+   * =========================================
+   * AUTH READY
+   * =========================================
    */
-  async waitForAuthReady(): Promise<User | null> {
+
+  async waitForAuthReady():
+    Promise<User | null> {
+
 
     await this.initializationReady;
 
     return firebaseAuth.currentUser;
   }
 
+
+  /*
+   * =========================================
+   * REGISTRO
+   * =========================================
+   */
+
   async register(
-    email: string,
-    password: string,
-    displayName: string
+    email:
+      string,
+    password:
+      string,
+    displayName:
+      string
   ): Promise<User> {
 
+
     await this.persistenceReady;
+
 
     const credential =
       await createUserWithEmailAndPassword(
@@ -106,8 +154,10 @@ export class AuthService {
         password
       );
 
+
     const user =
       credential.user;
+
 
     try {
 
@@ -118,6 +168,7 @@ export class AuthService {
             displayName.trim()
         }
       );
+
 
       await setDoc(
         doc(
@@ -166,21 +217,46 @@ export class AuthService {
         }
       );
 
+
+      /*
+       * La verificación de correo es necesaria
+       * para permitir posteriormente TOTP MFA.
+       *
+       * Un fallo de envío no elimina la cuenta.
+       */
+
+      try {
+
+        await sendEmailVerification(
+          user
+        );
+
+      } catch (
+        verificationError
+      ) {
+
+        console.warn(
+          '[ServiGo] No fue posible enviar verificación de correo:',
+          verificationError
+        );
+      }
+
+
       return user;
+
 
     } catch (error) {
 
-      /**
-       * Evita dejar un usuario en Authentication
-       * sin su correspondiente perfil Firestore.
-       */
+
       try {
 
         await deleteUser(
           user
         );
 
-      } catch (rollbackError) {
+      } catch (
+        rollbackError
+      ) {
 
         console.error(
           'No fue posible revertir el usuario:',
@@ -188,43 +264,257 @@ export class AuthService {
         );
       }
 
+
       throw error;
     }
   }
 
+
+  /*
+   * =========================================
+   * LOGIN - PRIMER FACTOR
+   * =========================================
+   */
+
   async login(
-    email: string,
-    password: string
-  ): Promise<User> {
+    email:
+      string,
+    password:
+      string
+  ): Promise<LoginResult> {
+
 
     await this.persistenceReady;
+
+
+    /*
+     * Elimina cualquier desafío MFA anterior.
+     */
+
+    this.pendingMfaResolver =
+      null;
+
 
     console.log(
       '[ServiGo] Iniciando autenticación...'
     );
 
-    const credential =
-      await signInWithEmailAndPassword(
-        firebaseAuth,
-        email.trim(),
-        password
+
+    try {
+
+      const credential =
+        await signInWithEmailAndPassword(
+          firebaseAuth,
+          email.trim(),
+          password
+        );
+
+
+      const user =
+        credential.user;
+
+
+      console.log(
+        '[ServiGo] Authentication OK:',
+        user.uid
       );
+
+
+      this.updateLastLogin(
+        user
+      );
+
+
+      return {
+        status:
+          'authenticated',
+
+        user
+      };
+
+
+    } catch (
+      error: any
+    ) {
+
+
+      /*
+       * =====================================
+       * MFA REQUERIDO
+       * =====================================
+       */
+
+      if (
+        error?.code ===
+        'auth/multi-factor-auth-required'
+      ) {
+
+
+        const resolver =
+          getMultiFactorResolver(
+            firebaseAuth,
+            error as MultiFactorError
+          );
+
+
+        this.pendingMfaResolver =
+          resolver;
+
+
+        console.log(
+          '[ServiGo MFA] Segundo factor requerido.'
+        );
+
+
+        console.log(
+          '[ServiGo MFA] Factores disponibles:',
+          resolver.hints.length
+        );
+
+
+        return {
+          status:
+            'mfa-required',
+
+          factorCount:
+            resolver.hints.length
+        };
+      }
+
+
+      throw error;
+    }
+  }
+
+
+  /*
+   * =========================================
+   * LOGIN - SEGUNDO FACTOR TOTP
+   * =========================================
+   */
+
+  async resolveTotpLogin(
+    verificationCode:
+      string
+  ): Promise<User> {
+
+
+    const resolver =
+      this.pendingMfaResolver;
+
+
+    if (
+      !resolver
+    ) {
+
+      throw new Error(
+        'mfa-session-missing'
+      );
+    }
+
+
+    const code =
+      verificationCode
+        .trim();
+
+
+    if (
+      !/^\d{6}$/
+        .test(
+          code
+        )
+    ) {
+
+      throw new Error(
+        'invalid-totp-format'
+      );
+    }
+
+
+    /*
+     * En ServiGo enrolaremos actualmente
+     * un único factor TOTP.
+     */
+
+    const hint =
+      resolver.hints[0];
+
+
+    if (
+      !hint
+    ) {
+
+      throw new Error(
+        'mfa-factor-missing'
+      );
+    }
+
+
+    const assertion =
+      TotpMultiFactorGenerator
+        .assertionForSignIn(
+          hint.uid,
+          code
+        );
+
+
+    const credential =
+      await resolver
+        .resolveSignIn(
+          assertion
+        );
+
 
     const user =
       credential.user;
 
+
+    this.pendingMfaResolver =
+      null;
+
+
     console.log(
-      '[ServiGo] Authentication OK:',
+      '[ServiGo MFA] Segundo factor validado:',
       user.uid
     );
 
-    /**
-     * La actualización de actividad NO debe bloquear
-     * el inicio de sesión.
-     *
-     * Si Firestore tarda o tiene un problema puntual,
-     * el usuario igual puede entrar.
-     */
+
+    this.updateLastLogin(
+      user
+    );
+
+
+    return user;
+  }
+
+
+  /*
+   * =========================================
+   * CANCELAR DESAFÍO MFA
+   * =========================================
+   */
+
+  cancelMfaLogin():
+    void {
+
+
+    this.pendingMfaResolver =
+      null;
+  }
+
+
+  /*
+   * =========================================
+   * LAST LOGIN
+   * =========================================
+   */
+
+  private updateLastLogin(
+    user:
+      User
+  ): void {
+
+
     updateDoc(
       doc(
         firestore,
@@ -240,7 +530,7 @@ export class AuthService {
       }
     )
       .catch(
-        (error) => {
+        error => {
 
           console.warn(
             '[ServiGo] No se pudo actualizar lastLoginAt:',
@@ -248,27 +538,51 @@ export class AuthService {
           );
         }
       );
-
-    return user;
   }
 
-  async logout(): Promise<void> {
+
+  /*
+   * =========================================
+   * LOGOUT
+   * =========================================
+   */
+
+  async logout():
+    Promise<void> {
+
+
+    this.pendingMfaResolver =
+      null;
+
 
     await signOut(
       firebaseAuth
     );
   }
 
-  getCurrentUser(): User | null {
+
+  /*
+   * =========================================
+   * USUARIO ACTUAL
+   * =========================================
+   */
+
+  getCurrentUser():
+    User | null {
+
 
     return firebaseAuth.currentUser;
   }
 
+
   onAuthStateChanged(
-    callback: (
-      user: User | null
-    ) => void
+    callback:
+      (
+        user:
+          User | null
+      ) => void
   ): () => void {
+
 
     return onAuthStateChanged(
       firebaseAuth,

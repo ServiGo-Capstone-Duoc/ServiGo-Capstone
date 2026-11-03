@@ -6621,6 +6621,49 @@ if (
  * sin modificar el frontend.
  */
 
+
+/*
+ * ============================================================
+ * FALLBACK GEOCODIFICACION DESARROLLO
+ * ============================================================
+ * Solo se utiliza cuando SERVIGO_ENV !== 'production' y el
+ * proveedor externo no esta disponible. Nunca se usa en
+ * produccion.
+ */
+function getDevelopmentGeocodeFallback(
+  address: string,
+  commune: string
+): {
+  latitude: number;
+  longitude: number;
+  displayName: string;
+} | null {
+
+  const normalizedCommune = normalizeText(commune);
+
+  const developmentLocations:
+    Record<string, { latitude: number; longitude: number }> = {
+      'puente alto': { latitude: -33.6117, longitude: -70.5758 },
+      'la florida': { latitude: -33.5227, longitude: -70.5988 },
+      'providencia': { latitude: -33.4314, longitude: -70.6093 },
+      'santiago': { latitude: -33.4489, longitude: -70.6693 },
+      'las condes': { latitude: -33.4088, longitude: -70.5671 }
+    };
+
+  const location = developmentLocations[normalizedCommune];
+
+  if (!location) {
+    return null;
+  }
+
+  return {
+    latitude: location.latitude,
+    longitude: location.longitude,
+    displayName: `${address}, ${commune}, Chile`
+  };
+}
+
+
 export const geocodeAddress =
   onCall(
     {
@@ -6977,32 +7020,92 @@ export const geocodeAddress =
         };
 
 
-      } catch (error) {
-
-
-        /*
-         * Conservamos nuestros errores
-         * controlados.
-         */
+      } catch (
+        error:
+          unknown
+      ) {
 
         if (
-          error instanceof
-          HttpsError
+          error instanceof HttpsError
+          &&
+          error.code !== 'unavailable'
         ) {
+          logger.error(
+            'Error controlado geocodificando dirección.',
+            {
+              userId,
+              commune,
+              code: error.code,
+              message: error.message
+            }
+          );
 
           throw error;
         }
 
+        if (
+          error instanceof HttpsError
+        ) {
+          logger.warn(
+            'Proveedor de geocodificación no disponible.',
+            {
+              userId,
+              commune,
+              code: error.code,
+              message: error.message
+            }
+          );
+        } else {
+          logger.error(
+            'Error geocodificando dirección.',
+            {
+              userId,
+              commune,
+              errorName: error instanceof Error ? error.name : null,
+              errorMessage: error instanceof Error ? error.message : String(error),
+              errorStack: error instanceof Error ? error.stack : null,
+              errorCause:
+                error instanceof Error
+                  ? (error as Error & { cause?: unknown }).cause
+                  : null
+            }
+          );
+        }
 
-        logger.error(
-          'Error geocodificando dirección.',
-          {
-            userId,
-            commune,
-            error
+        if (
+          servigoEnvironment !== 'production'
+        ) {
+          const fallback =
+            getDevelopmentGeocodeFallback(
+              address,
+              commune
+            );
+
+          if (
+            fallback
+          ) {
+            logger.warn(
+              '[ServiGo DEV] Geocoding externo no disponible. Utilizando coordenadas de desarrollo.',
+              {
+                userId,
+                commune,
+                latitude: fallback.latitude,
+                longitude: fallback.longitude,
+                source: 'development-fallback'
+              }
+            );
+
+            return {
+              ok: true,
+              latitude: fallback.latitude,
+              longitude: fallback.longitude,
+              displayName: fallback.displayName,
+              address,
+              commune,
+              source: 'development-fallback'
+            };
           }
-        );
-
+        }
 
         throw new HttpsError(
           'unavailable',

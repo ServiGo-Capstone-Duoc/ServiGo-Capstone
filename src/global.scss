@@ -37,3 +37,79 @@
 @import '@ionic/angular/css/palettes/dark.system.css';
 
 @import 'leaflet/dist/leaflet.css';
+
+
+/* =========================================
+   SERVIGO DESIGN SYSTEM v1
+   ========================================= */
+
+html, body, ion-app {
+  background: var(--servigo-background);
+}
+
+body {
+  color: var(--servigo-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, ion-button, ion-tab-button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sg-page {
+  width: 100%;
+  max-width: var(--servigo-page-max);
+  margin: 0 auto;
+  padding: var(--servigo-space-5) var(--servigo-space-4) calc(var(--servigo-tabbar-height) + 28px);
+}
+
+.sg-card {
+  background: var(--servigo-surface);
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-lg);
+  box-shadow: var(--servigo-shadow-card);
+}
+
+.sg-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--servigo-space-3);
+  margin-bottom: var(--servigo-space-3);
+}
+
+.sg-section-heading h2 {
+  margin: 0;
+  color: var(--servigo-text);
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.sg-text-action {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--servigo-blue);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sg-eyebrow {
+  color: var(--servigo-blue);
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 430px) {
+  .sg-page {
+    padding-left: var(--servigo-space-5);
+    padding-right: var(--servigo-space-5);
+  }
+}

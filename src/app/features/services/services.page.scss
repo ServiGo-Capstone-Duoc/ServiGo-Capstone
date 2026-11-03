@@ -462,3 +462,41 @@ ion-content {
 
   color: #c63a3a;
 }
+/* =========================================
+ * SERVIGO DESIGN SYSTEM V1 - CLIENTE
+ * ========================================= */
+.services-container {
+  max-width: var(--servigo-page-max);
+  padding: 20px 20px calc(var(--servigo-tabbar-height) + 36px);
+}
+.services-header { min-height: 48px; margin-bottom: 24px; }
+.services-logo { width: 104px; }
+.new-service-button {
+  min-height: 44px; padding: 0 14px; gap: 7px;
+  border-radius: var(--servigo-radius-md);
+  font-size: 12px; box-shadow: 0 8px 18px rgba(11,115,224,.16);
+}
+.services-intro { margin-bottom: 20px; }
+.services-intro > span { font-size: 11px; letter-spacing: .08em; }
+.services-intro h1 { margin: 5px 0 7px; font-size: 28px; line-height: 1.05; letter-spacing: -.02em; }
+.services-intro p { font-size: 14px; line-height: 1.45; }
+.services-view-switcher { margin-bottom: 20px; border-color: var(--servigo-border); background: #edf2f7; }
+.services-view-switcher button { min-height: 46px; font-size: 13px; }
+.service-card {
+  margin-bottom: 12px; padding: 16px; border-color: var(--servigo-border);
+  border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card);
+}
+.service-icon { width: 46px; height: 46px; border-radius: 14px; }
+.service-main > span { font-size: 11px; letter-spacing: .04em; }
+.service-main h2 { margin-top: 3px; font-size: 16px; line-height: 1.25; }
+.status-badge { padding: 6px 9px; border-radius: var(--servigo-radius-pill); font-size: 11px; }
+.service-description { margin: 13px 0; font-size: 13px; line-height: 1.5; }
+.service-meta { gap: 12px; margin-bottom: 13px; }
+.service-meta span { gap: 5px; font-size: 12px; }
+.quotes-summary { min-height: 42px; padding: 10px 12px; border-radius: var(--servigo-radius-sm); }
+.quotes-summary span { font-size: 12px; }
+.loading-state { padding: 48px 20px; font-size: 13px; }
+.empty-state { padding: 36px 22px; border: 1px solid var(--servigo-border); border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card); }
+.empty-state h2 { margin: 12px 0 6px; font-size: 19px; }
+.empty-state p { margin: 0; font-size: 13px; line-height: 1.5; }
+.empty-state button { min-height: 44px; margin-top: 18px; padding: 0 18px; border-radius: var(--servigo-radius-md); font-size: 13px; }

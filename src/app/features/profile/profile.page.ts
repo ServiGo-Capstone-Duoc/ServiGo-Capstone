@@ -256,12 +256,13 @@ export class ProfilePage
   }
 
 
-  openSecurity(): void {
+openSecurity(): void {
 
-    console.log(
-      '[ServiGo] Seguridad'
+  void this.router
+    .navigateByUrl(
+      '/app/security'
     );
-  }
+}
 
 
   openHelp(): void {
