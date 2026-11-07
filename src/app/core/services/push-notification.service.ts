@@ -32,6 +32,10 @@ import {
   AuthService
 } from './auth.service';
 
+import {
+  NotificationService
+} from './notification.service';
+
 
 @Injectable({
   providedIn:
@@ -49,6 +53,12 @@ export class PushNotificationService {
   private readonly router =
     inject(
       Router
+    );
+
+
+  private readonly notificationService =
+    inject(
+      NotificationService
     );
 
 
@@ -331,6 +341,48 @@ export class PushNotificationService {
           data[
             'type'
           ];
+
+
+        const notificationId =
+          data[
+            'notificationId'
+          ];
+
+
+        if (
+          typeof notificationId ===
+            'string'
+          &&
+          notificationId
+        ) {
+
+          try {
+
+            const currentUser =
+              await this.authService
+                .waitForAuthReady();
+
+
+            if (
+              currentUser
+            ) {
+
+              await this.notificationService
+                .markAsReadById(
+                  notificationId,
+                  currentUser.uid
+                );
+            }
+
+
+          } catch (error) {
+
+            console.warn(
+              '[ServiGo Push] No fue posible marcar la notificación como leída:',
+              error
+            );
+          }
+        }
 
 
         if (

@@ -270,6 +270,231 @@ type:
   commune?: string;
 
   matchScore?: string;
+
+  messageId?: string;
+}
+
+
+/*
+ * ============================================================
+ * NOTIFICACIÓN PERSISTENTE EN LA APP
+ * ============================================================
+ *
+ * Se crea incluso cuando PUSH_ENABLED=false.
+ * Esto permite que el centro de notificaciones funcione en:
+ *
+ * - ionic serve
+ * - Firebase Emulator Suite
+ * - Android sin token FCM registrado
+ */
+
+function sanitizeNotificationIdPart(
+  value: string
+): string {
+
+
+  return value
+    .replace(
+      /[^a-zA-Z0-9_-]/g,
+      '_'
+    )
+    .substring(
+      0,
+      240
+    );
+}
+
+
+function buildInAppNotificationId(
+  data: ServiGoPushData
+): string {
+
+
+  const sourceId =
+    data.messageId
+    ?? data.quoteId
+    ?? data.opportunityId
+    ?? 'event';
+
+
+  return [
+    data.type,
+    data.requestId,
+    sourceId
+  ]
+    .map(
+      sanitizeNotificationIdPart
+    )
+    .join(
+      '_'
+    );
+}
+
+
+async function saveInAppNotification(
+  userId: string,
+  title: string,
+  body: string,
+  data: ServiGoPushData
+): Promise<string> {
+
+
+  const notificationId =
+    buildInAppNotificationId(
+      data
+    );
+
+
+  const notificationRef =
+    db
+      .collection(
+        'users'
+      )
+      .doc(
+        userId
+      )
+      .collection(
+        'notifications'
+      )
+      .doc(
+        notificationId
+      );
+
+
+  const notificationData:
+    Record<string, unknown> = {
+
+      id:
+        notificationId,
+
+      userId,
+
+      type:
+        data.type,
+
+      title,
+
+      body,
+
+      requestId:
+        data.requestId,
+
+      read:
+        false,
+
+      readAt:
+        null,
+
+      createdAt:
+        FieldValue.serverTimestamp(),
+
+      updatedAt:
+        FieldValue.serverTimestamp()
+    };
+
+
+  if (
+    data.messageId
+  ) {
+
+    notificationData[
+      'messageId'
+    ] =
+      data.messageId;
+  }
+
+
+  if (
+    data.opportunityId
+  ) {
+
+    notificationData[
+      'opportunityId'
+    ] =
+      data.opportunityId;
+  }
+
+
+  if (
+    data.quoteId
+  ) {
+
+    notificationData[
+      'quoteId'
+    ] =
+      data.quoteId;
+  }
+
+
+  if (
+    data.category
+  ) {
+
+    notificationData[
+      'category'
+    ] =
+      data.category;
+  }
+
+
+  if (
+    data.commune
+  ) {
+
+    notificationData[
+      'commune'
+    ] =
+      data.commune;
+  }
+
+
+  if (
+    data.matchScore
+  ) {
+
+    notificationData[
+      'matchScore'
+    ] =
+      data.matchScore;
+  }
+
+
+  /*
+   * ID determinista + transacción:
+   *
+   * si Functions reintenta el mismo evento,
+   * no duplicamos la notificación ni volvemos
+   * a marcar como no leída una que el usuario
+   * ya alcanzó a revisar.
+   */
+
+  await db.runTransaction(
+    async transaction => {
+
+
+      const existingSnapshot =
+        await transaction.get(
+          notificationRef
+        );
+
+
+      if (
+        existingSnapshot.exists
+      ) {
+
+        return;
+      }
+
+
+      transaction.set(
+        notificationRef,
+        notificationData
+      );
+    }
+  );
+
+
+  return notificationId;
 }
 
 
@@ -297,6 +522,53 @@ async function sendPushToUser(
     );
 
     return false;
+  }
+
+
+  let notificationId =
+    buildInAppNotificationId(
+      data
+    );
+
+
+  try {
+
+    notificationId =
+      await saveInAppNotification(
+        userId,
+        title,
+        body,
+        data
+      );
+
+
+    logger.info(
+      'Notificación guardada en el centro ServiGo.',
+      {
+        notificationId,
+        userId,
+        type:
+          data.type,
+        requestId:
+          data.requestId
+      }
+    );
+
+
+  } catch (error) {
+
+    logger.error(
+      'No fue posible guardar la notificación en la app.',
+      {
+        notificationId,
+        userId,
+        type:
+          data.type,
+        requestId:
+          data.requestId,
+        error
+      }
+    );
   }
 
 
@@ -438,8 +710,21 @@ async function sendPushToUser(
         data.requestId,
 
       type:
-        data.type
+        data.type,
+
+      notificationId
     };
+
+
+  if (
+    data.messageId
+  ) {
+
+    pushData[
+      'messageId'
+    ] =
+      data.messageId;
+  }
 
 
   if (
@@ -1618,6 +1903,66 @@ export const onServiceRequestCreated =
 
         }
 
+        const opportunityNotificationTitle =
+          'Nueva oportunidad cerca de ti';
+
+
+        const opportunityNotificationBody =
+          `${category} · ${commune} · ${matchScore}% compatible`;
+
+
+        const opportunityNotificationData:
+          ServiGoPushData = {
+
+            requestId,
+
+            opportunityId,
+
+            category,
+
+            commune,
+
+            matchScore:
+              String(
+                matchScore
+              ),
+
+            type:
+              'technician_opportunity'
+          };
+
+
+        let opportunityNotificationId =
+          buildInAppNotificationId(
+            opportunityNotificationData
+          );
+
+
+        try {
+
+          opportunityNotificationId =
+            await saveInAppNotification(
+              technicianId,
+              opportunityNotificationTitle,
+              opportunityNotificationBody,
+              opportunityNotificationData
+            );
+
+
+        } catch (error) {
+
+          logger.error(
+            'No fue posible guardar la oportunidad en el centro de notificaciones.',
+            {
+              technicianId,
+              requestId,
+              opportunityId,
+              error
+            }
+          );
+        }
+
+
 
 
 
@@ -1852,13 +2197,13 @@ export const onServiceRequestCreated =
 
               title:
 
-                'Nueva oportunidad cerca de ti',
+                opportunityNotificationTitle,
 
 
 
               body:
 
-                `${category} · ${commune} · ${matchScore}% compatible`
+                opportunityNotificationBody
 
             },
 
@@ -1891,6 +2236,12 @@ export const onServiceRequestCreated =
                   matchScore
 
                 ),
+
+
+
+              notificationId:
+
+                opportunityNotificationId,
 
 
 
@@ -7889,14 +8240,17 @@ export const onChatMessageCreated =
 
 
       const senderName =
-        typeof message[
-          'senderName'
-        ] ===
-          'string'
-          ? message[
-              'senderName'
-            ].trim()
-          : 'Usuario ServiGo';
+        (
+          typeof message[
+            'senderName'
+          ] ===
+            'string'
+            ? message[
+                'senderName'
+              ].trim()
+            : ''
+        )
+        || 'Usuario ServiGo';
 
 
       const text =
@@ -7906,6 +8260,26 @@ export const onChatMessageCreated =
           'string'
           ? message[
               'text'
+            ].trim()
+          : '';
+
+
+      const messageType =
+        message[
+          'type'
+        ] ===
+          'image'
+          ? 'image'
+          : 'text';
+
+
+      const imagePath =
+        typeof message[
+          'imagePath'
+        ] ===
+          'string'
+          ? message[
+              'imagePath'
             ].trim()
           : '';
 
@@ -7921,7 +8295,19 @@ export const onChatMessageCreated =
         ||
         !senderId
         ||
-        !text
+        (
+          messageType ===
+            'text'
+          &&
+          !text
+        )
+        ||
+        (
+          messageType ===
+            'image'
+          &&
+          !imagePath
+        )
       ) {
 
         logger.warn(
@@ -8119,6 +8505,25 @@ export const onChatMessageCreated =
       }
 
 
+      if (
+        recipientId ===
+          senderId
+      ) {
+
+        logger.info(
+          'Notificación de chat omitida: remitente y destinatario son el mismo usuario.',
+          {
+            requestId,
+            messageId,
+            senderId
+          }
+        );
+
+
+        return;
+      }
+
+
       /*
        * =====================================
        * PREVIEW
@@ -8133,13 +8538,16 @@ export const onChatMessageCreated =
 
 
       const preview =
-        text.length >
-          maxPreviewLength
-          ? `${text.substring(
-              0,
+        messageType ===
+          'image'
+          ? 'Envió una imagen.'
+          : text.length >
               maxPreviewLength
-            )}…`
-          : text;
+            ? `${text.substring(
+                0,
+                maxPreviewLength
+              )}…`
+            : text;
 
 
       /*
@@ -8162,7 +8570,9 @@ export const onChatMessageCreated =
           type:
             pushType,
 
-          category
+          category,
+
+          messageId
         }
       );
 

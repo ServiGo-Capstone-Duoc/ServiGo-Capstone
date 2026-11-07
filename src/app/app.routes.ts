@@ -291,6 +291,26 @@ export const routes: Routes = [
 
       /*
        * -------------------------------------
+       * CENTRO DE NOTIFICACIONES
+       * -------------------------------------
+       */
+
+      {
+        path:
+          'notifications',
+
+        loadComponent: () =>
+          import(
+            './features/notifications/notifications.page'
+          )
+            .then(
+              m => m.NotificationsPage
+            )
+      },
+
+
+      /*
+       * -------------------------------------
        * PERFIL
        * -------------------------------------
        */

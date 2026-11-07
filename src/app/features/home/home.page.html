@@ -10,10 +10,21 @@
       <button
         class="notification-button"
         type="button"
-        aria-label="Notificaciones"
+        (click)="openNotifications()"
+        [attr.aria-label]="
+          (unreadCount$ | async)
+            ? 'Notificaciones pendientes'
+            : 'Notificaciones'
+        "
       >
         <ion-icon name="notifications-outline"></ion-icon>
-        <span class="notification-dot"></span>
+
+        <span
+          class="notification-badge"
+          *ngIf="unreadCount$ | async as unreadCount"
+        >
+          {{ unreadCount > 9 ? '9+' : unreadCount }}
+        </span>
       </button>
     </div>
   </ion-toolbar>

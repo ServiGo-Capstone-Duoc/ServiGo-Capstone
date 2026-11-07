@@ -105,6 +105,52 @@ service cloud.firestore {
 
       allow delete:
         if false;
+
+
+      /*
+       * =====================================
+       * NOTIFICACIONES DEL USUARIO
+       * =====================================
+       *
+       * La creación se realiza exclusivamente
+       * desde Cloud Functions mediante Admin SDK.
+       *
+       * El usuario solamente puede:
+       *
+       * - leer sus propias notificaciones
+       * - marcarlas como leídas
+       */
+
+      match /notifications/{notificationId} {
+
+        allow read:
+          if isOwner(userId);
+
+
+        allow create, delete:
+          if false;
+
+
+        allow update:
+          if isOwner(userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.type == resource.data.type
+          && request.resource.data.title == resource.data.title
+          && request.resource.data.body == resource.data.body
+          && request.resource.data.requestId == resource.data.requestId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.diff(
+            resource.data
+          ).affectedKeys().hasOnly([
+            'read',
+            'readAt',
+            'updatedAt'
+          ])
+          && request.resource.data.read == true
+          && request.resource.data.readAt is timestamp
+          && request.resource.data.updatedAt is timestamp;
+      }
     }
 
 

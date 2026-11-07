@@ -49,6 +49,10 @@ import {
 } from '../../../core/services/profile.service';
 
 import {
+  NotificationService
+} from '../../../core/services/notification.service';
+
+import {
   ChatMessage
 } from '../../../core/models/chat-message.model';
 
@@ -115,6 +119,13 @@ export class ChatDetailPage
     inject(
       ProfileService
     );
+
+
+  private readonly notificationService =
+    inject(
+      NotificationService
+    );
+
 
   private readonly mediaStorageService =
     inject(
@@ -298,6 +309,23 @@ export class ChatDetailPage
 
 
         return;
+      }
+
+
+      try {
+
+        await this.notificationService
+          .markChatNotificationsAsRead(
+            requestId
+          );
+
+
+      } catch (notificationError) {
+
+        console.warn(
+          '[ServiGo Chat] No fue posible marcar las notificaciones como leídas:',
+          notificationError
+        );
       }
 
 

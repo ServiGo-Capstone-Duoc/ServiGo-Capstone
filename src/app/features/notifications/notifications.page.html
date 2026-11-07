@@ -1,0 +1,104 @@
+<ion-header class="notifications-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/app/home"
+        text=""
+        aria-label="Volver"
+      ></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>Notificaciones</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button
+        fill="clear"
+        size="small"
+        class="mark-all-button"
+        [disabled]="markingAll || (unreadCount$ | async) === 0"
+        (click)="markAllAsRead()"
+      >
+        Leer todas
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="notifications-page sg-page">
+    <section
+      class="state-card sg-card"
+      *ngIf="loading$ | async"
+    >
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Cargando notificaciones…</span>
+    </section>
+
+    <ng-container *ngIf="!(loading$ | async)">
+      <section
+        class="state-card error-state sg-card"
+        *ngIf="error$ | async as errorMessage"
+      >
+        <ion-icon name="notifications-outline"></ion-icon>
+        <strong>No pudimos cargar tus notificaciones</strong>
+        <span>{{ errorMessage }}</span>
+      </section>
+
+      <ng-container *ngIf="notifications$ | async as notifications">
+        <section
+          class="state-card empty-state sg-card"
+          *ngIf="notifications.length === 0 && !(error$ | async)"
+        >
+          <div class="empty-icon">
+            <ion-icon name="notifications-outline"></ion-icon>
+          </div>
+
+          <strong>Aún no tienes notificaciones</strong>
+          <span>
+            Aquí aparecerán mensajes, presupuestos y cambios en tus servicios.
+          </span>
+        </section>
+
+        <section
+          class="notifications-list"
+          *ngIf="notifications.length > 0"
+        >
+          <button
+            type="button"
+            class="notification-card sg-card"
+            [class.unread]="!notification.read"
+            *ngFor="let notification of notifications"
+            (click)="openNotification(notification)"
+          >
+            <div class="notification-icon">
+              <ion-icon [name]="getIcon(notification)"></ion-icon>
+            </div>
+
+            <div class="notification-content">
+              <div class="notification-heading">
+                <strong>{{ notification.title }}</strong>
+                <span
+                  class="unread-dot"
+                  *ngIf="!notification.read"
+                  aria-label="No leída"
+                ></span>
+              </div>
+
+              <p>{{ notification.body }}</p>
+
+              <div class="notification-meta">
+                <span *ngIf="notification.category">
+                  {{ notification.category }}
+                </span>
+
+                <time>
+                  {{ formatDate(notification.createdAt) }}
+                </time>
+              </div>
+            </div>
+          </button>
+        </section>
+      </ng-container>
+    </ng-container>
+  </main>
+</ion-content>

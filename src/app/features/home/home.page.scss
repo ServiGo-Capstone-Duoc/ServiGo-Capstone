@@ -42,15 +42,22 @@ ion-toolbar {
 
 .notification-button ion-icon { font-size: 22px; }
 
-.notification-dot {
+.notification-badge {
   position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 7px;
-  height: 7px;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
   border: 2px solid #fff;
-  border-radius: 50%;
+  border-radius: 999px;
   background: var(--servigo-yellow);
+  color: var(--servigo-text);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 900;
 }
 
 ion-content { --background: var(--servigo-background); }

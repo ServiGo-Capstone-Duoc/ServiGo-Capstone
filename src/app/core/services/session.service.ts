@@ -11,29 +11,45 @@ import {
 } from './auth.service';
 
 import {
+  NotificationService
+} from './notification.service';
+
+import {
   ProfileService
 } from './profile.service';
 
+
 @Injectable({
-  providedIn: 'root'
+  providedIn:
+    'root'
 })
 export class SessionService {
+
 
   private initialized =
     false;
 
+
   private unsubscribeAuth:
-    (() => void) | null = null;
+    (() => void) | null =
+      null;
+
 
   constructor(
     private readonly authService:
       AuthService,
 
     private readonly profileService:
-      ProfileService
+      ProfileService,
+
+    private readonly notificationService:
+      NotificationService
   ) {}
 
-  async initialize(): Promise<void> {
+
+  async initialize():
+    Promise<void> {
+
 
     if (
       this.initialized
@@ -42,21 +58,25 @@ export class SessionService {
       return;
     }
 
+
     this.initialized =
       true;
+
 
     const user =
       await this.authService
         .waitForAuthReady();
 
+
     this.handleUser(
       user
     );
 
+
     this.unsubscribeAuth =
       this.authService
         .onAuthStateChanged(
-          (currentUser) => {
+          currentUser => {
 
             this.handleUser(
               currentUser
@@ -65,20 +85,36 @@ export class SessionService {
         );
   }
 
+
   private handleUser(
     user: User | null
   ): void {
 
-    if (!user) {
+
+    if (
+      !user
+    ) {
 
       this.profileService
         .clearProfile();
 
+
+      this.notificationService
+        .clearNotifications();
+
+
       return;
     }
 
+
     this.profileService
       .watchProfile(
+        user.uid
+      );
+
+
+    this.notificationService
+      .watchNotifications(
         user.uid
       );
   }

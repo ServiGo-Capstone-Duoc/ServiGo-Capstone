@@ -25,23 +25,27 @@ import {
 } from 'ionicons';
 
 import {
+  buildOutline,
+  chevronForwardOutline,
+  flashOutline,
+  hammerOutline,
+  locationOutline,
   notificationsOutline,
   searchOutline,
-  locationOutline,
-  flashOutline,
-  waterOutline,
-  hammerOutline,
-  buildOutline,
-  chevronForwardOutline
+  waterOutline
 } from 'ionicons/icons';
-
-import {
-  ProfileService
-} from '../../core/services/profile.service';
 
 import {
   AppModeService
 } from '../../core/services/app-mode.service';
+
+import {
+  NotificationService
+} from '../../core/services/notification.service';
+
+import {
+  ProfileService
+} from '../../core/services/profile.service';
 
 import {
   ModeSwitcherComponent
@@ -49,7 +53,8 @@ import {
 
 
 @Component({
-  selector: 'app-home',
+  selector:
+    'app-home',
 
   templateUrl:
     './home.page.html',
@@ -58,17 +63,16 @@ import {
     './home.page.scss'
   ],
 
-  standalone: true,
+  standalone:
+    true,
 
   imports: [
     CommonModule,
-
     IonButton,
     IonContent,
     IonHeader,
     IonIcon,
     IonToolbar,
-
     ModeSwitcherComponent
   ]
 })
@@ -77,15 +81,27 @@ export class HomePage
 
 
   private readonly router =
-    inject(Router);
+    inject(
+      Router
+    );
 
 
   private readonly profileService =
-    inject(ProfileService);
+    inject(
+      ProfileService
+    );
 
 
   private readonly modeService =
-    inject(AppModeService);
+    inject(
+      AppModeService
+    );
+
+
+  private readonly notificationService =
+    inject(
+      NotificationService
+    );
 
 
   readonly profile$ =
@@ -96,8 +112,11 @@ export class HomePage
     this.modeService.mode$;
 
 
-  readonly categories = [
+  readonly unreadCount$ =
+    this.notificationService.unreadCount$;
 
+
+  readonly categories = [
     {
       name:
         'Electricidad',
@@ -105,7 +124,6 @@ export class HomePage
       icon:
         'flash-outline'
     },
-
     {
       name:
         'Gasfitería',
@@ -113,7 +131,6 @@ export class HomePage
       icon:
         'water-outline'
     },
-
     {
       name:
         'Carpintería',
@@ -121,7 +138,6 @@ export class HomePage
       icon:
         'hammer-outline'
     },
-
     {
       name:
         'Mecánica',
@@ -135,22 +151,14 @@ export class HomePage
   constructor() {
 
     addIcons({
-
-      notificationsOutline,
-
-      searchOutline,
-
-      locationOutline,
-
-      flashOutline,
-
-      waterOutline,
-
-      hammerOutline,
-
       buildOutline,
-
-      chevronForwardOutline
+      chevronForwardOutline,
+      flashOutline,
+      hammerOutline,
+      locationOutline,
+      notificationsOutline,
+      searchOutline,
+      waterOutline
     });
   }
 
@@ -168,28 +176,37 @@ export class HomePage
   }
 
 
-async requestService():
-  Promise<void> {
+  async openNotifications():
+    Promise<void> {
 
-  await this.router.navigateByUrl(
-    '/app/services/new'
-  );
-}
+    await this.router.navigateByUrl(
+      '/app/notifications'
+    );
+  }
 
 
-async selectCategory(
-  category: string
-): Promise<void> {
+  async requestService():
+    Promise<void> {
 
-  await this.router.navigate(
-    [
+    await this.router.navigateByUrl(
       '/app/services/new'
-    ],
-    {
-      queryParams: {
-        category
+    );
+  }
+
+
+  async selectCategory(
+    category: string
+  ): Promise<void> {
+
+    await this.router.navigate(
+      [
+        '/app/services/new'
+      ],
+      {
+        queryParams: {
+          category
+        }
       }
-    }
-  );
-}
+    );
+  }
 }
