@@ -1,23 +1,93 @@
 <ion-content [fullscreen]="true">
+
   <div class="auth-shell">
 
     <section class="brand">
-<div class="brand-logo-container">
-  <img
-    src="assets/branding/servigo-logo-horizontal.png"
-    alt="ServiGo"
-    class="brand-logo"
-  />
-</div>
 
-      <h1>Únete a ServiGo</h1>
+      <div class="brand-logo-container">
+
+        <img
+          src="assets/branding/servigo-logo-horizontal.png"
+          alt="ServiGo"
+          class="brand-logo"
+        />
+
+      </div>
+
+      <h1>
+        Únete a ServiGo
+      </h1>
 
       <p>
         Encuentra servicios o comienza tu camino como técnico.
       </p>
+
     </section>
 
+
     <section class="auth-card">
+
+      <div class="heading">
+
+        <h2>
+          Crea tu cuenta
+        </h2>
+
+        <p>
+          Puedes continuar rápidamente con Google o completar tus datos.
+        </p>
+
+      </div>
+
+
+      <ion-button
+        expand="block"
+        fill="outline"
+        type="button"
+        class="google-button"
+        [disabled]="busy"
+        (click)="registerWithGoogle()"
+      >
+
+        <ion-spinner
+          *ngIf="googleLoading"
+          name="crescent"
+        ></ion-spinner>
+
+        <ng-container *ngIf="!googleLoading">
+
+          <span
+            class="google-mark"
+            aria-hidden="true"
+          >
+            G
+          </span>
+
+          <span>
+            Continuar con Google
+          </span>
+
+        </ng-container>
+
+      </ion-button>
+
+
+      <div class="auth-divider">
+        <span>
+          o crea tu cuenta con correo
+        </span>
+      </div>
+
+
+      <div
+        class="register-error"
+        *ngIf="errorMessage"
+        role="alert"
+        aria-live="polite"
+      >
+        {{ errorMessage }}
+      </div>
+
 
       <form
         [formGroup]="form"
@@ -25,58 +95,69 @@
       >
 
         <ion-item lines="none">
+
           <ion-input
             label="Nombre"
             labelPlacement="stacked"
             formControlName="displayName"
             autocomplete="name"
+            placeholder="Tu nombre"
           ></ion-input>
+
         </ion-item>
 
+
         <ion-item lines="none">
+
           <ion-input
             label="Correo electrónico"
             labelPlacement="stacked"
             type="email"
             formControlName="email"
             autocomplete="email"
+            placeholder="nombre@correo.cl"
           ></ion-input>
+
         </ion-item>
 
+
         <ion-item lines="none">
+
           <ion-input
             label="Contraseña"
             labelPlacement="stacked"
             type="password"
             formControlName="password"
             autocomplete="new-password"
+            placeholder="Mínimo 6 caracteres"
           ></ion-input>
+
         </ion-item>
 
+
         <ion-item lines="none">
+
           <ion-input
             label="Confirmar contraseña"
             labelPlacement="stacked"
             type="password"
             formControlName="confirmPassword"
             autocomplete="new-password"
+            placeholder="Repite tu contraseña"
           ></ion-input>
+
         </ion-item>
 
-        <ion-text
-          color="danger"
-          *ngIf="errorMessage"
-        >
-          <p class="error">
-            {{ errorMessage }}
-          </p>
-        </ion-text>
 
         <ion-button
           expand="block"
           type="submit"
-          [disabled]="form.invalid || loading"
+          [disabled]="
+            form.invalid ||
+            busy
+          "
         >
+
           <ion-spinner
             *ngIf="loading"
             name="crescent"
@@ -85,21 +166,30 @@
           <span *ngIf="!loading">
             Crear cuenta
           </span>
+
         </ion-button>
 
       </form>
 
+
       <div class="secondary-action">
-        <span>¿Ya tienes cuenta?</span>
+
+        <span>
+          ¿Ya tienes cuenta?
+        </span>
 
         <ion-button
           fill="clear"
           routerLink="/login"
+          [disabled]="busy"
         >
           Iniciar sesión
         </ion-button>
+
       </div>
 
     </section>
+
   </div>
+
 </ion-content>

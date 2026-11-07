@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 
 import {
+  GoogleAuthProvider,
   MultiFactorError,
   MultiFactorResolver,
   TotpMultiFactorGenerator,
@@ -15,12 +16,14 @@ import {
   sendEmailVerification,
   setPersistence,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile
 } from 'firebase/auth';
 
 import {
   doc,
+  getDoc,
   serverTimestamp,
   setDoc,
   updateDoc
@@ -67,6 +70,10 @@ export class AuthService {
     Promise<void>;
 
 
+  private readonly googleProvider =
+    new GoogleAuthProvider();
+
+
   /*
    * Resolver MFA temporal.
    *
@@ -79,6 +86,13 @@ export class AuthService {
 
 
   constructor() {
+
+    this.googleProvider
+      .setCustomParameters({
+        prompt:
+          'select_account'
+      });
+
 
     this.initializationReady =
       new Promise<void>(
@@ -130,7 +144,7 @@ export class AuthService {
 
   /*
    * =========================================
-   * REGISTRO
+   * REGISTRO CORREO / CONTRASEÑA
    * =========================================
    */
 
@@ -272,7 +286,7 @@ export class AuthService {
 
   /*
    * =========================================
-   * LOGIN - PRIMER FACTOR
+   * LOGIN CORREO / CONTRASEÑA
    * =========================================
    */
 
@@ -286,10 +300,6 @@ export class AuthService {
 
     await this.persistenceReady;
 
-
-    /*
-     * Elimina cualquier desafío MFA anterior.
-     */
 
     this.pendingMfaResolver =
       null;
@@ -334,56 +344,355 @@ export class AuthService {
 
 
     } catch (
-      error: any
+      error: unknown
     ) {
 
+      const mfaResult =
+        this.captureMfaChallenge(
+          error
+        );
 
-      /*
-       * =====================================
-       * MFA REQUERIDO
-       * =====================================
-       */
 
       if (
-        error?.code ===
-        'auth/multi-factor-auth-required'
+        mfaResult
       ) {
 
-
-        const resolver =
-          getMultiFactorResolver(
-            firebaseAuth,
-            error as MultiFactorError
-          );
-
-
-        this.pendingMfaResolver =
-          resolver;
-
-
-        console.log(
-          '[ServiGo MFA] Segundo factor requerido.'
-        );
-
-
-        console.log(
-          '[ServiGo MFA] Factores disponibles:',
-          resolver.hints.length
-        );
-
-
-        return {
-          status:
-            'mfa-required',
-
-          factorCount:
-            resolver.hints.length
-        };
+        return mfaResult;
       }
 
 
       throw error;
     }
+  }
+
+
+  /*
+   * =========================================
+   * GOOGLE SIGN-IN / REGISTRO AUTOMÁTICO
+   * =========================================
+   *
+   * El mismo flujo sirve para:
+   *
+   * - iniciar sesión si el usuario ya existe
+   * - crear la identidad Firebase si es nuevo
+   * - crear users/{uid} solo si aún no existe
+   *
+   * Para perfiles existentes se conservan
+   * roles, estado, rating y datos personalizados.
+   */
+
+  async loginWithGoogle():
+    Promise<LoginResult> {
+
+
+    await this.persistenceReady;
+
+
+    this.pendingMfaResolver =
+      null;
+
+
+    try {
+
+      const credential =
+        await signInWithPopup(
+          firebaseAuth,
+          this.googleProvider
+        );
+
+
+      const user =
+        credential.user;
+
+
+      try {
+
+        await this.ensureGoogleProfile(
+          user
+        );
+
+      } catch (
+        profileError
+      ) {
+
+        console.error(
+          '[ServiGo] No fue posible preparar el perfil Google:',
+          profileError
+        );
+
+
+        try {
+
+          await signOut(
+            firebaseAuth
+          );
+
+        } catch (
+          signOutError
+        ) {
+
+          console.warn(
+            '[ServiGo] No fue posible cerrar la sesión incompleta:',
+            signOutError
+          );
+        }
+
+
+        const error =
+          new Error(
+            'profile-bootstrap-failed'
+          ) as Error & {
+            code:
+              string;
+          };
+
+
+        error.code =
+          'servigo/profile-bootstrap-failed';
+
+
+        throw error;
+      }
+
+
+      console.log(
+        '[ServiGo] Google Authentication OK:',
+        user.uid
+      );
+
+
+      return {
+        status:
+          'authenticated',
+
+        user
+      };
+
+
+    } catch (
+      error: unknown
+    ) {
+
+      const mfaResult =
+        this.captureMfaChallenge(
+          error
+        );
+
+
+      if (
+        mfaResult
+      ) {
+
+        return mfaResult;
+      }
+
+
+      throw error;
+    }
+  }
+
+
+  /*
+   * =========================================
+   * PERFIL GOOGLE
+   * =========================================
+   */
+
+  private async ensureGoogleProfile(
+    user:
+      User
+  ): Promise<void> {
+
+
+    const profileReference =
+      doc(
+        firestore,
+        'users',
+        user.uid
+      );
+
+
+    const profileSnapshot =
+      await getDoc(
+        profileReference
+      );
+
+
+    const email =
+      user.email?.trim() ??
+      '';
+
+
+    const displayName =
+      user.displayName?.trim()
+      || email
+        .split('@')[0]
+      || 'Usuario ServiGo';
+
+
+    if (
+      !profileSnapshot.exists()
+    ) {
+
+      await setDoc(
+        profileReference,
+        {
+          uid:
+            user.uid,
+
+          email,
+
+          displayName,
+
+          phone:
+            null,
+
+          photoUrl:
+            user.photoURL ??
+            null,
+
+          roles: [
+            'cliente'
+          ],
+
+          status:
+            'active',
+
+          averageRating:
+            null,
+
+          ratingCount:
+            0,
+
+          createdAt:
+            serverTimestamp(),
+
+          updatedAt:
+            serverTimestamp(),
+
+          lastLoginAt:
+            serverTimestamp()
+        }
+      );
+
+
+      return;
+    }
+
+
+    const currentProfile =
+      profileSnapshot.data();
+
+
+    const changes:
+      Record<string, unknown> = {
+        email:
+          email
+          || currentProfile['email']
+          || '',
+
+        updatedAt:
+          serverTimestamp(),
+
+        lastLoginAt:
+          serverTimestamp()
+      };
+
+
+    if (
+      !currentProfile['displayName']
+      && displayName
+    ) {
+
+      changes['displayName'] =
+        displayName;
+    }
+
+
+    if (
+      !currentProfile['photoUrl']
+      && user.photoURL
+    ) {
+
+      changes['photoUrl'] =
+        user.photoURL;
+    }
+
+
+    await setDoc(
+      profileReference,
+      changes,
+      {
+        merge:
+          true
+      }
+    );
+  }
+
+
+  /*
+   * =========================================
+   * CAPTURAR DESAFÍO MFA
+   * =========================================
+   */
+
+  private captureMfaChallenge(
+    error:
+      unknown
+  ): Extract<
+    LoginResult,
+    {
+      status:
+        'mfa-required';
+    }
+  > | null {
+
+
+    const authError =
+      error as {
+        code?:
+          string;
+      };
+
+
+    if (
+      authError?.code !==
+      'auth/multi-factor-auth-required'
+    ) {
+
+      return null;
+    }
+
+
+    const resolver =
+      getMultiFactorResolver(
+        firebaseAuth,
+        error as MultiFactorError
+      );
+
+
+    this.pendingMfaResolver =
+      resolver;
+
+
+    console.log(
+      '[ServiGo MFA] Segundo factor requerido.'
+    );
+
+
+    console.log(
+      '[ServiGo MFA] Factores disponibles:',
+      resolver.hints.length
+    );
+
+
+    return {
+      status:
+        'mfa-required',
+
+      factorCount:
+        resolver.hints.length
+    };
   }
 
 
@@ -430,11 +739,6 @@ export class AuthService {
       );
     }
 
-
-    /*
-     * En ServiGo enrolaremos actualmente
-     * un único factor TOTP.
-     */
 
     const hint =
       resolver.hints[0];
@@ -485,6 +789,21 @@ export class AuthService {
 
 
     return user;
+  }
+
+
+  /*
+   * =========================================
+   * ESTADO DESAFÍO MFA
+   * =========================================
+   */
+
+  hasPendingMfaLogin():
+    boolean {
+
+
+    return this.pendingMfaResolver !==
+      null;
   }
 
 

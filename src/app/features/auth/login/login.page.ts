@@ -5,6 +5,7 @@ import {
 import {
   ChangeDetectorRef,
   Component,
+  OnInit,
   inject
 } from '@angular/core';
 
@@ -59,7 +60,7 @@ import {
     IonSpinner
   ]
 })
-export class LoginPage {
+export class LoginPage implements OnInit {
 
 
   private readonly fb =
@@ -78,12 +79,19 @@ export class LoginPage {
     inject(
       Router
     );
-private readonly cdr =
-  inject(
-    ChangeDetectorRef
-  );
+
+
+  private readonly cdr =
+    inject(
+      ChangeDetectorRef
+    );
+
 
   loading =
+    false;
+
+
+  googleLoading =
     false;
 
 
@@ -142,6 +150,125 @@ private readonly cdr =
       });
 
 
+  get busy():
+    boolean {
+
+
+    return this.loading
+      || this.googleLoading;
+  }
+
+
+  ngOnInit():
+    void {
+
+
+    /*
+     * Permite continuar aquí un desafío MFA
+     * iniciado desde el botón Google de registro.
+     */
+
+    if (
+      this.authService
+        .hasPendingMfaLogin()
+    ) {
+
+      this.mfaRequired =
+        true;
+
+
+      this.mfaForm
+        .reset();
+    }
+  }
+
+
+  /*
+   * =========================================
+   * LOGIN GOOGLE
+   * =========================================
+   */
+
+  async loginWithGoogle():
+    Promise<void> {
+
+
+    if (
+      this.busy
+      || this.mfaRequired
+    ) {
+
+      return;
+    }
+
+
+    this.errorMessage =
+      '';
+
+
+    this.googleLoading =
+      true;
+
+
+    try {
+
+      const result =
+        await this.authService
+          .loginWithGoogle();
+
+
+      if (
+        result.status ===
+        'mfa-required'
+      ) {
+
+        this.mfaRequired =
+          true;
+
+
+        this.mfaForm
+          .reset();
+
+
+        this.cdr
+          .detectChanges();
+
+
+        return;
+      }
+
+
+      await this.navigateHome();
+
+
+    } catch (
+      error: any
+    ) {
+
+      console.error(
+        '[ServiGo] Error Google login:',
+        error
+      );
+
+
+      this.errorMessage =
+        this.getAuthError(
+          error?.code
+        );
+
+
+    } finally {
+
+      this.googleLoading =
+        false;
+
+
+      this.cdr
+        .detectChanges();
+    }
+  }
+
+
   /*
    * =========================================
    * LOGIN PRIMER FACTOR
@@ -153,9 +280,8 @@ private readonly cdr =
 
 
     if (
-      this.loading
-      ||
-      this.mfaRequired
+      this.busy
+      || this.mfaRequired
     ) {
 
       return;
@@ -199,38 +325,26 @@ private readonly cdr =
           );
 
 
-      /*
-       * =====================================
-       * MFA
-       * =====================================
-       */
-
       if (
-  result.status ===
-  'mfa-required'
-) {
+        result.status ===
+        'mfa-required'
+      ) {
 
-  this.mfaRequired =
-    true;
-
-
-  this.mfaForm
-    .reset();
+        this.mfaRequired =
+          true;
 
 
-  this.cdr
-    .detectChanges();
+        this.mfaForm
+          .reset();
 
 
-  return;
-}
+        this.cdr
+          .detectChanges();
 
 
-      /*
-       * =====================================
-       * LOGIN COMPLETO
-       * =====================================
-       */
+        return;
+      }
+
 
       await this.navigateHome();
 
@@ -257,8 +371,8 @@ private readonly cdr =
         false;
 
 
-  this.cdr
-    .detectChanges();
+      this.cdr
+        .detectChanges();
     }
   }
 
@@ -274,7 +388,7 @@ private readonly cdr =
 
 
     if (
-      this.loading
+      this.busy
     ) {
 
       return;
@@ -340,8 +454,8 @@ private readonly cdr =
         false;
 
 
-  this.cdr
-    .detectChanges();
+      this.cdr
+        .detectChanges();
     }
   }
 
@@ -401,7 +515,7 @@ private readonly cdr =
 
   /*
    * =========================================
-   * ERRORES PRIMER FACTOR
+   * ERRORES AUTENTICACIÓN
    * =========================================
    */
 
@@ -442,6 +556,41 @@ private readonly cdr =
       case 'auth/network-request-failed':
 
         return 'No fue posible conectarse. Revisa tu conexión a internet.';
+
+
+      case 'auth/popup-closed-by-user':
+
+        return 'El acceso con Google fue cancelado.';
+
+
+      case 'auth/cancelled-popup-request':
+
+        return 'Se canceló la solicitud anterior de acceso con Google.';
+
+
+      case 'auth/popup-blocked':
+
+        return 'El navegador bloqueó la ventana de Google. Habilita las ventanas emergentes e intenta nuevamente.';
+
+
+      case 'auth/account-exists-with-different-credential':
+
+        return 'Ya existe una cuenta con ese correo. Inicia sesión con el método utilizado originalmente.';
+
+
+      case 'auth/unauthorized-domain':
+
+        return 'Este dominio todavía no está autorizado en Firebase Authentication.';
+
+
+      case 'auth/operation-not-supported-in-this-environment':
+
+        return 'El acceso con Google no está disponible en este entorno.';
+
+
+      case 'servigo/profile-bootstrap-failed':
+
+        return 'Google validó tu cuenta, pero no pudimos preparar tu perfil. Intenta nuevamente.';
 
 
       default:

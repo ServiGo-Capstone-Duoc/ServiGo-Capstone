@@ -2,7 +2,6 @@
 
   <div class="auth-shell">
 
-
     <section class="brand">
 
       <div class="brand-logo-container">
@@ -15,7 +14,6 @@
 
       </div>
 
-
       <p>
         Servicios confiables, donde los necesitas.
       </p>
@@ -24,7 +22,6 @@
 
 
     <section class="auth-card">
-
 
       <!-- ===================================== -->
       <!-- LOGIN NORMAL                          -->
@@ -44,6 +41,55 @@
             Ingresa a tu cuenta para continuar.
           </p>
 
+        </div>
+
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          type="button"
+          class="google-button"
+          [disabled]="busy"
+          (click)="loginWithGoogle()"
+        >
+
+          <ion-spinner
+            *ngIf="googleLoading"
+            name="crescent"
+          ></ion-spinner>
+
+          <ng-container *ngIf="!googleLoading">
+
+            <span
+              class="google-mark"
+              aria-hidden="true"
+            >
+              G
+            </span>
+
+            <span>
+              Continuar con Google
+            </span>
+
+          </ng-container>
+
+        </ion-button>
+
+
+        <div class="auth-divider">
+          <span>
+            o continúa con correo
+          </span>
+        </div>
+
+
+        <div
+          class="login-error"
+          *ngIf="errorMessage"
+          role="alert"
+          aria-live="polite"
+        >
+          {{ errorMessage }}
         </div>
 
 
@@ -104,22 +150,12 @@
           </ion-note>
 
 
-          <div
-            class="login-error"
-            *ngIf="errorMessage"
-            role="alert"
-            aria-live="polite"
-          >
-            {{ errorMessage }}
-          </div>
-
-
           <ion-button
             expand="block"
             type="submit"
             [disabled]="
               form.invalid ||
-              loading
+              busy
             "
           >
 
@@ -127,7 +163,6 @@
               *ngIf="loading"
               name="crescent"
             ></ion-spinner>
-
 
             <span *ngIf="!loading">
               Iniciar sesión
@@ -144,10 +179,10 @@
             ¿Aún no tienes cuenta?
           </span>
 
-
           <ion-button
             fill="clear"
             routerLink="/register"
+            [disabled]="busy"
           >
             Crear cuenta
           </ion-button>
@@ -171,11 +206,9 @@
             ✓
           </div>
 
-
           <h2>
             Verificación en dos pasos
           </h2>
-
 
           <p>
             Abre tu aplicación Authenticator
@@ -233,7 +266,7 @@
             type="submit"
             [disabled]="
               mfaForm.invalid ||
-              loading
+              busy
             "
           >
 
@@ -241,7 +274,6 @@
               *ngIf="loading"
               name="crescent"
             ></ion-spinner>
-
 
             <span *ngIf="!loading">
               Verificar y continuar
@@ -254,7 +286,7 @@
             expand="block"
             fill="clear"
             type="button"
-            [disabled]="loading"
+            [disabled]="busy"
             (click)="cancelMfa()"
           >
             Usar otra cuenta
@@ -263,7 +295,6 @@
         </form>
 
       </ng-container>
-
 
     </section>
 
