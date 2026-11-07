@@ -32,9 +32,12 @@
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
+/* ServiGo utiliza actualmente tema claro fijo. */
+/* Dark mode deshabilitado para evitar cambios automáticos según el sistema. */
+
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+/* @import "@ionic/angular/css/palettes/dark.system.css"; */
 
 @import 'leaflet/dist/leaflet.css';
 
