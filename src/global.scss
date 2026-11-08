@@ -1,73 +1,160 @@
-/*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
- */
-
 /* Core CSS required for Ionic components to work properly */
-@import "@ionic/angular/css/core.css";
+@import '@ionic/angular/css/core.css';
 
 /* Basic CSS for apps built with Ionic */
-@import "@ionic/angular/css/normalize.css";
-@import "@ionic/angular/css/structure.css";
-@import "@ionic/angular/css/typography.css";
-@import "@ionic/angular/css/display.css";
+@import '@ionic/angular/css/normalize.css';
+@import '@ionic/angular/css/structure.css';
+@import '@ionic/angular/css/typography.css';
+@import '@ionic/angular/css/display.css';
 
-/* Optional CSS utils that can be commented out */
-@import "@ionic/angular/css/padding.css";
-@import "@ionic/angular/css/float-elements.css";
-@import "@ionic/angular/css/text-alignment.css";
-@import "@ionic/angular/css/text-transformation.css";
-@import "@ionic/angular/css/flex-utils.css";
+/* Optional Ionic utilities */
+@import '@ionic/angular/css/padding.css';
+@import '@ionic/angular/css/float-elements.css';
+@import '@ionic/angular/css/text-alignment.css';
+@import '@ionic/angular/css/text-transformation.css';
+@import '@ionic/angular/css/flex-utils.css';
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
+/*
+ * Ionic dark palette controlled by the `ion-palette-dark` class.
+ * ThemeService applies that class according to the user preference.
  */
-
-/* ServiGo utiliza actualmente tema claro fijo. */
-/* Dark mode deshabilitado para evitar cambios automáticos según el sistema. */
-
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
-/* @import "@ionic/angular/css/palettes/dark.system.css"; */
+@import '@ionic/angular/css/palettes/dark.class.css';
 
 @import 'leaflet/dist/leaflet.css';
 
-
-/* =========================================
-   SERVIGO DESIGN SYSTEM v1
-   ========================================= */
-
-html, body, ion-app {
+html,
+body,
+ion-app {
+  min-height: 100%;
   background: var(--servigo-background);
 }
 
+html {
+  background-color: var(--servigo-background);
+}
+
 body {
+  margin: 0;
   color: var(--servigo-text);
+  background: var(--servigo-background);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-button, ion-button, ion-tab-button {
+body,
+ion-app,
+ion-content,
+ion-header,
+ion-footer,
+ion-toolbar,
+ion-tab-bar,
+ion-item,
+ion-card,
+button,
+input,
+textarea {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+button,
+ion-button,
+ion-tab-button {
   -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: var(--servigo-focus-ring);
+}
+
+ion-content {
+  --background: var(--servigo-background);
+  --color: var(--servigo-text);
+}
+
+ion-toolbar {
+  --background: var(--servigo-surface);
+  --color: var(--servigo-text);
+  --border-color: var(--servigo-border);
+}
+
+ion-item {
+  --background: var(--servigo-surface);
+  --color: var(--servigo-text);
+  --border-color: var(--servigo-border);
+  --detail-icon-color: var(--servigo-text-tertiary);
+}
+
+ion-input,
+ion-textarea,
+ion-searchbar,
+ion-select {
+  --color: var(--servigo-text);
+  --placeholder-color: var(--servigo-text-tertiary);
+  --placeholder-opacity: 1;
+  --highlight-color-focused: var(--servigo-blue);
+}
+
+input,
+textarea,
+select {
+  color: var(--servigo-text);
+  caret-color: var(--servigo-blue);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--servigo-text-tertiary);
+  opacity: 1;
+}
+
+ion-alert,
+ion-action-sheet,
+ion-modal,
+ion-popover {
+  --ion-background-color: var(--servigo-surface);
+  --ion-text-color: var(--servigo-text);
+}
+
+ion-loading,
+ion-toast {
+  --background: var(--servigo-surface-elevated);
+  --color: var(--servigo-text);
+}
+
+ion-tab-bar {
+  --background: var(--servigo-surface);
+  --border: 1px solid var(--servigo-border);
+  color: var(--servigo-text-secondary);
+}
+
+ion-tab-button {
+  --color: var(--servigo-text-secondary);
+  --color-selected: var(--servigo-blue);
+  --background: transparent;
 }
 
 .sg-page {
   width: 100%;
   max-width: var(--servigo-page-max);
   margin: 0 auto;
-  padding: var(--servigo-space-5) var(--servigo-space-4) calc(var(--servigo-tabbar-height) + 28px);
+  padding:
+    var(--servigo-space-5)
+    var(--servigo-space-4)
+    calc(var(--servigo-tabbar-height) + 28px);
 }
 
 .sg-card {
+  color: var(--servigo-text);
   background: var(--servigo-surface);
   border: 1px solid var(--servigo-border);
   border-radius: var(--servigo-radius-lg);
@@ -106,8 +193,40 @@ button, ion-button, ion-tab-button {
   font-size: 11px;
   line-height: 1.2;
   font-weight: 800;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.sg-form-message {
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--servigo-radius-sm);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sg-form-message.success {
+  color: var(--servigo-success-strong);
+  background: var(--servigo-success-soft);
+  border-color: var(--servigo-success-border);
+}
+
+.sg-form-message.error {
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border-color: var(--servigo-error-border);
+}
+
+.sg-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (min-width: 430px) {
@@ -116,3 +235,48 @@ button, ion-button, ion-tab-button {
     padding-right: var(--servigo-space-5);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Leaflet inserta estos marcadores fuera del alcance del encapsulado del componente. */
+.servigo-map-icon {
+  background: transparent;
+  border: 0;
+}
+
+.servigo-map-marker {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--servigo-surface);
+  border-radius: 50%;
+  box-shadow: var(--servigo-shadow-floating);
+  font-size: 21px;
+}
+
+.servigo-map-marker--technician {
+  color: var(--servigo-on-primary);
+  background: var(--servigo-blue);
+}
+
+.servigo-map-marker--destination {
+  color: var(--servigo-blue);
+  background: var(--servigo-surface);
+  border-color: var(--servigo-blue);
+}
+
+:root[data-theme='dark'] .leaflet-tile-pane,
+:root.ion-palette-dark .leaflet-tile-pane {
+  filter: brightness(0.72) contrast(1.08) saturate(0.78);
+}
+

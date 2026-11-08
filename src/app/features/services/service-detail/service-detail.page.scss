@@ -47,7 +47,7 @@ ion-content {
   border: 0;
   border-radius: 13px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color:
     var(--servigo-blue);
@@ -61,11 +61,11 @@ ion-content {
 
   border-radius: 20px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   > span {
     color:
@@ -117,7 +117,7 @@ ion-content {
 
     border-radius: 10px;
 
-    background: #f7f9fc;
+    background: var(--servigo-input-background);
 
     color:
       var(--servigo-text-secondary);
@@ -193,15 +193,21 @@ ion-content {
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   border-radius: 17px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: left;
 
   cursor: pointer;
+}
+
+
+.quote-card:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 
@@ -290,7 +296,7 @@ ion-content {
 
   border-radius: 18px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: center;
 
@@ -328,16 +334,16 @@ ion-content {
   margin-bottom: 20px;
   padding: 20px;
 
-  border: 1px solid #caead7;
+  border: 1px solid var(--servigo-success-border);
   border-radius: 22px;
 
-  background: #f3fbf6;
+  background: var(--servigo-success-soft);
 }
 
 .service-completed-card > ion-icon {
   flex: 0 0 auto;
 
-  color: #219653;
+  color: var(--servigo-success);
 
   font-size: 38px;
 }
@@ -347,7 +353,7 @@ ion-content {
 
   margin-bottom: 4px;
 
-  color: #219653;
+  color: var(--servigo-success);
 
   font-size: 10px;
   font-weight: 800;
@@ -357,7 +363,7 @@ ion-content {
 .service-completed-card strong {
   display: block;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 17px;
 }
@@ -368,7 +374,7 @@ ion-content {
     0
     0;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 13px;
 }
@@ -382,10 +388,10 @@ ion-content {
   margin-top: 20px;
   padding: 24px;
 
-  border: 1px solid #e1e8f1;
+  border: 1px solid var(--servigo-border);
   border-radius: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 }
 
 .review-heading > span {
@@ -393,7 +399,7 @@ ion-content {
 
   margin-bottom: 5px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 10px;
   font-weight: 800;
@@ -406,7 +412,7 @@ ion-content {
     0
     5px;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 21px;
 }
@@ -417,7 +423,7 @@ ion-content {
     0
     20px;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 13px;
 }
@@ -447,9 +453,9 @@ ion-content {
   border: 0;
   border-radius: 12px;
 
-  background: #f5f7fb;
+  background: var(--servigo-background);
 
-  color: #a8b1bf;
+  color: var(--servigo-text-disabled);
 
   font-size: 27px;
 
@@ -457,13 +463,13 @@ ion-content {
 }
 
 .review-stars button.active {
-  background: #fff8e5;
+  background: var(--servigo-warning-soft);
 
-  color: #f5b301;
+  color: var(--servigo-warning);
 }
 
 .review-stars.readonly ion-icon {
-  color: #f5b301;
+  color: var(--servigo-warning);
 
   font-size: 27px;
 }
@@ -476,7 +482,7 @@ ion-content {
 
   margin-bottom: 16px;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 12px;
   font-weight: 600;
@@ -493,16 +499,16 @@ ion-content {
 
   padding: 14px;
 
-  border: 1px solid #dce3ec;
+  border: 1px solid var(--servigo-border);
   border-radius: 16px;
 
   outline: none;
 
   resize: vertical;
 
-  background: #f9fafc;
+  background: var(--servigo-surface-soft);
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font: inherit;
 
@@ -510,7 +516,7 @@ ion-content {
 }
 
 .review-comment:focus {
-  border-color: #0879ee;
+  border-color: var(--servigo-blue);
 }
 
 
@@ -519,7 +525,7 @@ ion-content {
 .review-error {
   margin-top: 10px;
 
-  color: #c62828;
+  color: var(--servigo-error);
 
   font-size: 13px;
 }
@@ -527,7 +533,7 @@ ion-content {
 .review-success {
   margin-top: 10px;
 
-  color: #219653;
+  color: var(--servigo-success);
 
   font-size: 13px;
 }
@@ -550,9 +556,9 @@ ion-content {
   border: 0;
   border-radius: 16px;
 
-  background: #0879ee;
+  background: var(--servigo-blue);
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 
   font-size: 14px;
   font-weight: 800;
@@ -574,13 +580,13 @@ ion-content {
 
   border-radius: 18px;
 
-  background: #f5fbf7;
+  background: var(--servigo-success-soft);
 
   text-align: center;
 }
 
 .review-completed > ion-icon {
-  color: #219653;
+  color: var(--servigo-success);
 
   font-size: 38px;
 }
@@ -593,7 +599,7 @@ ion-content {
     0
     14px;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 }
 
 .review-completed .review-stars {
@@ -603,7 +609,7 @@ ion-content {
 .review-completed p {
   margin: 0;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 14px;
   line-height: 1.5;
@@ -617,14 +623,13 @@ ion-content {
   margin-top: 20px;
   padding: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  border: 1px solid #e4ebf5;
+  border: 1px solid var(--servigo-border);
   border-radius: 22px;
 
   box-shadow:
-    0 10px 30px
-    rgba(15, 23, 42, 0.04);
+    var(--servigo-shadow-card);
 }
 
 
@@ -642,7 +647,7 @@ ion-content {
 
   margin-bottom: 6px;
 
-  color: #0877f9;
+  color: var(--servigo-blue);
 
   font-size: 12px;
   font-weight: 800;
@@ -654,7 +659,7 @@ ion-content {
 .payment-heading h2 {
   margin: 0;
 
-  color: #202938;
+  color: var(--servigo-text);
 
   font-size: 22px;
   font-weight: 750;
@@ -678,15 +683,15 @@ ion-content {
   margin-bottom: 18px;
   padding: 18px 20px;
 
-  background: #f6f9fd;
+  background: var(--servigo-surface-soft);
 
-  border: 1px solid #e5edf7;
+  border: 1px solid var(--servigo-border);
   border-radius: 16px;
 }
 
 
 .payment-total span {
-  color: #64748b;
+  color: var(--servigo-text-secondary);
 
   font-size: 12px;
   font-weight: 700;
@@ -696,7 +701,7 @@ ion-content {
 
 
 .payment-total strong {
-  color: #182230;
+  color: var(--servigo-text);
 
   font-size: 26px;
   font-weight: 800;
@@ -715,7 +720,7 @@ ion-content {
     0
     20px;
 
-  color: #64748b;
+  color: var(--servigo-text-secondary);
 
   font-size: 14px;
   line-height: 1.55;
@@ -726,18 +731,36 @@ ion-content {
    ERROR
    ============================================================ */
 
+.payment-unavailable,
 .payment-error {
   margin-bottom: 16px;
   padding: 12px 14px;
-
-  color: #b42318;
-
-  background: #fff1f0;
-
-  border: 1px solid #fecaca;
   border-radius: 12px;
-
   font-size: 13px;
+  line-height: 1.45;
+}
+
+.payment-unavailable {
+  display: grid;
+  gap: 4px;
+
+  color: var(--servigo-warning-strong);
+  background: var(--servigo-warning-soft);
+  border: 1px solid var(--servigo-warning-border);
+}
+
+.payment-unavailable strong {
+  font-weight: 800;
+}
+
+.payment-unavailable span {
+  color: var(--servigo-text-secondary);
+}
+
+.payment-error {
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border: 1px solid var(--servigo-error-border);
   font-weight: 600;
 }
 
@@ -763,21 +786,20 @@ ion-content {
 
   appearance: none;
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 
   background:
     linear-gradient(
       135deg,
-      #0877f9 0%,
-      #0669dd 100%
+      var(--servigo-blue) 0%,
+      var(--servigo-blue-dark) 100%
     );
 
   border: 0;
   border-radius: 15px;
 
   box-shadow:
-    0 8px 20px
-    rgba(8, 119, 249, 0.20);
+    var(--servigo-shadow-primary);
 
   font-family: inherit;
 
@@ -798,8 +820,7 @@ ion-content {
     translateY(-1px);
 
   box-shadow:
-    0 11px 24px
-    rgba(8, 119, 249, 0.26);
+    var(--servigo-shadow-primary-strong);
 }
 
 
@@ -810,10 +831,20 @@ ion-content {
 
 
 .payment-button:disabled {
-  opacity: 0.55;
-
   cursor: not-allowed;
+}
 
+.payment-button--processing:disabled {
+  opacity: 0.78;
+}
+
+.payment-button--unavailable:disabled {
+  opacity: 1;
+
+  color: var(--servigo-text-disabled);
+  background: var(--servigo-surface-muted);
+
+  border: 1px solid var(--servigo-border-strong);
   box-shadow: none;
 }
 
@@ -822,7 +853,7 @@ ion-content {
   width: 22px;
   height: 22px;
 
-  --color: #ffffff;
+  --color: var(--servigo-on-primary);
 }
 
 
@@ -837,9 +868,9 @@ ion-content {
 
   gap: 16px;
 
-  background: #f0fbf5;
+  background: var(--servigo-success-soft);
 
-  border-color: #bde9cf;
+  border-color: var(--servigo-success-border);
 }
 
 
@@ -852,7 +883,7 @@ ion-content {
   width: 42px;
   height: 42px;
 
-  color: #169b52;
+  color: var(--servigo-success);
 }
 
 
@@ -869,7 +900,7 @@ ion-content {
 .payment-approved-card span {
   margin-bottom: 4px;
 
-  color: #169b52;
+  color: var(--servigo-success);
 
   font-size: 12px;
   font-weight: 800;
@@ -881,7 +912,7 @@ ion-content {
 .payment-approved-card strong {
   margin-bottom: 8px;
 
-  color: #17251d;
+  color: var(--servigo-success-strong);
 
   font-size: 26px;
   font-weight: 800;
@@ -896,7 +927,7 @@ ion-content {
     0
     12px;
 
-  color: #52665a;
+  color: var(--servigo-text-secondary);
 
   font-size: 14px;
   line-height: 1.45;
@@ -910,7 +941,7 @@ ion-content {
 
   margin-top: 4px;
 
-  color: #64748b;
+  color: var(--servigo-text-secondary);
 
   font-size: 11px;
   line-height: 1.4;
@@ -981,13 +1012,12 @@ ion-content {
 
   border-radius: 22px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  border: 1px solid rgba(11, 115, 224, 0.14);
+  border: 1px solid rgba(var(--servigo-blue-rgb), 0.14);
 
   box-shadow:
-    0 12px 30px
-    rgba(15, 23, 42, 0.06);
+    var(--servigo-shadow-card);
 }
 
 
@@ -1065,7 +1095,7 @@ ion-content {
 
   border-radius: 16px;
 
-  background: #f7f9fc;
+  background: var(--servigo-input-background);
 
   ion-spinner {
     flex: 0 0 auto;
@@ -1095,6 +1125,68 @@ ion-content {
 }
 
 
+.tracking-status {
+  min-height: 92px;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 13px;
+
+  padding: 16px;
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 16px;
+
+  ion-icon {
+    flex: 0 0 auto;
+
+    width: 23px;
+    height: 23px;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+  }
+
+  strong {
+    color: var(--servigo-text);
+
+    font-size: 12px;
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+
+    font-size: 10px;
+    line-height: 1.45;
+  }
+}
+
+
+.tracking-status--unavailable {
+  background: var(--servigo-warning-soft);
+  border-color: var(--servigo-warning-border);
+
+  ion-icon {
+    color: var(--servigo-warning-strong);
+  }
+}
+
+
+.tracking-status--error {
+  background: var(--servigo-error-soft);
+  border-color: var(--servigo-error-border);
+
+  ion-icon {
+    color: var(--servigo-error-strong);
+  }
+}
+
+
 .tracking-map {
   width: 100%;
   height: 290px;
@@ -1103,9 +1195,9 @@ ion-content {
 
   border-radius: 18px;
 
-  background: #e9eef5;
+  background: var(--servigo-surface-muted);
 
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--servigo-divider);
 
   z-index: 1;
 }
@@ -1129,7 +1221,7 @@ ion-content {
 
     border-radius: 14px;
 
-    background: #f7f9fc;
+    background: var(--servigo-input-background);
   }
 
   span {
@@ -1156,7 +1248,7 @@ ion-content {
 
   margin-top: 12px;
 
-  color: #16834b;
+  color: var(--servigo-success);
 
   font-size: 10px;
   font-weight: 700;
@@ -1190,9 +1282,9 @@ ion-content {
 
   border-radius: 14px;
 
-  background: #fff8e8;
+  background: var(--servigo-warning-soft);
 
-  color: #775b15;
+  color: var(--servigo-warning-strong);
 
   font-size: 10px;
   line-height: 1.45;
@@ -1222,9 +1314,9 @@ ion-content {
 
   border-radius: 20px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  border: 1px solid rgba(11, 115, 224, 0.10);
+  border: 1px solid rgba(var(--servigo-blue-rgb), 0.10);
 
   > ion-icon {
     width: 34px;
@@ -1270,13 +1362,13 @@ ion-content {
 
 
 .arrival-card {
-  background: #f2fbf6;
+  background: var(--servigo-success-soft);
 
-  border-color: #ccebd8;
+  border-color: var(--servigo-success-border);
 
   > ion-icon,
   span {
-    color: #16834b;
+    color: var(--servigo-success);
   }
 }
 
@@ -1299,7 +1391,7 @@ ion-content {
 
 
 /* CANCELACION */
-.cancellation-card,.cancelled-card{margin-top:18px;border-radius:22px}.cancellation-card{padding:22px;background:#fff;border:1px solid rgba(148,163,184,.28);box-shadow:0 12px 30px rgba(15,23,42,.06)}.cancellation-summary{display:flex;align-items:center;justify-content:space-between;gap:22px}.cancellation-summary span,.cancellation-form>span,.cancelled-card span{display:block;margin-bottom:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em}.cancellation-summary span,.cancellation-form>span{color:#64748b}.cancellation-summary strong{display:block;color:#0f172a}.cancellation-summary p,.cancellation-form p,.cancelled-card p{margin:6px 0 0;line-height:1.5}.cancellation-summary p,.cancellation-form p{color:#64748b}.open-cancellation-button,.cancel-back-button,.confirm-cancellation-button{min-height:46px;border:0;border-radius:14px;font-weight:800;cursor:pointer}.open-cancellation-button{padding:0 18px;color:#b42318;background:#fff1f0;border:1px solid rgba(180,35,24,.16)}.open-cancellation-button:disabled,.cancel-back-button:disabled,.confirm-cancellation-button:disabled{opacity:.55;cursor:not-allowed}.cancellation-form h2{margin:0;color:#0f172a;font-size:1.25rem}.cancellation-reason{width:100%;min-height:120px;margin-top:18px;padding:14px 16px;resize:vertical;border:1px solid #cbd5e1;border-radius:14px;outline:none;background:#fff;color:#0f172a;font:inherit;line-height:1.5;box-sizing:border-box}.cancellation-counter{display:block;margin-top:6px;text-align:right;color:#94a3b8}.cancellation-error{margin-top:12px;padding:11px 13px;border-radius:12px;color:#b42318;background:#fff1f0;font-size:.9rem;font-weight:700}.cancellation-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.cancel-back-button{padding:0 18px;color:#334155;background:#f1f5f9}.confirm-cancellation-button{min-width:190px;padding:0 20px;color:#fff;background:#b42318}.cancelled-card{display:flex;align-items:flex-start;gap:14px;padding:20px;color:#7f1d1d;background:#fff7f7;border:1px solid rgba(185,28,28,.18)}.cancelled-card>ion-icon{width:28px;height:28px;margin-top:2px}.cancelled-card span{color:#b42318}.cancelled-card strong{display:block;color:#7f1d1d}.cancelled-card p{color:#991b1b}@media(max-width:640px){.cancellation-summary{align-items:stretch;flex-direction:column}.open-cancellation-button{width:100%}.cancellation-actions{flex-direction:column-reverse}.cancel-back-button,.confirm-cancellation-button{width:100%}}
+.cancellation-card,.cancelled-card{margin-top:18px;border-radius:22px}.cancellation-card{padding:22px;background:var(--servigo-surface);border:1px solid var(--servigo-border);box-shadow:var(--servigo-shadow-card)}.cancellation-summary{display:flex;align-items:center;justify-content:space-between;gap:22px}.cancellation-summary span,.cancellation-form>span,.cancelled-card span{display:block;margin-bottom:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em}.cancellation-summary span,.cancellation-form>span{color:var(--servigo-text-secondary)}.cancellation-summary strong{display:block;color:var(--servigo-text)}.cancellation-summary p,.cancellation-form p,.cancelled-card p{margin:6px 0 0;line-height:1.5}.cancellation-summary p,.cancellation-form p{color:var(--servigo-text-secondary)}.open-cancellation-button,.cancel-back-button,.confirm-cancellation-button{min-height:46px;border:0;border-radius:14px;font-weight:800;cursor:pointer}.open-cancellation-button{padding:0 18px;color:var(--servigo-error-strong);background:var(--servigo-error-soft);border:1px solid var(--servigo-error-border)}.open-cancellation-button:disabled,.cancel-back-button:disabled,.confirm-cancellation-button:disabled{opacity:.55;cursor:not-allowed}.cancellation-form h2{margin:0;color:var(--servigo-text);font-size:1.25rem}.cancellation-reason{width:100%;min-height:120px;margin-top:18px;padding:14px 16px;resize:vertical;border:1px solid var(--servigo-border-strong);border-radius:14px;outline:none;background:var(--servigo-surface);color:var(--servigo-text);font:inherit;line-height:1.5;box-sizing:border-box}.cancellation-counter{display:block;margin-top:6px;text-align:right;color:var(--servigo-text-tertiary)}.cancellation-error{margin-top:12px;padding:11px 13px;border-radius:12px;color:var(--servigo-error-strong);background:var(--servigo-error-soft);font-size:.9rem;font-weight:700}.cancellation-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.cancel-back-button{padding:0 18px;color:var(--servigo-text);background:var(--servigo-surface-hover)}.confirm-cancellation-button{min-width:190px;padding:0 20px;color:var(--servigo-on-primary);background:var(--servigo-error-strong)}.cancelled-card{display:flex;align-items:flex-start;gap:14px;padding:20px;color:var(--servigo-error-strong);background:var(--servigo-error-soft);border:1px solid var(--servigo-error-border)}.cancelled-card>ion-icon{width:28px;height:28px;margin-top:2px}.cancelled-card span{color:var(--servigo-error-strong)}.cancelled-card strong{display:block;color:var(--servigo-error-strong)}.cancelled-card p{color:var(--servigo-error-strong)}@media(max-width:640px){.cancellation-summary{align-items:stretch;flex-direction:column}.open-cancellation-button{width:100%}.cancellation-actions{flex-direction:column-reverse}.cancel-back-button,.confirm-cancellation-button{width:100%}}
 
 /* =========================================
  * SERVIGO DESIGN SYSTEM V1 - DETALLE SERVICIO
@@ -1323,7 +1415,7 @@ ion-content {
 .quote-main h3 { font-size: 15px; }
 .quote-main span, .quote-main p { font-size: 12px; line-height: 1.45; }
 .quote-price { font-size: 16px; }
-.payment-button, .submit-review-button, .confirm-cancellation-button { min-height: 50px; border-radius: var(--servigo-radius-md); font-size: 14px; box-shadow: 0 10px 22px rgba(11,115,224,.16); }
+.payment-button, .submit-review-button, .confirm-cancellation-button { min-height: 50px; border-radius: var(--servigo-radius-md); font-size: 14px; box-shadow: 0 10px 22px rgba(var(--servigo-blue-rgb), .16); }
 .open-cancellation-button, .cancel-back-button { min-height: 44px; border-radius: var(--servigo-radius-md); font-size: 13px; }
 .review-stars button { min-width: 44px; min-height: 44px; }
 .review-comment { font-size: 14px; }

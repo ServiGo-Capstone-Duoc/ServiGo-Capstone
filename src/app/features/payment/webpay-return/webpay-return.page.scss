@@ -5,7 +5,7 @@
 
 ion-content {
   --background:
-    #f6f8fb;
+    var(--servigo-surface-soft);
 }
 
 
@@ -50,7 +50,7 @@ ion-content {
     24px;
 
   background:
-    #ffffff;
+    var(--servigo-surface);
 
   box-shadow:
     0 18px 50px
@@ -89,10 +89,10 @@ ion-content {
     22px;
 
   background:
-    #eef4ff;
+    var(--servigo-blue-soft);
 
   color:
-    #0b73e0;
+    var(--servigo-blue);
 
 
   ion-icon {
@@ -112,28 +112,28 @@ ion-content {
 
   &.success {
     background:
-      #eaf8f0;
+      var(--servigo-success-soft);
 
     color:
-      #16834b;
+      var(--servigo-success);
   }
 
 
   &.error {
     background:
-      #fff0f0;
+      var(--servigo-error-soft);
 
     color:
-      #d33b3b;
+      var(--servigo-error);
   }
 
 
   &.neutral {
     background:
-      #f1f3f6;
+      var(--servigo-surface-muted);
 
     color:
-      #566273;
+      var(--servigo-text-secondary);
   }
 }
 
@@ -146,7 +146,7 @@ ion-content {
     8px;
 
   color:
-    #0b73e0;
+    var(--servigo-blue);
 
   font-size:
     11px;
@@ -164,7 +164,7 @@ h1 {
     0;
 
   color:
-    #172033;
+    var(--servigo-text);
 
   font-size:
     25px;
@@ -182,7 +182,7 @@ p {
     350px;
 
   color:
-    #657084;
+    var(--servigo-text-secondary);
 
   font-size:
     14px;
@@ -203,10 +203,10 @@ p {
     13px;
 
   background:
-    #f5f8fc;
+    var(--servigo-surface-soft);
 
   color:
-    #667085;
+    var(--servigo-text-secondary);
 
   font-size:
     12px;
@@ -225,7 +225,7 @@ p {
 
   border:
     1px solid
-    #edf0f4;
+    var(--servigo-surface-muted);
 
   border-radius:
     16px;
@@ -249,7 +249,7 @@ p {
 
     border-bottom:
       1px solid
-      #edf0f4;
+      var(--servigo-surface-muted);
 
 
     &:last-child {
@@ -261,7 +261,7 @@ p {
 
   span {
     color:
-      #737e90;
+      var(--servigo-text-secondary);
 
     font-size:
       12px;
@@ -270,7 +270,7 @@ p {
 
   strong {
     color:
-      #172033;
+      var(--servigo-text);
 
     font-size:
       13px;
@@ -313,10 +313,10 @@ p {
     15px;
 
   background:
-    #0b73e0;
+    var(--servigo-blue);
 
   color:
-    #ffffff;
+    var(--servigo-on-primary);
 
   font-family:
     inherit;

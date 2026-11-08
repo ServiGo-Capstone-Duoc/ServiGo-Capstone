@@ -157,10 +157,7 @@ export class MainShellPage {
   ): Promise<void> {
 
 
-    console.log(
-      '[ServiGo Navigation] Inicio:',
-      mode
-    );
+    
 
 
     if (
@@ -197,10 +194,7 @@ export class MainShellPage {
   ): Promise<void> {
 
 
-    console.log(
-      '[ServiGo Navigation] Servicios/Trabajos:',
-      mode
-    );
+    
 
 
     if (

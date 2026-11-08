@@ -240,6 +240,8 @@
           class="tracking-waiting"
           *ngIf="
             !trackingActive
+            &&
+            trackingWaiting
           "
         >
 
@@ -253,7 +255,61 @@
             </strong>
 
             <span>
-              El mapa aparecerá cuando recibamos su posición.
+              Estamos esperando la primera posición compartida.
+            </span>
+          </div>
+
+        </div>
+
+
+        <div
+          class="tracking-status tracking-status--unavailable"
+          *ngIf="
+            !trackingActive
+            &&
+            trackingUnavailable
+          "
+          role="status"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+          <div>
+            <strong>
+              Ubicación aún no disponible
+            </strong>
+
+            <span>
+              El técnico debe activar la ubicación de su equipo y autorizar a ServiGo para compartirla.
+            </span>
+          </div>
+
+        </div>
+
+
+        <div
+          class="tracking-status tracking-status--error"
+          *ngIf="
+            !trackingActive
+            &&
+            trackingError
+          "
+          role="alert"
+        >
+
+          <ion-icon
+            name="close-circle-outline"
+          ></ion-icon>
+
+          <div>
+            <strong>
+              Seguimiento no disponible
+            </strong>
+
+            <span>
+              {{ trackingError }}
             </span>
           </div>
 
@@ -525,6 +581,26 @@
 
 
         <div
+          id="payment-unavailable-message"
+          class="payment-unavailable"
+          *ngIf="!acceptedQuote"
+          role="status"
+          aria-live="polite"
+        >
+          <strong>
+            Pago temporalmente no disponible
+          </strong>
+
+          <span>
+            No pudimos recuperar los datos económicos
+            del presupuesto que fue aceptado. El servicio
+            conserva su estado y no se iniciará un pago
+            hasta validar el monto de forma segura.
+          </span>
+        </div>
+
+
+        <div
           class="payment-error"
           *ngIf="
             paymentError
@@ -539,10 +615,21 @@
         <button
           type="button"
           class="payment-button"
+          [class.payment-button--unavailable]="
+            !acceptedQuote
+          "
+          [class.payment-button--processing]="
+            processingPayment
+          "
           [disabled]="
             processingPayment
             ||
             !acceptedQuote
+          "
+          [attr.aria-describedby]="
+            !acceptedQuote
+              ? 'payment-unavailable-message'
+              : null
           "
           (click)="
             payService()
@@ -562,7 +649,11 @@
               !processingPayment
             "
           >
-            Pagar con Webpay
+            {{
+              acceptedQuote
+                ? 'Pagar con Webpay'
+                : 'Pago no disponible'
+            }}
           </span>
 
         </button>
@@ -652,7 +743,7 @@
 
 
           <strong>
-            {{ quotes.length }}
+            {{ displayQuotes.length }}
           </strong>
 
         </div>
@@ -661,7 +752,7 @@
         <div
           class="empty-quotes"
           *ngIf="
-            quotes.length === 0
+            displayQuotes.length === 0
           "
         >
 
@@ -686,9 +777,10 @@
         <button
           type="button"
           class="quote-card"
+          [disabled]="!isQuoteDetailAvailable(quote.id)"
           *ngFor="
             let quote
-            of quotes
+            of displayQuotes
           "
           (click)="
             openQuote(

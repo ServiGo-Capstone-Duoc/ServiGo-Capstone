@@ -25,6 +25,7 @@ import {
 } from '../firebase/firebase';
 
 import {
+  AcceptedQuoteSnapshot,
   ServiceRequest,
   ServiceRequestStatus,
   ServiceUrgency
@@ -589,10 +590,7 @@ async cancelService(
   }
 
 
-  console.log(
-    '[ServiGo] Servicio cancelado por backend:',
-    response.data
-  );
+  
 }
 /*
  * =========================================
@@ -662,10 +660,7 @@ private async updateJobStatus(
   }
 
 
-  console.log(
-    '[ServiGo] Estado de trabajo actualizado por backend:',
-    response.data
-  );
+  
 }
 
   /*
@@ -752,6 +747,9 @@ private async updateJobStatus(
   null,
 
 acceptedQuoteId:
+  null,
+
+acceptedQuoteSnapshot:
   null,
 
 /*
@@ -866,6 +864,11 @@ updatedAt:
   data['acceptedQuoteId']
   ?? null,
 
+acceptedQuoteSnapshot:
+  this.mapAcceptedQuoteSnapshot(
+    data['acceptedQuoteSnapshot']
+  ),
+
 
 /*
  * =====================================
@@ -897,6 +900,125 @@ createdAt:
       updatedAt:
         this.toDate(
           data['updatedAt']
+        )
+    };
+  }
+
+
+  private mapAcceptedQuoteSnapshot(
+    value: unknown
+  ): AcceptedQuoteSnapshot | null {
+
+
+    if (
+      !value
+      ||
+      typeof value !== 'object'
+    ) {
+
+      return null;
+    }
+
+
+    const data =
+      value as DocumentData;
+
+
+    const quoteId =
+      typeof data['quoteId'] === 'string'
+        ? data['quoteId']
+        : '';
+
+
+    const requestId =
+      typeof data['requestId'] === 'string'
+        ? data['requestId']
+        : '';
+
+
+    const clientId =
+      typeof data['clientId'] === 'string'
+        ? data['clientId']
+        : '';
+
+
+    const technicianId =
+      typeof data['technicianId'] === 'string'
+        ? data['technicianId']
+        : '';
+
+
+    const totalAmount =
+      Number(
+        data['totalAmount']
+        ?? 0
+      );
+
+
+    if (
+      !quoteId
+      ||
+      !requestId
+      ||
+      !clientId
+      ||
+      !technicianId
+      ||
+      !Number.isFinite(
+        totalAmount
+      )
+      ||
+      totalAmount <= 0
+    ) {
+
+      return null;
+    }
+
+
+    return {
+      quoteId,
+      requestId,
+      clientId,
+      technicianId,
+
+      technicianName:
+        typeof data['technicianName'] === 'string'
+          ? data['technicianName']
+          : '',
+
+      laborAmount:
+        Number(
+          data['laborAmount']
+          ?? 0
+        ),
+
+      materialsAmount:
+        Number(
+          data['materialsAmount']
+          ?? 0
+        ),
+
+      otherAmount:
+        Number(
+          data['otherAmount']
+          ?? 0
+        ),
+
+      totalAmount,
+
+      availableDate:
+        this.toDate(
+          data['availableDate']
+        ),
+
+      comment:
+        typeof data['comment'] === 'string'
+          ? data['comment']
+          : '',
+
+      acceptedAt:
+        this.toDate(
+          data['acceptedAt']
         )
     };
   }

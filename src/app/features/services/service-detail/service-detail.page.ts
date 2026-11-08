@@ -84,6 +84,7 @@ import {
 } from '../../../core/models/quote.model';
 
 import {
+  AcceptedQuoteSnapshot,
   ServiceRequest
 } from '../../../core/models/service-request.model';
 
@@ -168,6 +169,11 @@ export class ServiceDetailPage implements OnDestroy {
     Quote[] =
       [];
 
+
+  private acceptedQuoteRecord:
+    Quote | null =
+      null;
+
 /*
  * =========================================
  * PAGO WEBPAY PLUS
@@ -243,6 +249,19 @@ paymentError =
 
   trackingWaiting =
     false;
+
+
+  trackingUnavailable =
+    false;
+
+
+  trackingError =
+    '';
+
+
+  private trackingWaitTimer:
+    ReturnType<typeof setTimeout> | null =
+      null;
 
 
   technicianLatitude:
@@ -469,6 +488,9 @@ paymentError =
           );
 
 
+      await this.loadAcceptedQuoteRecord();
+
+
       /*
        * =====================================
        * EVALUACIÓN
@@ -568,6 +590,10 @@ paymentError =
             this.request.status;
 
 
+          const previousAcceptedQuoteId =
+            this.request.acceptedQuoteId;
+
+
           this.request = {
             ...this.request,
 
@@ -582,6 +608,11 @@ paymentError =
             acceptedQuoteId:
               data['acceptedQuoteId']
               ?? null,
+
+            acceptedQuoteSnapshot:
+              this.mapAcceptedQuoteSnapshot(
+                data['acceptedQuoteSnapshot']
+              ),
 
             latitude:
               typeof data['latitude'] === 'number'
@@ -629,6 +660,21 @@ paymentError =
           }
 
 
+          if (
+            this.request.acceptedQuoteId
+            &&
+            (
+              previousAcceptedQuoteId !==
+                this.request.acceptedQuoteId
+              ||
+              !this.acceptedQuote
+            )
+          ) {
+
+            void this.refreshQuotesForCurrentRequest();
+          }
+
+
           this.cdr.detectChanges();
         },
 
@@ -640,6 +686,93 @@ paymentError =
           );
         }
       );
+  }
+
+
+  private async refreshQuotesForCurrentRequest():
+    Promise<void> {
+
+
+    if (
+      !this.request
+    ) {
+
+      return;
+    }
+
+
+    try {
+
+      const [
+        quotes
+      ] =
+        await Promise.all([
+          this.quoteService
+            .getQuotesForRequest(
+              this.request.id,
+              this.request.clientId
+            ),
+          this.loadAcceptedQuoteRecord()
+        ]);
+
+
+      this.quotes =
+        quotes;
+
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo] Error actualizando presupuestos:',
+        error
+      );
+
+
+    } finally {
+
+      this.cdr
+        .detectChanges();
+    }
+  }
+
+
+  private async loadAcceptedQuoteRecord():
+    Promise<void> {
+
+
+    this.acceptedQuoteRecord =
+      null;
+
+
+    const acceptedQuoteId =
+      this.request
+        ?.acceptedQuoteId;
+
+
+    if (
+      !acceptedQuoteId
+    ) {
+
+      return;
+    }
+
+
+    try {
+
+      this.acceptedQuoteRecord =
+        await this.quoteService
+          .getQuoteById(
+            acceptedQuoteId
+          );
+
+
+    } catch (error) {
+
+      console.warn(
+        '[ServiGo] No fue posible recuperar directamente el presupuesto aceptado:',
+        error
+      );
+    }
   }
 
 
@@ -673,15 +806,30 @@ paymentError =
     }
 
 
+    this.trackingActive =
+      false;
+
+
     this.trackingWaiting =
       true;
+
+
+    this.trackingUnavailable =
+      false;
+
+
+    this.trackingError =
+      '';
+
+
+    this.startTrackingWaitTimer();
 
 
     const locationRef =
       doc(
         firestore,
         'technicianLocations',
-        this.request.assignedTechnicianId
+        this.request.id
       );
 
 
@@ -698,12 +846,12 @@ paymentError =
             this.trackingActive =
               false;
 
-            this.trackingWaiting =
-              true;
 
             this.clearTechnicianPosition();
 
+
             this.cdr.detectChanges();
+
 
             return;
           }
@@ -731,6 +879,9 @@ paymentError =
           }
 
 
+          this.clearTrackingWaitTimer();
+
+
           this.technicianLatitude =
             latitude;
 
@@ -751,6 +902,14 @@ paymentError =
 
           this.trackingWaiting =
             false;
+
+
+          this.trackingUnavailable =
+            false;
+
+
+          this.trackingError =
+            '';
 
 
           this.updateDistanceAndEta();
@@ -775,6 +934,9 @@ paymentError =
           );
 
 
+          this.clearTrackingWaitTimer();
+
+
           this.trackingActive =
             false;
 
@@ -783,9 +945,70 @@ paymentError =
             false;
 
 
+          this.trackingUnavailable =
+            false;
+
+
+          this.trackingError =
+            'No pudimos consultar la ubicación compartida. Intenta nuevamente en unos segundos.';
+
+
           this.cdr.detectChanges();
         }
       );
+  }
+
+
+  private startTrackingWaitTimer():
+    void {
+
+
+    this.clearTrackingWaitTimer();
+
+
+    this.trackingWaitTimer =
+      setTimeout(
+        () => {
+
+          if (
+            this.trackingActive
+          ) {
+
+            return;
+          }
+
+
+          this.trackingWaiting =
+            false;
+
+
+          this.trackingUnavailable =
+            true;
+
+
+          this.cdr.detectChanges();
+        },
+        8000
+      );
+  }
+
+
+  private clearTrackingWaitTimer():
+    void {
+
+
+    if (
+      this.trackingWaitTimer
+    ) {
+
+      clearTimeout(
+        this.trackingWaitTimer
+      );
+
+
+      this.trackingWaitTimer =
+        null;
+    }
   }
 
 
@@ -879,10 +1102,10 @@ paymentError =
       const technicianIcon =
         L.divIcon({
           className:
-            '',
+            'servigo-map-icon',
 
           html:
-            '<div style="width:42px;height:42px;border-radius:50%;background:#0b73e0;color:#fff;display:grid;place-items:center;font-size:21px;border:3px solid #fff;box-shadow:0 5px 18px rgba(15,23,42,.25)">🚗</div>',
+            '<div class="servigo-map-marker servigo-map-marker--technician" aria-label="Ubicación del técnico">🚗</div>',
 
           iconSize:
             [42, 42],
@@ -895,10 +1118,10 @@ paymentError =
       const destinationIcon =
         L.divIcon({
           className:
-            '',
+            'servigo-map-icon',
 
           html:
-            '<div style="width:42px;height:42px;border-radius:50%;background:#fff;color:#0b73e0;display:grid;place-items:center;font-size:21px;border:3px solid #0b73e0;box-shadow:0 5px 18px rgba(15,23,42,.20)">🏠</div>',
+            '<div class="servigo-map-marker servigo-map-marker--destination" aria-label="Destino del servicio">🏠</div>',
 
           iconSize:
             [42, 42],
@@ -1245,12 +1468,23 @@ paymentError =
     }
 
 
+    this.clearTrackingWaitTimer();
+
+
     this.trackingActive =
       false;
 
 
     this.trackingWaiting =
       false;
+
+
+    this.trackingUnavailable =
+      false;
+
+
+    this.trackingError =
+      '';
 
 
     this.clearTechnicianPosition();
@@ -1362,7 +1596,7 @@ paymentError =
       this.showCancellationForm = false;
       this.cancellationReason = '';
       this.stopLocationListener();
-      console.log('[ServiGo] Solicitud cancelada por el cliente.');
+      
     } catch (error: any) {
       console.error('[ServiGo] Error cancelando solicitud:', error);
       if (error?.code === 'functions/failed-precondition') {
@@ -1412,8 +1646,70 @@ paymentError =
 
 /*
  * =========================================
+ * PRESUPUESTOS VISIBLES
+ * =========================================
+ */
+
+get displayQuotes():
+  Quote[] {
+
+
+  const result =
+    [
+      ...this.quotes
+    ];
+
+
+  const acceptedQuote =
+    this.acceptedQuote;
+
+
+  if (
+    acceptedQuote
+    &&
+    !result.some(
+      quote =>
+        quote.id ===
+        acceptedQuote.id
+    )
+  ) {
+
+    result.push(
+      acceptedQuote
+    );
+  }
+
+
+  return result.sort(
+    (
+      a,
+      b
+    ) =>
+      (
+        b.createdAt
+          ?.getTime()
+        ?? 0
+      )
+      -
+      (
+        a.createdAt
+          ?.getTime()
+        ?? 0
+      )
+  );
+}
+
+
+/*
+ * =========================================
  * PRESUPUESTO ACEPTADO
  * =========================================
+ *
+ * Orden de recuperación:
+ *
+ * 1. Documento individual de quotes.
+ * 2. Resultado de la consulta de propuestas.
+ * 3. Snapshot autoritativo guardado al aceptar.
  */
 
 get acceptedQuote():
@@ -1430,16 +1726,261 @@ get acceptedQuote():
   }
 
 
-  return (
+  if (
+    this.acceptedQuoteRecord
+    &&
+    this.acceptedQuoteRecord.id ===
+      this.request.acceptedQuoteId
+  ) {
+
+    return this.acceptedQuoteRecord;
+  }
+
+
+  const quoteFromList =
     this.quotes.find(
       quote =>
         quote.id ===
         this.request
           ?.acceptedQuoteId
-    )
+    );
+
+
+  if (
+    quoteFromList
+  ) {
+
+    return quoteFromList;
+  }
+
+
+  return this.quoteFromAcceptedSnapshot(
+    this.request.acceptedQuoteSnapshot
     ?? null
   );
 }
+
+
+private quoteFromAcceptedSnapshot(
+  snapshot:
+    AcceptedQuoteSnapshot | null
+): Quote | null {
+
+
+  if (
+    !snapshot
+    ||
+    !this.request
+    ||
+    snapshot.quoteId !==
+      this.request.acceptedQuoteId
+    ||
+    snapshot.requestId !==
+      this.request.id
+    ||
+    snapshot.clientId !==
+      this.request.clientId
+    ||
+    !Number.isFinite(
+      snapshot.totalAmount
+    )
+    ||
+    snapshot.totalAmount <= 0
+  ) {
+
+    return null;
+  }
+
+
+  return {
+    id:
+      snapshot.quoteId,
+
+    requestId:
+      snapshot.requestId,
+
+    clientId:
+      snapshot.clientId,
+
+    technicianId:
+      snapshot.technicianId,
+
+    technicianName:
+      snapshot.technicianName,
+
+    laborAmount:
+      snapshot.laborAmount,
+
+    materialsAmount:
+      snapshot.materialsAmount,
+
+    otherAmount:
+      snapshot.otherAmount,
+
+    totalAmount:
+      snapshot.totalAmount,
+
+    availableDate:
+      snapshot.availableDate,
+
+    comment:
+      snapshot.comment,
+
+    status:
+      'accepted',
+
+    createdAt:
+      snapshot.acceptedAt,
+
+    updatedAt:
+      snapshot.acceptedAt
+  };
+}
+
+
+private mapAcceptedQuoteSnapshot(
+  value: unknown
+): AcceptedQuoteSnapshot | null {
+
+
+  if (
+    !value
+    ||
+    typeof value !== 'object'
+  ) {
+
+    return null;
+  }
+
+
+  const data =
+    value as Record<string, unknown>;
+
+
+  const quoteId =
+    typeof data['quoteId'] === 'string'
+      ? data['quoteId']
+      : '';
+
+
+  const requestId =
+    typeof data['requestId'] === 'string'
+      ? data['requestId']
+      : '';
+
+
+  const clientId =
+    typeof data['clientId'] === 'string'
+      ? data['clientId']
+      : '';
+
+
+  const technicianId =
+    typeof data['technicianId'] === 'string'
+      ? data['technicianId']
+      : '';
+
+
+  const totalAmount =
+    Number(
+      data['totalAmount']
+      ?? 0
+    );
+
+
+  if (
+    !quoteId
+    ||
+    !requestId
+    ||
+    !clientId
+    ||
+    !technicianId
+    ||
+    !Number.isFinite(
+      totalAmount
+    )
+    ||
+    totalAmount <= 0
+  ) {
+
+    return null;
+  }
+
+
+  return {
+    quoteId,
+    requestId,
+    clientId,
+    technicianId,
+
+    technicianName:
+      typeof data['technicianName'] === 'string'
+        ? data['technicianName']
+        : '',
+
+    laborAmount:
+      Number(
+        data['laborAmount']
+        ?? 0
+      ),
+
+    materialsAmount:
+      Number(
+        data['materialsAmount']
+        ?? 0
+      ),
+
+    otherAmount:
+      Number(
+        data['otherAmount']
+        ?? 0
+      ),
+
+    totalAmount,
+
+    availableDate:
+      this.toDateValue(
+        data['availableDate']
+      ),
+
+    comment:
+      typeof data['comment'] === 'string'
+        ? data['comment']
+        : '',
+
+    acceptedAt:
+      this.toDateValue(
+        data['acceptedAt']
+      )
+  };
+}
+
+
+private toDateValue(
+  value: unknown
+): Date | null {
+
+
+  if (
+    value instanceof Date
+  ) {
+
+    return value;
+  }
+
+
+  if (
+    value instanceof Timestamp
+  ) {
+
+    return value.toDate();
+  }
+
+
+  return null;
+}
+
 /*
  * =========================================
  * PAGAR SERVICIO
@@ -1771,10 +2312,7 @@ async payService():
         'Gracias. Tu evaluación fue registrada correctamente.';
 
 
-      console.log(
-        '[ServiGo] Evaluación registrada:',
-        result
-      );
+      
 
 
     } catch (error: any) {
@@ -1847,9 +2385,38 @@ async payService():
   }
 
 
+  isQuoteDetailAvailable(
+    quoteId: string
+  ): boolean {
+
+
+    return (
+      this.acceptedQuoteRecord
+        ?.id ===
+        quoteId
+      ||
+      this.quotes.some(
+        quote =>
+          quote.id ===
+          quoteId
+      )
+    );
+  }
+
+
   async openQuote(
     quote: Quote
   ): Promise<void> {
+
+
+    if (
+      !this.isQuoteDetailAvailable(
+        quote.id
+      )
+    ) {
+
+      return;
+    }
 
 
     await this.router.navigate(

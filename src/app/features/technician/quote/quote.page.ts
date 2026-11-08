@@ -353,10 +353,7 @@ export class QuotePage
         result;
 
 
-      console.log(
-        '[ServiGo] Oportunidad cargada para cotización:',
-        result
-      );
+      
 
 
     } catch (error) {
@@ -649,10 +646,7 @@ export class QuotePage
           });
 
 
-      console.log(
-        '[ServiGo] Presupuesto creado:',
-        this.quoteId
-      );
+      
 
 
       this.success =

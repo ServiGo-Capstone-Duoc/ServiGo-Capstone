@@ -1,0 +1,236 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background: var(--servigo-background);
+}
+
+.settings-page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 18px calc(var(--servigo-tabbar-height) + 34px);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+
+  span {
+    color: var(--servigo-blue);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 3px 0 0;
+    color: var(--servigo-text);
+    font-size: 26px;
+    font-weight: 850;
+  }
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--servigo-border);
+  border-radius: 14px;
+  background: var(--servigo-surface);
+  color: var(--servigo-text);
+  box-shadow: var(--servigo-shadow-card);
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 21px;
+  }
+}
+
+.settings-intro {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-lg);
+  background: var(--servigo-surface);
+  box-shadow: var(--servigo-shadow-card);
+
+  h2 {
+    margin: 0 0 5px;
+    color: var(--servigo-text);
+    font-size: 17px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--servigo-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.intro-icon,
+.theme-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--servigo-blue);
+  background: var(--servigo-blue-light);
+}
+
+.intro-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+
+  ion-icon {
+    font-size: 24px;
+  }
+}
+
+.theme-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.theme-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-md);
+  background: var(--servigo-surface);
+  color: var(--servigo-text);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--servigo-surface-hover);
+  }
+
+  &.active {
+    border-color: var(--servigo-blue);
+    box-shadow: var(--servigo-focus-ring);
+  }
+}
+
+.theme-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+
+  ion-icon {
+    font-size: 21px;
+  }
+}
+
+.theme-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    color: var(--servigo-text);
+    font-size: 14px;
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
+.selected-icon {
+  flex: 0 0 auto;
+  color: var(--servigo-blue);
+  font-size: 23px;
+}
+
+.theme-preview {
+  margin-top: 28px;
+}
+
+.preview-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--servigo-text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.preview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-md);
+  background: var(--servigo-surface-elevated);
+  box-shadow: var(--servigo-shadow-card);
+
+  > div:nth-child(2) {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  strong {
+    color: var(--servigo-text);
+    font-size: 13px;
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+    font-size: 11px;
+  }
+}
+
+.preview-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--servigo-blue);
+  color: var(--servigo-on-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.preview-status {
+  padding: 5px 8px;
+  border-radius: var(--servigo-radius-pill);
+  color: var(--servigo-success-strong) !important;
+  background: var(--servigo-success-soft);
+  font-size: 10px !important;
+  font-weight: 800;
+}
+
+.settings-note {
+  margin: 18px 0 0;
+  color: var(--servigo-text-secondary);
+  font-size: 12px;
+  text-align: center;
+
+  strong {
+    color: var(--servigo-text);
+  }
+}

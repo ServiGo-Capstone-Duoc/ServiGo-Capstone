@@ -1,0 +1,287 @@
+<ion-content [fullscreen]="true">
+  <main class="edit-profile-page">
+    <header class="page-header">
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Volver al perfil"
+        (click)="goBack()"
+      >
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+
+      <div>
+        <span>Mi cuenta</span>
+        <h1>Editar datos personales</h1>
+      </div>
+    </header>
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Cargando perfil...</span>
+    </div>
+
+    <ng-container *ngIf="!loading && profile">
+      <div
+        *ngIf="successMessage"
+        class="sg-form-message success"
+        role="status"
+      >
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        {{ successMessage }}
+      </div>
+
+      <div
+        *ngIf="errorMessage"
+        class="sg-form-message error"
+        role="alert"
+      >
+        <ion-icon name="close-circle-outline"></ion-icon>
+        {{ errorMessage }}
+      </div>
+
+      <section class="profile-card avatar-section">
+        <div class="avatar-preview">
+          <img
+            *ngIf="photoPreview"
+            [src]="photoPreview"
+            alt="Vista previa de la foto de perfil"
+          />
+
+          <ion-icon
+            *ngIf="!photoPreview"
+            name="person-outline"
+          ></ion-icon>
+        </div>
+
+        <div class="avatar-copy">
+          <h2>Foto de perfil</h2>
+          <p>JPG, PNG o WEBP. Tamaño máximo 5 MB.</p>
+
+          <div class="avatar-actions">
+            <label class="upload-button">
+              <ion-icon name="camera-outline"></ion-icon>
+              Cambiar foto
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                (change)="onPhotoSelected($event)"
+              />
+            </label>
+
+            <button
+              *ngIf="photoPreview"
+              type="button"
+              class="secondary-button danger-text"
+              [disabled]="removingPhoto || saving"
+              (click)="removePhoto()"
+            >
+              <ion-spinner
+                *ngIf="removingPhoto"
+                name="crescent"
+              ></ion-spinner>
+              <span *ngIf="!removingPhoto">Eliminar</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <form
+        class="profile-card profile-form"
+        [formGroup]="form"
+        (ngSubmit)="save()"
+      >
+        <div class="section-heading">
+          <div>
+            <span>Perfil cliente</span>
+            <h2>Información de contacto</h2>
+          </div>
+          <span class="required-note">* Obligatorio</span>
+        </div>
+
+        <ion-item lines="none">
+          <ion-input
+            label="Nombre visible *"
+            labelPlacement="stacked"
+            formControlName="displayName"
+            autocomplete="name"
+            maxlength="80"
+            placeholder="Nombre y apellido"
+          ></ion-input>
+        </ion-item>
+
+        <p
+          class="field-error"
+          *ngIf="form.controls.displayName.touched && form.controls.displayName.invalid"
+        >
+          Ingresa un nombre válido de al menos 2 caracteres.
+        </p>
+
+        <ion-item lines="none">
+          <ion-input
+            label="Correo electrónico"
+            labelPlacement="stacked"
+            [value]="profile.email"
+            type="email"
+            [readonly]="true"
+          ></ion-input>
+        </ion-item>
+
+        <p class="field-help">
+          El correo de acceso se administra desde Seguridad.
+        </p>
+
+        <ion-item lines="none">
+          <ion-input
+            label="Teléfono"
+            labelPlacement="stacked"
+            formControlName="phone"
+            type="tel"
+            autocomplete="tel"
+            maxlength="24"
+            placeholder="+56 9 1234 5678"
+          ></ion-input>
+        </ion-item>
+
+        <p
+          class="field-error"
+          *ngIf="form.controls.phone.touched && form.controls.phone.invalid"
+        >
+          Ingresa un teléfono chileno válido.
+        </p>
+
+        <div class="form-grid">
+          <ion-item lines="none">
+            <ion-input
+              label="Comuna"
+              labelPlacement="stacked"
+              formControlName="commune"
+              maxlength="80"
+              placeholder="Ej. Puente Alto"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item lines="none">
+            <ion-select
+              label="Contacto preferido"
+              labelPlacement="stacked"
+              formControlName="preferredContact"
+              interface="popover"
+            >
+              <ion-select-option value="chat">
+                Chat ServiGo
+              </ion-select-option>
+              <ion-select-option value="phone">
+                Teléfono
+              </ion-select-option>
+              <ion-select-option value="email">
+                Correo
+              </ion-select-option>
+            </ion-select>
+          </ion-item>
+        </div>
+
+        <ion-item lines="none">
+          <ion-textarea
+            label="Dirección principal"
+            labelPlacement="stacked"
+            formControlName="address"
+            maxlength="160"
+            [autoGrow]="true"
+            placeholder="Calle, número y referencia"
+          ></ion-textarea>
+        </ion-item>
+
+        <p class="privacy-note">
+          Tu dirección solo se utiliza para facilitar solicitudes de servicio. Puedes modificarla antes de confirmar cada solicitud.
+        </p>
+
+        <ion-button
+          expand="block"
+          type="submit"
+          [disabled]="form.invalid || saving || removingPhoto"
+        >
+          <ion-spinner
+            *ngIf="saving"
+            name="crescent"
+          ></ion-spinner>
+          <span *ngIf="!saving">Guardar cambios</span>
+        </ion-button>
+      </form>
+
+      <section
+        class="profile-card technician-readonly"
+        *ngIf="profile.roles.includes('tecnico')"
+      >
+        <div>
+          <span>Perfil profesional</span>
+          <h2>Administrado por ServiGo</h2>
+          <p>
+            Tus especialidades, cobertura y antecedentes técnicos solo pueden ser modificados por un administrador para mantener la validación del perfil.
+          </p>
+        </div>
+      </section>
+
+      <section class="danger-zone">
+        <div>
+          <span>Zona de seguridad</span>
+          <h2>Eliminar cuenta</h2>
+          <p>
+            Esta acción elimina tu perfil y acceso. No está disponible mientras existan servicios activos y no se puede deshacer.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="danger-outline-button"
+          (click)="toggleDeletePanel()"
+        >
+          <ion-icon name="trash-outline"></ion-icon>
+          {{ showDeletePanel ? 'Cancelar' : 'Solicitar eliminación' }}
+        </button>
+
+        <form
+          *ngIf="showDeletePanel"
+          class="delete-form"
+          [formGroup]="deleteForm"
+          (ngSubmit)="deleteAccount()"
+        >
+          <ion-item lines="none">
+            <ion-input
+              label="Confirma tu correo"
+              labelPlacement="stacked"
+              formControlName="email"
+              type="email"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item lines="none">
+            <ion-input
+              label="Escribe ELIMINAR"
+              labelPlacement="stacked"
+              formControlName="confirmation"
+              autocomplete="off"
+              placeholder="ELIMINAR"
+            ></ion-input>
+          </ion-item>
+
+          <ion-button
+            expand="block"
+            color="danger"
+            type="submit"
+            [disabled]="deleteForm.invalid || deleting"
+          >
+            <ion-spinner
+              *ngIf="deleting"
+              name="crescent"
+            ></ion-spinner>
+            <span *ngIf="!deleting">Eliminar definitivamente</span>
+          </ion-button>
+        </form>
+      </section>
+    </ng-container>
+  </main>
+</ion-content>

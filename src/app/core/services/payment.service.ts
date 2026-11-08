@@ -145,25 +145,7 @@ export class PaymentService {
     }
 
 
-    console.log(
-      '[ServiGo Payment] Webpay creado:',
-      {
-        paymentId:
-          response.data.paymentId,
-
-        requestId:
-          response.data.requestId,
-
-        amount:
-          response.data.amount,
-
-        status:
-          response.data.status,
-
-        buyOrder:
-          response.data.buyOrder
-      }
-    );
+    
 
 
     return response.data;
@@ -231,10 +213,7 @@ export class PaymentService {
       });
 
 
-    console.log(
-      '[ServiGo Payment] Resultado Webpay:',
-      response.data
-    );
+    
 
 
     return response.data;

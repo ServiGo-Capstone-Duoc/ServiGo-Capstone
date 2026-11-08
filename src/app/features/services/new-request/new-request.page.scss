@@ -48,14 +48,13 @@ ion-content {
   border: 0;
   border-radius: 13px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color:
     var(--servigo-blue);
 
   box-shadow:
-    0 5px 16px
-    rgba(31, 41, 55, 0.06);
+    var(--servigo-shadow-card);
 
   cursor: pointer;
 
@@ -116,17 +115,17 @@ ion-content {
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   border-radius: 20px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   ion-input,
   ion-textarea {
     margin-top: 10px;
 
-    --background: #f7f9fc;
+    --background: var(--servigo-input-background);
 
     --padding-start: 13px;
     --padding-end: 13px;
@@ -218,11 +217,11 @@ ion-content {
     10px;
 
   border:
-    1px solid #dde7f3;
+    1px solid var(--servigo-border);
 
   border-radius: 14px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color:
     var(--servigo-text);
@@ -287,11 +286,11 @@ ion-content {
   padding: 12px;
 
   border:
-    1px dashed #ccd8e7;
+    1px dashed var(--servigo-border-strong);
 
   border-radius: 14px;
 
-  background: #fafcff;
+  background: var(--servigo-surface-soft);
 
   div:last-child {
     display: flex;
@@ -353,7 +352,7 @@ ion-content {
 
   border-radius: 13px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color:
     var(--servigo-blue);
@@ -376,7 +375,7 @@ ion-content {
 
   margin-top: 9px;
 
-  color: #15803d;
+  color: var(--servigo-success-strong);
 
   font-size: 10px;
   font-weight: 700;
@@ -406,11 +405,11 @@ ion-content {
     min-height: 38px;
 
     border:
-      1px solid #dde7f3;
+      1px solid var(--servigo-border);
 
     border-radius: 12px;
 
-    background: #ffffff;
+    background: var(--servigo-surface);
 
     color:
       var(--servigo-text-secondary);
@@ -457,11 +456,11 @@ ion-content {
     12px;
 
   border:
-    1px solid #dde7f3;
+    1px solid var(--servigo-border);
 
   border-radius: 13px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: left;
 
@@ -497,9 +496,9 @@ ion-content {
   }
 
   &.urgent.selected {
-    border-color: #ef4444;
+    border-color: var(--servigo-error);
 
-    background: #fef2f2;
+    background: var(--servigo-error-soft);
   }
 }
 
@@ -510,7 +509,7 @@ ion-content {
   flex: 0 0 auto;
 
   border:
-    2px solid #cbd5e1;
+    2px solid var(--servigo-border-strong);
 
   border-radius: 50%;
 }
@@ -528,7 +527,7 @@ ion-content {
 
   .selection-dot {
     border-color:
-      #ef4444;
+      var(--servigo-error);
   }
 }
 
@@ -541,7 +540,7 @@ ion-content {
     4px
     8px;
 
-  color: #dc2626;
+  color: var(--servigo-error);
 
   font-size: 10px;
   font-weight: 600;
@@ -555,13 +554,13 @@ ion-content {
     13px;
 
   border:
-    1px solid #fecaca;
+    1px solid var(--servigo-error-border);
 
   border-radius: 12px;
 
-  background: #fef2f2;
+  background: var(--servigo-error-soft);
 
-  color: #b91c1c;
+  color: var(--servigo-error-strong);
 
   font-size: 11px;
   font-weight: 700;
@@ -596,12 +595,10 @@ ion-content {
 
   border-radius: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   box-shadow:
-    0 10px
-    30px
-    rgba(31, 41, 55, 0.06);
+    var(--servigo-shadow-card);
 
   h1 {
     margin:
@@ -629,7 +626,7 @@ ion-content {
 }
 
 .success-icon {
-  color: #22c55e;
+  color: var(--servigo-success);
 
   ion-icon {
     font-size: 60px;
@@ -660,7 +657,7 @@ ion-content {
 
   border-radius: 13px;
 
-  background: #f7f9fc;
+  background: var(--servigo-input-background);
 
   span {
     color:
@@ -705,7 +702,7 @@ ion-content {
 .location-button, .confirm-location-button { min-height: 48px; border-radius: var(--servigo-radius-md); font-size: 13px; font-weight: 800; }
 .time-slots { gap: 9px; }
 .urgency-option { min-height: 54px; border-radius: var(--servigo-radius-md); }
-.publish-button { min-height: 52px; border-radius: var(--servigo-radius-md); font-size: 14px; box-shadow: 0 10px 22px rgba(11,115,224,.18); }
+.publish-button { min-height: 52px; border-radius: var(--servigo-radius-md); font-size: 14px; box-shadow: 0 10px 22px rgba(var(--servigo-blue-rgb), .18); }
 .field-error, .location-error, .form-error { font-size: 12px; line-height: 1.4; }
 .success-card { border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card); }
 .success-card h1 { font-size: 26px; }
@@ -732,7 +729,7 @@ ion-content {
 
   overflow: hidden;
 
-  background: #e9eef5;
+  background: var(--servigo-surface-muted);
 
   position: relative;
 
@@ -772,15 +769,15 @@ ion-content {
 
   border-radius: 50% 50% 50% 0;
 
-  background: #0879ee;
+  background: var(--servigo-blue);
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 
   font-size: 20px;
 
   box-shadow:
     0 6px 16px
-    rgba(8, 121, 238, 0.28);
+    rgba(var(--servigo-blue-rgb), 0.28);
 
   transform:
     rotate(-45deg);
@@ -800,13 +797,12 @@ ion-content {
   border: 0 !important;
 
   box-shadow:
-    0 4px 14px
-    rgba(23, 32, 51, 0.12) !important;
+    var(--servigo-shadow-floating) !important;
 }
 
 
 :host ::ng-deep .leaflet-control-zoom a {
-  color: #172033 !important;
+  color: var(--servigo-text) !important;
 
   border: 0 !important;
 }
@@ -824,14 +820,13 @@ ion-content {
   margin-top: 14px;
   padding: 16px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  border: 1px solid #e5eaf1;
+  border: 1px solid var(--servigo-border);
   border-radius: 18px;
 
   box-shadow:
-    0 8px 24px
-    rgba(23, 32, 51, 0.06);
+    var(--servigo-shadow-card);
 }
 
 
@@ -860,7 +855,7 @@ ion-content {
 
   margin-bottom: 6px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 11px;
   font-weight: 800;
@@ -875,7 +870,7 @@ ion-content {
 .location-preview-heading h3 {
   margin: 0;
 
-  color: #172033;
+  color: var(--servigo-text);
 
   font-size: 18px;
   font-weight: 800;
@@ -894,9 +889,9 @@ ion-content {
 
   padding: 9px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
-  background: #eaf4ff;
+  background: var(--servigo-blue-light);
 
   border-radius: 12px;
 
@@ -914,11 +909,11 @@ ion-content {
   margin: 0 0 14px;
   padding: 12px 14px 12px 38px;
 
-  color: #344054;
+  color: var(--servigo-text);
 
-  background: #f7f9fc;
+  background: var(--servigo-input-background);
 
-  border: 1px solid #e8edf4;
+  border: 1px solid var(--servigo-border);
   border-radius: 12px;
 
   font-size: 13px;
@@ -936,7 +931,7 @@ ion-content {
   left: 14px;
   top: 50%;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 18px;
   font-weight: 800;
@@ -958,14 +953,13 @@ ion-content {
 
   overflow: hidden;
 
-  background: #e9eef5;
+  background: var(--servigo-surface-muted);
 
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--servigo-border);
   border-radius: 16px;
 
   box-shadow:
-    0 4px 14px
-    rgba(23, 32, 51, 0.06);
+    var(--servigo-shadow-card);
 }
 
 
@@ -979,9 +973,9 @@ ion-content {
   margin: 0 0 14px;
   padding: 11px 12px 11px 36px;
 
-  color: #667085;
+  color: var(--servigo-text-secondary);
 
-  background: #f8fafc;
+  background: var(--servigo-surface-soft);
 
   border-radius: 12px;
 
@@ -1000,7 +994,7 @@ ion-content {
   left: 13px;
   top: 10px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 16px;
   font-weight: 800;
@@ -1022,11 +1016,11 @@ ion-content {
   justify-content: center;
   gap: 8px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  border: 1.5px solid #0879ee;
+  border: 1.5px solid var(--servigo-blue);
   border-radius: 14px;
 
   font-size: 13px;
@@ -1058,11 +1052,11 @@ ion-content {
    ========================================================== */
 
 .confirm-location-button.confirmed {
-  color: #137a42;
+  color: var(--servigo-success-strong);
 
-  background: #edf9f2;
+  background: var(--servigo-success-soft);
 
-  border-color: #b7e5ca;
+  border-color: var(--servigo-success-border);
 }
 
 
@@ -1074,11 +1068,11 @@ ion-content {
   align-items: flex-start;
   gap: 8px;
 
-  color: #137a42;
+  color: var(--servigo-success-strong);
 
-  background: #edf9f2;
+  background: var(--servigo-success-soft);
 
-  border: 1px solid #ccebd8;
+  border: 1px solid var(--servigo-success-border);
   border-radius: 12px;
 
   font-size: 11px;
@@ -1093,7 +1087,7 @@ ion-content {
 
   margin-top: 1px;
 
-  color: #16a05d;
+  color: var(--servigo-success);
 
   font-size: 17px;
 }
@@ -1105,9 +1099,9 @@ ion-content {
 .photo-upload {
   margin-top: 14px;
   padding: 14px;
-  border: 1px solid #e5eaf1;
+  border: 1px solid var(--servigo-border);
   border-radius: 16px;
-  background: #f8fafc;
+  background: var(--servigo-surface-soft);
 }
 .photo-upload-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
 .photo-upload-heading > div { display:flex; flex-direction:column; gap:3px; }
@@ -1115,10 +1109,10 @@ ion-content {
 .photo-upload-heading span { color:var(--servigo-text-secondary); font-size:11px; line-height:1.35; }
 .photo-counter { flex:0 0 auto; padding:4px 8px; border-radius:999px; background:var(--servigo-blue-light); color:var(--servigo-blue) !important; font-weight:800; }
 .photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; }
-.photo-preview { position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:12px; background:#e9eef5; border:1px solid #e1e7ef; }
+.photo-preview { position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:12px; background:var(--servigo-surface-muted); border:1px solid var(--servigo-border); }
 .photo-preview img { width:100%; height:100%; object-fit:cover; display:block; }
-.photo-remove { position:absolute; top:5px; right:5px; width:28px; height:28px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; background:rgba(20,27,40,.82); color:#fff; font-size:20px; line-height:1; }
-.photo-add-button { min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px; border:1.5px dashed #a9bfd8; border-radius:13px; background:#fff; color:var(--servigo-blue); font-size:12px; font-weight:800; cursor:pointer; }
+.photo-remove { position:absolute; top:5px; right:5px; width:28px; height:28px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; background:var(--servigo-media-overlay); color:var(--servigo-on-media); font-size:20px; line-height:1; }
+.photo-add-button { min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px; border:1.5px dashed var(--servigo-border-strong); border-radius:13px; background:var(--servigo-surface); color:var(--servigo-blue); font-size:12px; font-weight:800; cursor:pointer; }
 .photo-add-button ion-icon { font-size:19px; }
 .photo-add-button input { display:none; }
 .photo-add-button.disabled { opacity:.5; cursor:not-allowed; }

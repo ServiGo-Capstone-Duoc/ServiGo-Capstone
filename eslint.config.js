@@ -26,6 +26,10 @@ module.exports = tseslint.config(
   {
     files: ["**/*.html"],
     extends: [...angular.configs.templateRecommended],
-    rules: {},
+    rules: {
+      // ServiGo conserva *ngIf/*ngFor para evitar una migración cosmética
+      // masiva sin beneficio funcional. Angular 22 sigue soportándolos.
+      "@angular-eslint/template/prefer-control-flow": "off",
+    },
   }
 );

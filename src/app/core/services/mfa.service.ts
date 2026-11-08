@@ -90,19 +90,7 @@ export class MfaService {
     this.requireUser();
 
 
-  console.log(
-    '[ServiGo MFA] Usuario actual:',
-    {
-      uid:
-        user.uid,
-
-      email:
-        user.email,
-
-      emailVerified:
-        user.emailVerified
-    }
-  );
+  
 
 
   const factors =
@@ -112,10 +100,7 @@ export class MfaService {
       .enrolledFactors;
 
 
-  console.log(
-    '[ServiGo MFA] Factores enrolados:',
-    factors.length
-  );
+  
 
 
   return {

@@ -378,9 +378,7 @@ export class HomePage
       );
 
 
-    console.log(
-      '[ServiGo] Home técnico activo. Recargando dashboard...'
-    );
+    
 
 
     await this.loadDashboard();
@@ -609,34 +607,19 @@ export class HomePage
        * =====================================
        */
 
-      console.log(
-        '[ServiGo] Oportunidades backend:',
-        this.opportunities
-      );
+      
 
 
-      console.log(
-        '[ServiGo] Trabajos activos:',
-        this.activeJobs
-      );
+      
 
 
-      console.log(
-        '[ServiGo] Presupuestos enviados:',
-        this.quotes
-      );
+      
 
 
-      console.log(
-        '[ServiGo] Predicciones de demanda cargadas:',
-        this.demandPredictions.length
-      );
+      
 
 
-      console.log(
-        '[ServiGo] Demanda seleccionada:',
-        this.demandAnalytics
-      );
+      
 
 
       if (
@@ -644,9 +627,7 @@ export class HomePage
           0
       ) {
 
-        console.log(
-          '[ServiGo] No existen oportunidades disponibles.'
-        );
+        
       }
 
 
@@ -655,9 +636,7 @@ export class HomePage
           0
       ) {
 
-        console.log(
-          '[ServiGo] No existen recomendaciones de demanda disponibles.'
-        );
+        
       }
 
 
@@ -934,19 +913,7 @@ export class HomePage
         );
 
 
-    console.log(
-      '[ServiGo] Predicción seleccionada:',
-      {
-        category:
-          this.selectedDemandCategory,
-
-        timeBand:
-          this.selectedDemandTimeBand,
-
-        prediction:
-          this.demandAnalytics
-      }
-    );
+    
   }
 
 
@@ -1089,10 +1056,7 @@ export class HomePage
     void {
 
 
-    console.log(
-      '[ServiGo] Ver oportunidades:',
-      this.opportunities
-    );
+    
   }
 
 
@@ -1123,9 +1087,6 @@ export class HomePage
     void {
 
 
-    console.log(
-      '[ServiGo] Presupuestos enviados:',
-      this.quotes
-    );
+    
   }
 }

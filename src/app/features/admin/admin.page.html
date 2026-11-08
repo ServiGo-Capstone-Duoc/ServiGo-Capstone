@@ -10,7 +10,7 @@
         class="admin-logo"
       />
 
-      <div>
+      <div class="admin-title">
 
         <span>
           Administración
@@ -21,6 +21,15 @@
         </h1>
 
       </div>
+
+      <button
+        type="button"
+        class="technicians-button"
+        (click)="manageTechnicians()"
+      >
+        <ion-icon name="people-outline"></ion-icon>
+        Gestionar técnicos
+      </button>
 
     </header>
 
@@ -360,50 +369,154 @@
       </div>
 
 
-      <div
-        class="detail-card"
-      >
+      <div class="detail-card documents-review-card">
 
-        <strong>
-          Documentación declarada
-        </strong>
+        <div class="detail-title documents-title">
 
+          <ion-icon
+            name="shield-checkmark-outline"
+          ></ion-icon>
 
-        <div
-          class="document-status"
-        >
+          <div>
+            <strong>
+              Documentación de respaldo
+            </strong>
 
-          <span>
-            Identificación vigente
-          </span>
+            <span>
+              {{ applicationDocuments.length }}
+              archivos recuperados
+            </span>
+          </div>
 
-          <strong>
+          <span
+            class="review-status"
+            [class.ready]="documentsReady"
+          >
             {{
-              application.hasIdentification
-                ? 'Sí'
-                : 'No'
+              documentsReady
+                ? 'Mínimo completo'
+                : 'Revisión pendiente'
             }}
-          </strong>
+          </span>
 
         </div>
 
+        <div
+          class="documents-loading"
+          *ngIf="documentsLoading"
+        >
+          <ion-spinner name="crescent"></ion-spinner>
+          <span>Recuperando archivos protegidos...</span>
+        </div>
 
         <div
-          class="document-status"
+          class="document-warning"
+          *ngIf="documentErrorMessage"
+          role="alert"
         >
+          {{ documentErrorMessage }}
+        </div>
 
+        <div
+          class="document-warning"
+          *ngIf="
+            !documentsLoading &&
+            !documentErrorMessage &&
+            !documentsReady
+          "
+        >
+          Debe existir una identificación y al menos un título,
+          certificado, licencia o respaldo profesional antes de aprobar.
+        </div>
+
+        <div
+          class="review-document-list"
+          *ngIf="
+            !documentsLoading &&
+            applicationDocuments.length > 0
+          "
+        >
+          <article
+            class="review-document"
+            *ngFor="let fileDocument of applicationDocuments"
+          >
+            <div class="review-document-icon">
+              <ion-icon name="document-text-outline"></ion-icon>
+            </div>
+
+            <div class="review-document-copy">
+              <span>
+                {{ categoryLabel(fileDocument.category) }}
+              </span>
+
+              <strong>
+                {{ fileDocument.originalName }}
+              </strong>
+
+              <small>
+                {{ formatFileSize(fileDocument.size) }}
+                ·
+                {{ fileDocument.contentType }}
+              </small>
+            </div>
+
+            <div class="review-document-actions">
+              <button
+                type="button"
+                title="Abrir documento"
+                [disabled]="openingDocumentPath !== ''"
+                (click)="openDocument(fileDocument)"
+              >
+                <ion-spinner
+                  *ngIf="
+                    openingDocumentPath ===
+                    fileDocument.storagePath
+                  "
+                  name="crescent"
+                ></ion-spinner>
+
+                <ion-icon
+                  *ngIf="
+                    openingDocumentPath !==
+                    fileDocument.storagePath
+                  "
+                  name="eye-outline"
+                ></ion-icon>
+              </button>
+
+              <button
+                type="button"
+                title="Descargar documento"
+                [disabled]="openingDocumentPath !== ''"
+                (click)="openDocument(fileDocument, true)"
+              >
+                <ion-icon name="download-outline"></ion-icon>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div class="declared-document-summary">
           <span>
-            Certificaciones
+            Identificación declarada:
+            <strong>
+              {{ application.identificationDocumentCount }}
+            </strong>
           </span>
 
-          <strong>
-            {{
-              application.hasCertifications
-                ? 'Sí'
-                : 'No'
-            }}
-          </strong>
+          <span>
+            Respaldos profesionales declarados:
+            <strong>
+              {{ application.professionalDocumentCount }}
+            </strong>
+          </span>
 
+          <span>
+            Adicionales declarados:
+            <strong>
+              {{ application.additionalDocumentCount }}
+            </strong>
+          </span>
         </div>
 
       </div>
@@ -456,7 +569,11 @@
 
         <ion-button
           expand="block"
-          [disabled]="actionLoading"
+          [disabled]="
+            actionLoading ||
+            documentsLoading ||
+            !documentsReady
+          "
           (click)="approve()"
         >
 

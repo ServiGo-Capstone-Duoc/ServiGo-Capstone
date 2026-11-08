@@ -8,6 +8,10 @@ import {
 } from '@angular/router';
 
 import {
+  UserRole
+} from '../models/user.model';
+
+import {
   AuthService
 } from '../services/auth.service';
 
@@ -15,217 +19,96 @@ import {
   ProfileService
 } from '../services/profile.service';
 
-import {
-  UserRole
-} from '../models/user.model';
-
-
 export const roleGuard: CanActivateFn =
-  async (
-    route
-  ) => {
-
+  async route => {
 
     const authService =
       inject(
         AuthService
       );
 
-
     const profileService =
       inject(
         ProfileService
       );
-
 
     const router =
       inject(
         Router
       );
 
-
     const user =
       await authService
         .waitForAuthReady();
 
-
-    /*
-     * =========================================
-     * SIN SESIÓN
-     * =========================================
-     */
-
     if (
       !user
     ) {
-
-      console.warn(
-        '[ServiGo Guard] Usuario no autenticado.'
-      );
-
-
-      return router
-        .createUrlTree(
-          [
-            '/login'
-          ]
-        );
-    }
-
-
-    /*
-     * =========================================
-     * PERFIL
-     * =========================================
-     */
-
-    const profile =
-      await profileService
-        .getProfile(
-          user.uid
-        );
-
-
-    console.log(
-      '[ServiGo Guard] Evaluando acceso:',
-      {
-        uid:
-          user.uid,
-
-        profile,
-
-        requiredRoles:
-          route.data?.[
-            'roles'
-          ]
-          ?? []
-      }
-    );
-
-
-    /*
-     * =========================================
-     * PERFIL INVÁLIDO
-     * =========================================
-     */
-
-    if (
-      !profile
-    ) {
-
-      console.warn(
-        '[ServiGo Guard] Perfil no encontrado.'
-      );
-
-
-      return router
-        .createUrlTree(
-          [
-            '/app/home'
-          ]
-        );
-    }
-
-
-    if (
-      profile.status !==
-      'active'
-    ) {
-
-      console.warn(
-        '[ServiGo Guard] Perfil no activo:',
-        profile.status
-      );
-
-
-      return router
-        .createUrlTree(
-          [
-            '/app/home'
-          ]
-        );
-    }
-
-
-    /*
-     * =========================================
-     * ROLES REQUERIDOS
-     * =========================================
-     */
-
-    const requiredRoles =
-      (
-        route.data?.[
-          'roles'
+      return router.createUrlTree(
+        [
+          '/login'
         ]
-        ??
-        []
-      ) as UserRole[];
-
-
-    if (
-      requiredRoles.length ===
-      0
-    ) {
-
-      return true;
+      );
     }
 
+    try {
 
-    /*
-     * =========================================
-     * VALIDAR ROL
-     * =========================================
-     */
+      const profile =
+        await profileService
+          .getProfile(
+            user.uid
+          );
 
-    const authorized =
-      requiredRoles
-        .some(
-          role =>
-            profile.roles
-              .includes(
-                role
-              )
+      if (
+        !profile
+        || profile.status !== 'active'
+      ) {
+        return router.createUrlTree(
+          [
+            '/app/home'
+          ]
         );
-
-
-    console.log(
-      '[ServiGo Guard] Resultado:',
-      {
-        rolesUsuario:
-          profile.roles,
-
-        rolesRequeridos:
-          requiredRoles,
-
-        authorized
       }
-    );
 
+      const requiredRoles =
+        (
+          route.data?.['roles']
+          ?? []
+        ) as UserRole[];
 
-    if (
-      authorized
-    ) {
+      if (
+        requiredRoles.length === 0
+        || requiredRoles.some(
+          role =>
+            profile.roles.includes(
+              role
+            )
+        )
+      ) {
+        return true;
+      }
 
-      return true;
-    }
+      console.warn(
+        '[ServiGo Guard] Acceso denegado por rol.'
+      );
 
-
-    /*
-     * =========================================
-     * ACCESO DENEGADO
-     * =========================================
-     */
-
-    console.warn(
-      '[ServiGo Guard] Acceso denegado por rol.'
-    );
-
-
-    return router
-      .createUrlTree(
+      return router.createUrlTree(
         [
           '/app/home'
         ]
       );
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo Guard] No fue posible validar el rol:',
+        error
+      );
+
+      return router.createUrlTree(
+        [
+          '/app/home'
+        ]
+      );
+    }
   };

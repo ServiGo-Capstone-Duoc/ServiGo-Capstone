@@ -1,0 +1,347 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background: var(--servigo-background);
+}
+
+.edit-profile-page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 18px calc(var(--servigo-tabbar-height) + 34px);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+
+  span {
+    color: var(--servigo-blue);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 3px 0 0;
+    color: var(--servigo-text);
+    font-size: 24px;
+    font-weight: 850;
+  }
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--servigo-border);
+  border-radius: 14px;
+  background: var(--servigo-surface);
+  color: var(--servigo-text);
+  box-shadow: var(--servigo-shadow-card);
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 21px;
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 20px;
+  color: var(--servigo-text-secondary);
+  font-size: 13px;
+}
+
+.sg-form-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  ion-icon {
+    flex: 0 0 auto;
+    font-size: 19px;
+  }
+}
+
+.profile-card,
+.danger-zone {
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-lg);
+  background: var(--servigo-surface);
+  box-shadow: var(--servigo-shadow-card);
+}
+
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar-preview {
+  width: 86px;
+  height: 86px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid var(--servigo-border);
+  border-radius: 26px;
+  background: var(--servigo-blue-light);
+  color: var(--servigo-blue);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  ion-icon {
+    font-size: 38px;
+  }
+}
+
+.avatar-copy {
+  min-width: 0;
+  flex: 1;
+
+  h2 {
+    margin: 0 0 4px;
+    color: var(--servigo-text);
+    font-size: 16px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--servigo-text-secondary);
+    font-size: 11px;
+  }
+}
+
+.avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.upload-button,
+.secondary-button,
+.danger-outline-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.upload-button {
+  color: var(--servigo-on-primary);
+  background: var(--servigo-blue);
+
+  input {
+    display: none;
+  }
+}
+
+.secondary-button {
+  border: 1px solid var(--servigo-border);
+  background: var(--servigo-surface-soft);
+  color: var(--servigo-text);
+}
+
+.danger-text {
+  color: var(--servigo-error-strong);
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  span:first-child {
+    color: var(--servigo-blue);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 3px 0 0;
+    color: var(--servigo-text);
+    font-size: 18px;
+  }
+}
+
+.required-note {
+  color: var(--servigo-text-tertiary);
+  font-size: 10px;
+}
+
+.profile-form {
+  ion-item {
+    --background: var(--servigo-input-background);
+    --border-radius: 14px;
+    --padding-start: 13px;
+    --inner-padding-end: 13px;
+    margin-bottom: 10px;
+    border: 1px solid var(--servigo-border);
+    border-radius: 14px;
+  }
+
+  ion-button[type='submit'] {
+    min-height: 48px;
+    margin-top: 16px;
+    font-weight: 850;
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.field-help,
+.field-error,
+.privacy-note {
+  margin: -4px 3px 10px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.field-help,
+.privacy-note {
+  color: var(--servigo-text-tertiary);
+}
+
+.field-error {
+  color: var(--servigo-error-strong);
+  font-weight: 700;
+}
+
+.technician-readonly {
+  border-left: 4px solid var(--servigo-warning);
+
+  span {
+    color: var(--servigo-warning-strong);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 4px 0 7px;
+    color: var(--servigo-text);
+    font-size: 16px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--servigo-text-secondary);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+}
+
+.danger-zone {
+  border-color: var(--servigo-error-border);
+  background: var(--servigo-error-soft);
+  box-shadow: none;
+
+  > div:first-child {
+    span {
+      color: var(--servigo-error-strong);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 4px 0 6px;
+      color: var(--servigo-text);
+      font-size: 17px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--servigo-text-secondary);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+  }
+}
+
+.danger-outline-button {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid var(--servigo-error);
+  background: transparent;
+  color: var(--servigo-error-strong);
+}
+
+.delete-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--servigo-error-border);
+
+  ion-item {
+    --background: var(--servigo-surface);
+    --border-radius: 14px;
+    border: 1px solid var(--servigo-border);
+    border-radius: 14px;
+  }
+
+  ion-button {
+    min-height: 48px;
+    font-weight: 850;
+  }
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 520px) {
+  .avatar-section {
+    align-items: flex-start;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .avatar-section {
+    flex-direction: column;
+  }
+}

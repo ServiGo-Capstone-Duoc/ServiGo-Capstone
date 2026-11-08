@@ -10,5 +10,5 @@ export const environment = {
    */
 
   useFirebaseEmulators:
-    true
+    false,
 };

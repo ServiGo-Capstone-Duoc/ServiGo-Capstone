@@ -30,9 +30,77 @@ service cloud.firestore {
         && role in currentUser().data.roles;
     }
 
+
+    function hasActiveAccount() {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        )
+        && currentUser().data.status == 'active';
+    }
+
     function isAdmin() {
-      return hasRole('administrador')
-        || hasRole('superadmin');
+      return hasActiveAccount()
+        && (
+          hasRole('administrador')
+          || hasRole('superadmin')
+        );
+    }
+
+    function isSuperAdmin() {
+      return hasActiveAccount()
+        && hasRole('superadmin');
+    }
+
+    function isRegularAdmin() {
+      return hasActiveAccount()
+        && hasRole('administrador')
+        && !hasRole('superadmin');
+    }
+
+    function validRoles(roles) {
+      return roles is list
+        && roles.size() >= 1
+        && roles.size() <= 4
+        && roles.hasOnly([
+          'cliente',
+          'tecnico',
+          'administrador',
+          'superadmin'
+        ])
+        && 'cliente' in roles;
+    }
+
+    function hasTechnicianRole(userId) {
+      return exists(
+        /databases/$(database)/documents/users/$(userId)
+      )
+      && get(
+        /databases/$(database)/documents/users/$(userId)
+      ).data.roles is list
+      && 'tecnico' in get(
+        /databases/$(database)/documents/users/$(userId)
+      ).data.roles;
+    }
+
+    function isActiveTechnicianAccount(userId) {
+      return hasTechnicianRole(userId)
+        && get(
+          /databases/$(database)/documents/users/$(userId)
+        ).data.status == 'active';
+    }
+
+
+    function isActiveTechnicianAccountAfter(userId) {
+      return getAfter(
+        /databases/$(database)/documents/users/$(userId)
+      ).data.status == 'active'
+      && getAfter(
+        /databases/$(database)/documents/users/$(userId)
+      ).data.roles is list
+      && 'tecnico' in getAfter(
+        /databases/$(database)/documents/users/$(userId)
+      ).data.roles;
     }
 
     function isServiceClient() {
@@ -52,84 +120,189 @@ service cloud.firestore {
      * =========================================
      */
 
-    match /users/{userId} {
+    function validNullableString(value, maxLength) {
+      return value == null
+        || (
+          value is string
+          && value.size() <= maxLength
+        );
+    }
 
-      /*
-       * Cada usuario puede leer su propio perfil.
-       *
-       * Administradores pueden leer perfiles
-       * necesarios para administración.
-       */
+    function validPreferredContact(value) {
+      return value == 'chat'
+        || value == 'phone'
+        || value == 'email';
+    }
+
+    function validUserProfile(data) {
+      return data.uid is string
+        && data.email is string
+        && data.email.size() <= 254
+        && data.displayName is string
+        && data.displayName.size() >= 2
+        && data.displayName.size() <= 80
+        && validNullableString(data.get('phone', null), 24)
+        && validNullableString(data.get('photoUrl', null), 2048)
+        && validNullableString(data.get('commune', null), 80)
+        && validNullableString(data.get('address', null), 160)
+        && validPreferredContact(
+          data.get('preferredContact', 'chat')
+        )
+        && validRoles(data.roles)
+        && data.status is string
+        && (
+          data.status == 'active'
+          || data.status == 'pending'
+          || data.status == 'suspended'
+          || data.status == 'blocked'
+        )
+        && (
+          data.get('averageRating', null) == null
+          || data.get('averageRating', null) is number
+        )
+        && data.get('ratingCount', 0) is int
+        && data.get('ratingCount', 0) >= 0
+        && data.get('profileVersion', 1) is int;
+    }
+
+    match /users/{userId} {
 
       allow read:
         if isOwner(userId)
         || isAdmin();
 
-
-      /*
-       * Registro inicial.
-       *
-       * El documento debe pertenecer al usuario
-       * autenticado y no puede autoconcederse
-       * privilegios administrativos.
-       */
-
       allow create:
         if isOwner(userId)
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'email',
+          'displayName',
+          'phone',
+          'photoUrl',
+          'commune',
+          'address',
+          'preferredContact',
+          'profileVersion',
+          'roles',
+          'status',
+          'averageRating',
+          'ratingCount',
+          'createdAt',
+          'updatedAt',
+          'lastLoginAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'displayName',
+          'phone',
+          'photoUrl',
+          'commune',
+          'address',
+          'preferredContact',
+          'profileVersion',
+          'roles',
+          'status',
+          'averageRating',
+          'ratingCount',
+          'createdAt',
+          'updatedAt',
+          'lastLoginAt'
+        ])
+        && validUserProfile(request.resource.data)
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.roles is list
+        && request.resource.data.email == request.auth.token.email
         && request.resource.data.roles.size() == 1
-        && request.resource.data.roles[0] == 'cliente';
-
-
-      /*
-       * El usuario puede actualizar su documento,
-       * pero NO puede cambiar campos controlados
-       * por backend/administración.
-       */
+        && request.resource.data.roles[0] == 'cliente'
+        && request.resource.data.status == 'active'
+        && request.resource.data.averageRating == null
+        && request.resource.data.ratingCount == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.lastLoginAt == request.time;
 
       allow update:
         if (
           isOwner(userId)
-          &&
-          request.resource.data.uid == resource.data.uid
-          &&
-          request.resource.data.roles == resource.data.roles
-          &&
-          request.resource.data.averageRating == resource.data.averageRating
-          &&
-          request.resource.data.ratingCount == resource.data.ratingCount
+          && hasActiveAccount()
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && validUserProfile(request.resource.data)
+          && request.resource.data.diff(
+            resource.data
+          ).affectedKeys().hasOnly([
+            'displayName',
+            'phone',
+            'photoUrl',
+            'commune',
+            'address',
+            'preferredContact',
+            'profileVersion',
+            'email',
+            'lastLoginAt',
+            'updatedAt'
+          ])
+          && request.resource.data.updatedAt == request.time
+          && (
+            !request.resource.data.diff(
+              resource.data
+            ).affectedKeys().hasAny([
+              'email'
+            ])
+            || request.resource.data.email == request.auth.token.email
+          )
+          && (
+            !request.resource.data.diff(
+              resource.data
+            ).affectedKeys().hasAny([
+              'lastLoginAt'
+            ])
+            || request.resource.data.lastLoginAt == request.time
+          )
         )
-        || isAdmin();
-
+        || (
+          isRegularAdmin()
+          && !('administrador' in resource.data.roles)
+          && !('superadmin' in resource.data.roles)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && validUserProfile(request.resource.data)
+          && !('administrador' in request.resource.data.roles)
+          && !('superadmin' in request.resource.data.roles)
+          && request.resource.data.diff(
+            resource.data
+          ).affectedKeys().hasOnly([
+            'roles',
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.updatedAt == request.time
+        )
+        || (
+          isSuperAdmin()
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && validUserProfile(request.resource.data)
+          && request.resource.data.diff(
+            resource.data
+          ).affectedKeys().hasOnly([
+            'roles',
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.updatedAt == request.time
+        );
 
       allow delete:
         if false;
-
-
-      /*
-       * =====================================
-       * NOTIFICACIONES DEL USUARIO
-       * =====================================
-       *
-       * La creación se realiza exclusivamente
-       * desde Cloud Functions mediante Admin SDK.
-       *
-       * El usuario solamente puede:
-       *
-       * - leer sus propias notificaciones
-       * - marcarlas como leídas
-       */
 
       match /notifications/{notificationId} {
 
         allow read:
           if isOwner(userId);
 
-
         allow create, delete:
           if false;
-
 
         allow update:
           if isOwner(userId)
@@ -148,8 +321,8 @@ service cloud.firestore {
             'updatedAt'
           ])
           && request.resource.data.read == true
-          && request.resource.data.readAt is timestamp
-          && request.resource.data.updatedAt is timestamp;
+          && request.resource.data.readAt == request.time
+          && request.resource.data.updatedAt == request.time;
       }
     }
 
@@ -173,7 +346,7 @@ service cloud.firestore {
        */
 
       allow get:
-        if signedIn()
+        if hasActiveAccount()
         && (
           resource.data.clientId == request.auth.uid
           ||
@@ -201,7 +374,15 @@ service cloud.firestore {
        */
 
       allow list:
-        if signedIn();
+        if hasActiveAccount()
+        && (
+          resource.data.clientId == request.auth.uid
+          || resource.data.assignedTechnicianId == request.auth.uid
+          || isAdmin()
+          || exists(
+            /databases/$(database)/documents/technicianOpportunities/$(request.auth.uid + "_" + requestId)
+          )
+        );
 
 
       /*
@@ -213,11 +394,157 @@ service cloud.firestore {
        */
 
       allow create:
-        if signedIn()
+        if hasActiveAccount()
+        && request.resource.data.keys().hasAll([
+          'id',
+          'clientId',
+          'clientName',
+          'category',
+          'description',
+          'address',
+          'commune',
+          'latitude',
+          'longitude',
+          'preferredDate',
+          'timeSlot',
+          'urgency',
+          'photoUrls',
+          'photoPaths',
+          'status',
+          'assignedTechnicianId',
+          'acceptedQuoteId',
+          'paymentStatus',
+          'paymentId',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'clientId',
+          'clientName',
+          'category',
+          'description',
+          'address',
+          'commune',
+          'latitude',
+          'longitude',
+          'preferredDate',
+          'timeSlot',
+          'urgency',
+          'photoUrls',
+          'photoPaths',
+          'status',
+          'assignedTechnicianId',
+          'acceptedQuoteId',
+          'acceptedQuoteSnapshot',
+          'paymentStatus',
+          'paymentId',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.id == requestId
         && request.resource.data.clientId == request.auth.uid
+        && request.resource.data.clientName is string
+        && request.resource.data.clientName.size() >= 2
+        && request.resource.data.clientName.size() <= 80
+        && request.resource.data.category is string
+        && request.resource.data.category.size() > 0
+        && request.resource.data.category.size() <= 80
+        && request.resource.data.description is string
+        && request.resource.data.description.size() >= 10
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.address is string
+        && request.resource.data.address.size() >= 5
+        && request.resource.data.address.size() <= 200
+        && request.resource.data.commune is string
+        && request.resource.data.commune.size() > 0
+        && request.resource.data.commune.size() <= 80
+        && (
+          (
+            request.resource.data.latitude == null
+            && request.resource.data.longitude == null
+          )
+          || (
+            request.resource.data.latitude is number
+            && request.resource.data.latitude >= -90
+            && request.resource.data.latitude <= 90
+            && request.resource.data.longitude is number
+            && request.resource.data.longitude >= -180
+            && request.resource.data.longitude <= 180
+          )
+        )
+        && (
+          request.resource.data.preferredDate == null
+          || request.resource.data.preferredDate is timestamp
+        )
+        && request.resource.data.timeSlot is string
+        && request.resource.data.timeSlot.size() > 0
+        && request.resource.data.timeSlot.size() <= 80
+        && (
+          request.resource.data.urgency == 'normal'
+          || request.resource.data.urgency == 'soon'
+          || request.resource.data.urgency == 'urgent'
+        )
+        && request.resource.data.photoUrls is list
+        && request.resource.data.photoUrls.size() == 0
+        && request.resource.data.photoPaths is list
+        && request.resource.data.photoPaths.size() <= 5
+        && (
+          request.resource.data.photoPaths.size() < 1
+          || (
+            request.resource.data.photoPaths[0] is string
+            && request.resource.data.photoPaths[0].matches(
+              'service-request-images/' + requestId + '/' + request.auth.uid + '/.*'
+            )
+          )
+        )
+        && (
+          request.resource.data.photoPaths.size() < 2
+          || (
+            request.resource.data.photoPaths[1] is string
+            && request.resource.data.photoPaths[1].matches(
+              'service-request-images/' + requestId + '/' + request.auth.uid + '/.*'
+            )
+          )
+        )
+        && (
+          request.resource.data.photoPaths.size() < 3
+          || (
+            request.resource.data.photoPaths[2] is string
+            && request.resource.data.photoPaths[2].matches(
+              'service-request-images/' + requestId + '/' + request.auth.uid + '/.*'
+            )
+          )
+        )
+        && (
+          request.resource.data.photoPaths.size() < 4
+          || (
+            request.resource.data.photoPaths[3] is string
+            && request.resource.data.photoPaths[3].matches(
+              'service-request-images/' + requestId + '/' + request.auth.uid + '/.*'
+            )
+          )
+        )
+        && (
+          request.resource.data.photoPaths.size() < 5
+          || (
+            request.resource.data.photoPaths[4] is string
+            && request.resource.data.photoPaths[4].matches(
+              'service-request-images/' + requestId + '/' + request.auth.uid + '/.*'
+            )
+          )
+        )
         && request.resource.data.status == 'published'
         && request.resource.data.assignedTechnicianId == null
-        && request.resource.data.acceptedQuoteId == null;
+        && request.resource.data.acceptedQuoteId == null
+        && request.resource.data.get(
+          'acceptedQuoteSnapshot',
+          null
+        ) == null
+        && request.resource.data.paymentStatus == 'pending'
+        && request.resource.data.paymentId == null
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
 
 
       /*
@@ -286,7 +613,7 @@ service cloud.firestore {
          */
 
         function isParticipant() {
-          return signedIn()
+          return hasActiveAccount()
             && (
               parentService().data.clientId == request.auth.uid
               ||
@@ -309,6 +636,7 @@ service cloud.firestore {
 
         function canWriteMessage() {
           return isParticipant()
+            && hasActiveAccount()
             && (
               parentService().data.status == 'accepted'
               ||
@@ -357,20 +685,45 @@ service cloud.firestore {
 
         allow create:
           if canWriteMessage()
+          && request.resource.data.keys().hasAll([
+            'id',
+            'requestId',
+            'senderId',
+            'senderName',
+            'type',
+            'text',
+            'imagePath',
+            'createdAt'
+          ])
+          && request.resource.data.keys().hasOnly([
+            'id',
+            'requestId',
+            'senderId',
+            'senderName',
+            'type',
+            'text',
+            'imagePath',
+            'createdAt'
+          ])
+          && request.resource.data.id == messageId
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.requestId == requestId
+          && request.resource.data.senderName is string
+          && request.resource.data.senderName.size() >= 2
+          && request.resource.data.senderName.size() <= 80
+          && request.resource.data.createdAt == request.time
           && (
             (
-              (!('type' in request.resource.data) || request.resource.data.type == 'text')
+              request.resource.data.type == 'text'
               && request.resource.data.text is string
               && request.resource.data.text.size() > 0
               && request.resource.data.text.size() <= 1000
+              && request.resource.data.imagePath == null
             )
             ||
             (
               request.resource.data.type == 'image'
-              && request.resource.data.text is string
-              && request.resource.data.text.size() == 0
+              && request.resource.data.text == ''
               && request.resource.data.imagePath is string
               && request.resource.data.imagePath.matches(
                 'chat-images/' + requestId + '/' + request.auth.uid + '/' + messageId + '/.*'
@@ -407,7 +760,7 @@ service cloud.firestore {
        */
 
       allow read:
-        if signedIn()
+        if hasActiveAccount()
         && (
           resource.data.technicianId == request.auth.uid
           ||
@@ -424,10 +777,94 @@ service cloud.firestore {
        */
 
       allow create:
-        if signedIn()
+        if hasActiveAccount()
         && hasRole('tecnico')
+        && isActiveTechnicianAccount(request.auth.uid)
+        && request.resource.data.keys().hasAll([
+          'id',
+          'requestId',
+          'clientId',
+          'technicianId',
+          'technicianName',
+          'laborAmount',
+          'materialsAmount',
+          'otherAmount',
+          'totalAmount',
+          'availableDate',
+          'comment',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'requestId',
+          'clientId',
+          'technicianId',
+          'technicianName',
+          'laborAmount',
+          'materialsAmount',
+          'otherAmount',
+          'totalAmount',
+          'availableDate',
+          'comment',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.id == quoteId
+        && request.resource.data.requestId is string
+        && request.resource.data.requestId.size() > 0
+        && exists(
+          /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+        )
+        && exists(
+          /databases/$(database)/documents/technicianOpportunities/$(request.auth.uid + '_' + request.resource.data.requestId)
+        )
+        && get(
+          /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+        ).data.clientId == request.resource.data.clientId
+        && get(
+          /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+        ).data.clientId != request.auth.uid
+        && (
+          get(
+            /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+          ).data.status == 'published'
+          || get(
+            /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+          ).data.status == 'matched'
+          || get(
+            /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+          ).data.status == 'quoted'
+        )
+        && request.resource.data.clientId is string
         && request.resource.data.technicianId == request.auth.uid
-        && request.resource.data.status == 'sent';
+        && request.resource.data.technicianName is string
+        && request.resource.data.technicianName.size() >= 2
+        && request.resource.data.technicianName.size() <= 80
+        && request.resource.data.laborAmount is number
+        && request.resource.data.laborAmount >= 0
+        && request.resource.data.materialsAmount is number
+        && request.resource.data.materialsAmount >= 0
+        && request.resource.data.otherAmount is number
+        && request.resource.data.otherAmount >= 0
+        && request.resource.data.totalAmount is number
+        && request.resource.data.totalAmount > 0
+        && request.resource.data.totalAmount <= 100000000
+        && request.resource.data.totalAmount ==
+          request.resource.data.laborAmount
+          + request.resource.data.materialsAmount
+          + request.resource.data.otherAmount
+        && (
+          request.resource.data.availableDate == null
+          || request.resource.data.availableDate is timestamp
+        )
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 1200
+        && request.resource.data.status == 'sent'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
 
 
       /*
@@ -443,7 +880,7 @@ service cloud.firestore {
        */
 
       allow update:
-        if signedIn()
+        if hasActiveAccount()
         && resource.data.clientId == request.auth.uid
         && resource.data.status == 'sent'
         && request.resource.data.status == 'rejected'
@@ -452,7 +889,8 @@ service cloud.firestore {
         ).affectedKeys().hasOnly([
           'status',
           'updatedAt'
-        ]);
+        ])
+        && request.resource.data.updatedAt == request.time;
 
 
       allow delete:
@@ -466,34 +904,351 @@ service cloud.firestore {
      * =========================================
      */
 
+    function validTechnicianApplicationCreate(data, applicationId) {
+      return data.keys().hasAll([
+        'id',
+        'userId',
+        'fullName',
+        'rut',
+        'phone',
+        'specialties',
+        'experienceYears',
+        'experienceDescription',
+        'baseCommune',
+        'serviceRadiusKm',
+        'hasIdentification',
+        'hasCertifications',
+        'documentsSubmitted',
+        'documentsSubmittedAt',
+        'documentVersion',
+        'identificationDocumentCount',
+        'professionalDocumentCount',
+        'additionalDocumentCount',
+        'termsAccepted',
+        'status',
+        'rejectionReason',
+        'createdAt',
+        'updatedAt',
+        'reviewedAt',
+        'reviewedBy'
+      ])
+      && data.keys().hasOnly([
+        'id',
+        'userId',
+        'fullName',
+        'rut',
+        'phone',
+        'specialties',
+        'experienceYears',
+        'experienceDescription',
+        'baseCommune',
+        'serviceRadiusKm',
+        'hasIdentification',
+        'hasCertifications',
+        'documentsSubmitted',
+        'documentsSubmittedAt',
+        'documentVersion',
+        'identificationDocumentCount',
+        'professionalDocumentCount',
+        'additionalDocumentCount',
+        'termsAccepted',
+        'status',
+        'rejectionReason',
+        'createdAt',
+        'updatedAt',
+        'reviewedAt',
+        'reviewedBy'
+      ])
+      && data.id == applicationId
+      && data.userId == request.auth.uid
+      && data.fullName is string
+      && data.fullName.size() >= 2
+      && data.fullName.size() <= 100
+      && data.rut is string
+      && data.rut.size() >= 7
+      && data.rut.size() <= 20
+      && data.phone is string
+      && data.phone.size() >= 8
+      && data.phone.size() <= 24
+      && data.specialties is list
+      && data.specialties.size() > 0
+      && data.specialties.size() <= 12
+      && data.experienceYears is int
+      && data.experienceYears >= 0
+      && data.experienceYears <= 60
+      && data.experienceDescription is string
+      && data.experienceDescription.size() <= 1200
+      && data.baseCommune is string
+      && data.baseCommune.size() > 0
+      && data.baseCommune.size() <= 80
+      && data.serviceRadiusKm is int
+      && data.serviceRadiusKm >= 1
+      && data.serviceRadiusKm <= 200
+      && data.hasIdentification == true
+      && data.hasCertifications == true
+      && data.documentsSubmitted == true
+      && data.documentsSubmittedAt == request.time
+      && data.documentVersion == 1
+      && data.identificationDocumentCount is int
+      && data.identificationDocumentCount >= 1
+      && data.identificationDocumentCount <= 2
+      && data.professionalDocumentCount is int
+      && data.professionalDocumentCount >= 1
+      && data.professionalDocumentCount <= 3
+      && data.additionalDocumentCount is int
+      && data.additionalDocumentCount >= 0
+      && data.additionalDocumentCount <= 3
+      && (
+        data.identificationDocumentCount
+        + data.professionalDocumentCount
+        + data.additionalDocumentCount
+      ) <= 8
+      && data.termsAccepted == true
+      && data.status == 'pending'
+      && data.rejectionReason == null
+      && data.createdAt == request.time
+      && data.updatedAt == request.time
+      && data.reviewedAt == null
+      && data.reviewedBy == null;
+    }
+
     match /technicianApplications/{applicationId} {
 
       allow read:
-        if signedIn()
+        if hasActiveAccount()
         && (
           resource.data.userId == request.auth.uid
-          ||
-          isAdmin()
+          || isAdmin()
         );
 
-
       allow create:
-        if signedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'pending';
-
-
-      /*
-       * Aprobar/rechazar queda exclusivamente
-       * para administrador.
-       */
+        if hasActiveAccount()
+        && validTechnicianApplicationCreate(
+          request.resource.data,
+          applicationId
+        );
 
       allow update:
-        if isAdmin();
-
+        if isAdmin()
+        && resource.data.status == 'pending'
+        && resource.data.documentsSubmitted == true
+        && resource.data.identificationDocumentCount >= 1
+        && resource.data.professionalDocumentCount >= 1
+        && (
+          request.resource.data.status == 'approved'
+          || request.resource.data.status == 'rejected'
+        )
+        && request.resource.data.reviewedBy == request.auth.uid
+        && request.resource.data.reviewedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(
+          resource.data
+        ).affectedKeys().hasOnly([
+          'status',
+          'rejectionReason',
+          'reviewedBy',
+          'reviewedAt',
+          'updatedAt'
+        ])
+        && (
+          (
+            request.resource.data.status == 'approved'
+            && request.resource.data.rejectionReason == null
+          )
+          || (
+            request.resource.data.status == 'rejected'
+            && request.resource.data.rejectionReason is string
+            && request.resource.data.rejectionReason.size() >= 5
+            && request.resource.data.rejectionReason.size() <= 500
+          )
+        );
 
       allow delete:
         if false;
+    }
+
+
+    /*
+     * =========================================
+     * TECHNICIAN PROFILES
+     * =========================================
+     *
+     * El perfil profesional es administrado exclusivamente por
+     * administradores. El técnico puede leerlo, pero no modificarlo.
+     */
+
+    function validTechnicianProfile(data, userId) {
+      return data.keys().hasAll([
+        'userId',
+        'displayName',
+        'photoUrl',
+        'specialties',
+        'experienceYears',
+        'experienceDescription',
+        'baseCommune',
+        'serviceRadiusKm',
+        'hasCertifications',
+        'publicDescription',
+        'status',
+        'accountStatus',
+        'createdAt',
+        'updatedAt',
+        'createdBy',
+        'updatedBy',
+        'sourceApplicationId'
+      ])
+      && data.keys().hasOnly([
+        'userId',
+        'displayName',
+        'photoUrl',
+        'specialties',
+        'experienceYears',
+        'experienceDescription',
+        'baseCommune',
+        'serviceRadiusKm',
+        'hasCertifications',
+        'publicDescription',
+        'status',
+        'accountStatus',
+        'createdAt',
+        'updatedAt',
+        'createdBy',
+        'updatedBy',
+        'sourceApplicationId'
+      ])
+      && data.userId == userId
+      && data.displayName is string
+      && data.displayName.size() >= 2
+      && data.displayName.size() <= 80
+      && validNullableString(data.photoUrl, 2048)
+      && data.specialties is list
+      && data.specialties.size() > 0
+      && data.specialties.size() <= 12
+      && data.experienceYears is int
+      && data.experienceYears >= 0
+      && data.experienceYears <= 60
+      && data.experienceDescription is string
+      && data.experienceDescription.size() <= 1200
+      && data.baseCommune is string
+      && data.baseCommune.size() > 0
+      && data.baseCommune.size() <= 80
+      && data.serviceRadiusKm is int
+      && data.serviceRadiusKm >= 1
+      && data.serviceRadiusKm <= 200
+      && data.hasCertifications is bool
+      && data.publicDescription is string
+      && data.publicDescription.size() <= 800
+      && (
+        data.status == 'active'
+        || data.status == 'inactive'
+        || data.status == 'suspended'
+      )
+      && (
+        data.accountStatus == 'active'
+        || data.accountStatus == 'pending'
+        || data.accountStatus == 'suspended'
+        || data.accountStatus == 'blocked'
+      )
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp
+      && validNullableString(data.createdBy, 128)
+      && validNullableString(data.updatedBy, 128)
+      && validNullableString(data.sourceApplicationId, 128);
+    }
+
+    match /technicianProfiles/{userId} {
+
+      allow get:
+        if hasActiveAccount()
+        && (
+          isOwner(userId)
+          || isAdmin()
+          || (
+            resource.data.status == 'active'
+            && resource.data.accountStatus == 'active'
+            && isActiveTechnicianAccount(userId)
+          )
+        );
+
+      allow list:
+        if isAdmin()
+        || (
+          hasActiveAccount()
+          && resource.data.status == 'active'
+          && resource.data.accountStatus == 'active'
+          && isActiveTechnicianAccount(userId)
+        );
+
+      allow create:
+        if isAdmin()
+        && isActiveTechnicianAccountAfter(userId)
+        && validTechnicianProfile(
+          request.resource.data,
+          userId
+        )
+        && request.resource.data.accountStatus == getAfter(
+          /databases/$(database)/documents/users/$(userId)
+        ).data.status
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && (
+          request.resource.data.sourceApplicationId == null
+          || (
+            existsAfter(
+              /databases/$(database)/documents/technicianApplications/$(request.resource.data.sourceApplicationId)
+            )
+            && getAfter(
+              /databases/$(database)/documents/technicianApplications/$(request.resource.data.sourceApplicationId)
+            ).data.userId == userId
+            && getAfter(
+              /databases/$(database)/documents/technicianApplications/$(request.resource.data.sourceApplicationId)
+            ).data.status == 'approved'
+          )
+        );
+
+      allow update:
+        if isAdmin()
+        && hasTechnicianRole(userId)
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.sourceApplicationId == resource.data.sourceApplicationId
+        && request.resource.data.accountStatus == get(
+          /databases/$(database)/documents/users/$(userId)
+        ).data.status
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(
+          resource.data
+        ).affectedKeys().hasOnly([
+          'displayName',
+          'photoUrl',
+          'specialties',
+          'experienceYears',
+          'experienceDescription',
+          'baseCommune',
+          'serviceRadiusKm',
+          'hasCertifications',
+          'publicDescription',
+          'status',
+          'accountStatus',
+          'updatedBy',
+          'updatedAt'
+        ])
+        && validTechnicianProfile(
+          request.resource.data,
+          userId
+        );
+
+      allow delete:
+        if isAdmin()
+        && !(
+          'tecnico' in getAfter(
+            /databases/$(database)/documents/users/$(userId)
+          ).data.roles
+        );
     }
 
 
@@ -506,11 +1261,11 @@ service cloud.firestore {
     match /technicianOpportunities/{opportunityId} {
 
       allow read:
-        if signedIn()
-        && (
-          resource.data.technicianId == request.auth.uid
-          ||
-          isAdmin()
+        if isAdmin()
+        || (
+          hasActiveAccount()
+          && hasRole('tecnico')
+          && resource.data.technicianId == request.auth.uid
         );
 
 
@@ -533,7 +1288,8 @@ service cloud.firestore {
        */
 
       allow update:
-        if signedIn()
+        if hasActiveAccount()
+        && hasRole('tecnico')
         && resource.data.technicianId == request.auth.uid
         && resource.data.status == 'available'
         && request.resource.data.status == 'viewed'
@@ -543,7 +1299,9 @@ service cloud.firestore {
           'status',
           'viewedAt',
           'updatedAt'
-        ]);
+        ])
+        && request.resource.data.viewedAt == request.time
+        && request.resource.data.updatedAt == request.time;
 
 
       allow delete:
@@ -559,24 +1317,59 @@ service cloud.firestore {
 
     match /deviceTokens/{tokenId} {
 
-      /*
-       * El usuario solamente administra
-       * tokens que declaren su propio UID.
-       */
+      function validDeviceToken(data) {
+        return data.keys().hasAll([
+          'id',
+          'userId',
+          'token',
+          'platform',
+          'active',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'userId',
+          'token',
+          'platform',
+          'active',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == tokenId
+        && data.userId == request.auth.uid
+        && tokenId == request.auth.uid + '_android'
+        && data.token is string
+        && data.token.size() >= 16
+        && data.token.size() <= 4096
+        && data.platform == 'android'
+        && data.active == true;
+      }
 
-      allow create, update:
-        if signedIn()
-        && request.resource.data.userId == request.auth.uid;
+      allow create:
+        if hasActiveAccount()
+        && validDeviceToken(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
 
-
-      /*
-       * El frontend no necesita leer tokens.
-       * Functions usa Admin SDK.
-       */
+      allow update:
+        if hasActiveAccount()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && validDeviceToken(request.resource.data)
+        && request.resource.data.diff(
+          resource.data
+        ).affectedKeys().hasOnly([
+          'token',
+          'active',
+          'updatedAt'
+        ]);
 
       allow read, delete:
         if false;
     }
+
 
 
     /*
@@ -587,7 +1380,7 @@ service cloud.firestore {
      * Ubicación temporal del técnico mientras
      * se dirige al domicilio.
      *
-     * technicianLocations/{technicianId}
+     * technicianLocations/{requestId}
      *
      * Seguridad:
      *
@@ -601,204 +1394,123 @@ service cloud.firestore {
      * - cliente jamás puede modificar ubicación
      */
 
-    match /technicianLocations/{technicianId} {
+    match /technicianLocations/{requestId} {
 
-
-      /*
-       * =====================================
-       * HELPERS
-       * =====================================
-       */
-
-      function locationService() {
-
-        return get(
-          /databases/$(database)/documents/serviceRequests/$(resource.data.requestId)
+      function trackedServiceExists() {
+        return exists(
+          /databases/$(database)/documents/serviceRequests/$(requestId)
         );
       }
 
-
-      function newLocationService() {
-
+      function trackedService() {
         return get(
-          /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+          /databases/$(database)/documents/serviceRequests/$(requestId)
         );
       }
 
+      function validLocationPayload(data) {
+        return data.keys().hasAll([
+          'technicianId',
+          'requestId',
+          'latitude',
+          'longitude',
+          'accuracy',
+          'heading',
+          'speed',
+          'active',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'technicianId',
+          'requestId',
+          'latitude',
+          'longitude',
+          'accuracy',
+          'heading',
+          'speed',
+          'active',
+          'updatedAt'
+        ])
+        && data.technicianId is string
+        && data.technicianId.size() >= 1
+        && data.technicianId.size() <= 128
+        && data.requestId is string
+        && data.requestId == requestId
+        && data.requestId.size() >= 1
+        && data.requestId.size() <= 128
+        && data.latitude is number
+        && data.longitude is number
+        && data.latitude >= -90
+        && data.latitude <= 90
+        && data.longitude >= -180
+        && data.longitude <= 180
+        && data.accuracy is number
+        && data.accuracy >= 0
+        && (
+          data.heading == null
+          || data.heading is number
+        )
+        && (
+          data.speed == null
+          || data.speed is number
+        )
+        && data.active == true
+        && data.updatedAt == request.time;
+      }
 
       /*
-       * =====================================
-       * READ
-       * =====================================
+       * El requestId forma parte de la ruta.
        *
-       * El cliente solamente puede consultar
-       * la posición si:
-       *
-       * - es dueño del servicio
-       * - el técnico es el asignado
-       * - el servicio está en_route
-       *
-       * El técnico puede leer su propia posición.
+       * Esto permite autorizar al cliente incluso antes de que el técnico
+       * publique la primera coordenada. Con el esquema anterior, basado en
+       * technicianId, un listener sobre un documento todavía inexistente
+       * intentaba resolver resource.data.requestId == null y Firestore
+       * rechazaba la lectura con "Null value error".
        */
 
       allow read:
-        if signedIn()
+        if hasActiveAccount()
         && (
-          (
-            resource.data.technicianId ==
-              request.auth.uid
-            &&
-            technicianId ==
-              request.auth.uid
-          )
-          ||
-          (
-            locationService().data.clientId ==
-              request.auth.uid
-            &&
-            locationService().data.assignedTechnicianId ==
-              technicianId
-            &&
-            locationService().data.status ==
-              'en_route'
-          )
-          ||
           isAdmin()
+          ||
+          (
+            trackedServiceExists()
+            && trackedService().data.status == 'en_route'
+            && (
+              trackedService().data.clientId == request.auth.uid
+              ||
+              (
+                trackedService().data.assignedTechnicianId == request.auth.uid
+                && hasRole('tecnico')
+              )
+            )
+          )
         );
 
-
-      /*
-       * =====================================
-       * CREATE
-       * =====================================
-       */
-
       allow create:
-        if signedIn()
-
-        /*
-         * Solo el técnico propietario
-         * del documento.
-         */
-        && technicianId ==
-          request.auth.uid
-
-        && request.resource.data.technicianId ==
-          request.auth.uid
-
-        /*
-         * Debe existir requestId.
-         */
-        && request.resource.data.requestId
-          is string
-
-        /*
-         * Debe ser técnico asignado.
-         */
-        && newLocationService().data.assignedTechnicianId ==
-          request.auth.uid
-
-        /*
-         * Solamente mientras va en camino.
-         */
-        && newLocationService().data.status ==
-          'en_route'
-
-        /*
-         * Coordenadas obligatorias.
-         */
-        && request.resource.data.latitude
-          is number
-
-        && request.resource.data.longitude
-          is number
-
-        /*
-         * Rangos geográficos válidos.
-         */
-        && request.resource.data.latitude >=
-          -90
-
-        && request.resource.data.latitude <=
-          90
-
-        && request.resource.data.longitude >=
-          -180
-
-        && request.resource.data.longitude <=
-          180
-
-        /*
-         * Tracking activo.
-         */
-        && request.resource.data.active ==
-          true;
-
-
-      /*
-       * =====================================
-       * UPDATE
-       * =====================================
-       */
+        if hasActiveAccount()
+        && hasRole('tecnico')
+        && validLocationPayload(
+          request.resource.data
+        )
+        && request.resource.data.technicianId == request.auth.uid
+        && trackedServiceExists()
+        && trackedService().data.assignedTechnicianId == request.auth.uid
+        && trackedService().data.status == 'en_route';
 
       allow update:
-        if signedIn()
-
-        && technicianId ==
-          request.auth.uid
-
-        && resource.data.technicianId ==
-          request.auth.uid
-
-        && request.resource.data.technicianId ==
-          request.auth.uid
-
-        /*
-         * No puede cambiar de servicio.
-         */
-        && request.resource.data.requestId ==
-          resource.data.requestId
-
-        /*
-         * Continúa siendo técnico asignado.
-         */
-        && newLocationService().data.assignedTechnicianId ==
-          request.auth.uid
-
-        /*
-         * Continúa en camino.
-         */
-        && newLocationService().data.status ==
-          'en_route'
-
-        /*
-         * Coordenadas válidas.
-         */
-        && request.resource.data.latitude
-          is number
-
-        && request.resource.data.longitude
-          is number
-
-        && request.resource.data.latitude >=
-          -90
-
-        && request.resource.data.latitude <=
-          90
-
-        && request.resource.data.longitude >=
-          -180
-
-        && request.resource.data.longitude <=
-          180
-
-        && request.resource.data.active ==
-          true
-
-        /*
-         * No permitimos que el cliente/técnico
-         * introduzca campos arbitrarios.
-         */
+        if hasActiveAccount()
+        && hasRole('tecnico')
+        && resource.data.requestId == requestId
+        && resource.data.technicianId == request.auth.uid
+        && request.resource.data.requestId == requestId
+        && request.resource.data.technicianId == request.auth.uid
+        && validLocationPayload(
+          request.resource.data
+        )
+        && trackedServiceExists()
+        && trackedService().data.assignedTechnicianId == request.auth.uid
+        && trackedService().data.status == 'en_route'
         && request.resource.data.diff(
           resource.data
         ).affectedKeys().hasOnly([
@@ -811,22 +1523,17 @@ service cloud.firestore {
           'updatedAt'
         ]);
 
-
-      /*
-       * =====================================
-       * DELETE
-       * =====================================
-       *
-       * El técnico puede retirar su ubicación
-       * cuando termina el desplazamiento.
-       */
-
       allow delete:
-        if signedIn()
-        && technicianId ==
-          request.auth.uid
-        && resource.data.technicianId ==
-          request.auth.uid;
+        if hasActiveAccount()
+        && (
+          isAdmin()
+          ||
+          (
+            hasRole('tecnico')
+            && resource.data.requestId == requestId
+            && resource.data.technicianId == request.auth.uid
+          )
+        );
     }
 
 
@@ -844,7 +1551,7 @@ service cloud.firestore {
        */
 
       allow read:
-        if signedIn()
+        if hasActiveAccount()
         && (
           resource.data.clientId == request.auth.uid
           ||
@@ -888,7 +1595,7 @@ service cloud.firestore {
 match /analyticsDemand/{predictionId} {
 
   allow read:
-    if signedIn()
+    if hasActiveAccount()
     && (
       hasRole('tecnico')
       ||

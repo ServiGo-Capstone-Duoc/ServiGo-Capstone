@@ -9,7 +9,15 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "test:unit": "ng test --watch=false",
+    "test:functions": "npm --prefix functions run test:unit",
+    "test:security:profile": "node security-tests/test-profile-security.mjs",
+    "lint": "ng lint",
+    "lint:functions": "npm --prefix functions run lint",
+    "build:functions": "npm --prefix functions run build",
+    "check:static": "npm run lint && npm run build && npm run lint:functions && npm run build:functions",
+    "check:unit": "npm run test:unit && npm run test:functions",
+    "check": "npm run check:static && npm run check:unit"
   },
   "private": true,
   "dependencies": {

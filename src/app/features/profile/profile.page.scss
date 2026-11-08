@@ -60,17 +60,16 @@ ion-content {
 
   padding: 20px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.09);
+    rgba(var(--servigo-blue-rgb), 0.09);
 
   border-radius: 22px;
 
   box-shadow:
-    0 8px 28px
-    rgba(31, 41, 55, 0.05);
+    var(--servigo-shadow-card);
 }
 
 .avatar {
@@ -210,11 +209,11 @@ ion-content {
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   border-radius: 16px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: left;
 
@@ -284,7 +283,7 @@ ion-content {
 .arrow {
   flex: 0 0 auto;
 
-  color: #a1a8b4;
+  color: var(--servigo-text-tertiary);
 
   font-size: 18px;
 }
@@ -310,13 +309,13 @@ ion-content {
   background:
     linear-gradient(
       135deg,
-      #0b73e0,
-      #0757b4
+      var(--servigo-blue),
+      var(--servigo-blue-dark)
     );
 
   box-shadow:
     0 12px 30px
-    rgba(11, 115, 224, 0.20);
+    rgba(var(--servigo-blue-rgb), 0.20);
 
   &::after {
     content: '';
@@ -332,7 +331,7 @@ ion-content {
     border-radius: 50%;
 
     background:
-      rgba(255, 194, 26, 0.18);
+      var(--servigo-warning-ring);
 
     pointer-events: none;
   }
@@ -356,7 +355,7 @@ ion-content {
   background:
     var(--servigo-yellow);
 
-  color: #1f2937;
+  color: var(--servigo-text);
 
   ion-icon {
     font-size: 24px;
@@ -372,7 +371,7 @@ ion-content {
 
   flex: 1;
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 
   h2 {
     margin:
@@ -380,7 +379,7 @@ ion-content {
       0
       6px;
 
-    color: #ffffff;
+    color: var(--servigo-on-primary);
 
     font-size: 18px;
     line-height: 1.2;
@@ -393,7 +392,7 @@ ion-content {
       14px;
 
     color:
-      rgba(255, 255, 255, 0.82);
+      var(--servigo-on-primary-muted);
 
     font-size: 12px;
     line-height: 1.45;
@@ -433,7 +432,7 @@ ion-content {
 
   border-radius: 12px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color:
     var(--servigo-blue-dark);
@@ -453,8 +452,7 @@ ion-content {
 
   &:hover {
     box-shadow:
-      0 6px 18px
-      rgba(0, 0, 0, 0.12);
+      var(--servigo-shadow-floating);
   }
 
   &:active {
@@ -485,13 +483,13 @@ ion-content {
   margin-bottom: 8px;
 
   border:
-    1px solid #fecaca;
+    1px solid var(--servigo-error-border);
 
   border-radius: 16px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  color: #b91c1c;
+  color: var(--servigo-error-strong);
 
   font-size: 13px;
   font-weight: 800;
@@ -518,15 +516,14 @@ ion-content {
 
   border-radius: 22px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.10);
+    rgba(var(--servigo-blue-rgb), 0.10);
 
   box-shadow:
-    0 8px 28px
-    rgba(31, 41, 55, 0.05);
+    var(--servigo-shadow-card);
 }
 
 
@@ -596,13 +593,13 @@ ion-content {
 .application-status-card.pending {
 
   .application-status-icon {
-    background: #fff7d6;
+    background: var(--servigo-warning-soft);
 
-    color: #c88a00;
+    color: var(--servigo-warning);
   }
 
   .application-status-copy > span {
-    color: #c88a00;
+    color: var(--servigo-warning);
   }
 }
 
@@ -612,16 +609,16 @@ ion-content {
 .application-status-card.approved {
 
   border-color:
-    rgba(34, 197, 94, 0.20);
+    color-mix(in srgb, var(--servigo-success) 20%, transparent);
 
   .application-status-icon {
-    background: #ecfdf5;
+    background: var(--servigo-success-soft);
 
-    color: #16a34a;
+    color: var(--servigo-success);
   }
 
   .application-status-copy > span {
-    color: #16a34a;
+    color: var(--servigo-success);
   }
 }
 
@@ -631,16 +628,16 @@ ion-content {
 .application-status-card.rejected {
 
   border-color:
-    rgba(239, 68, 68, 0.18);
+    color-mix(in srgb, var(--servigo-error) 18%, transparent);
 
   .application-status-icon {
-    background: #fef2f2;
+    background: var(--servigo-error-soft);
 
-    color: #dc2626;
+    color: var(--servigo-error);
   }
 
   .application-status-copy > span {
-    color: #dc2626;
+    color: var(--servigo-error);
   }
 }
 
@@ -662,16 +659,16 @@ ion-content {
 
 
 .status-pill.pending {
-  background: #fff7d6;
+  background: var(--servigo-warning-soft);
 
-  color: #9a6700;
+  color: var(--servigo-warning-strong);
 }
 
 
 .status-pill.approved {
-  background: #ecfdf5;
+  background: var(--servigo-success-soft);
 
-  color: #15803d;
+  color: var(--servigo-success-strong);
 }
 
 
@@ -685,16 +682,127 @@ ion-content {
     13px;
 
   border:
-    1px solid #fecaca;
+    1px solid var(--servigo-error-border);
 
   border-radius: 11px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  color: #b91c1c;
+  color: var(--servigo-error-strong);
 
   font-size: 11px;
   font-weight: 800;
 
   cursor: pointer;
+}
+/* PERFIL PROFESIONAL VERIFICADO */
+
+.professional-profile-card {
+  margin-bottom: 18px;
+  padding: 18px;
+  color: var(--servigo-text);
+  background: var(--servigo-surface);
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-lg);
+  box-shadow: var(--servigo-shadow-card);
+}
+
+.professional-heading {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 13px;
+}
+
+.professional-heading h2 {
+  margin: 2px 0 0;
+  color: var(--servigo-text);
+  font-size: 17px;
+}
+
+.professional-status {
+  padding: 5px 9px;
+  color: var(--servigo-success-strong);
+  background: var(--servigo-success-soft);
+  border: 1px solid var(--servigo-success-border);
+  border-radius: var(--servigo-radius-pill);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.professional-status.inactive {
+  color: var(--servigo-warning-strong);
+  background: var(--servigo-warning-soft);
+  border-color: var(--servigo-warning-border);
+}
+
+.professional-status.suspended {
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border-color: var(--servigo-error-border);
+}
+
+.professional-profile-card > p {
+  margin: 0 0 13px;
+  color: var(--servigo-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.professional-facts,
+.professional-specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.professional-facts {
+  margin-bottom: 11px;
+}
+
+.professional-facts span {
+  color: var(--servigo-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.professional-facts span:not(:last-child)::after {
+  margin-left: 7px;
+  color: var(--servigo-border-strong);
+  content: '·';
+}
+
+.professional-specialties {
+  margin-bottom: 12px;
+}
+
+.professional-specialties span {
+  padding: 5px 8px;
+  color: var(--servigo-blue-dark);
+  background: var(--servigo-blue-light);
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.professional-profile-card small {
+  display: block;
+  padding-top: 11px;
+  color: var(--servigo-text-tertiary);
+  border-top: 1px solid var(--servigo-border);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 430px) {
+  .professional-heading {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .professional-status {
+    grid-column: 2;
+    justify-self: start;
+  }
 }

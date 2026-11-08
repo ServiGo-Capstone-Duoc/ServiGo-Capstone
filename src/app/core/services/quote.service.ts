@@ -6,6 +6,7 @@ import {
   collection,
   DocumentData,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -235,6 +236,58 @@ export class QuoteService {
       quote =>
         quote.requestId ===
         requestId
+    );
+  }
+
+
+  /*
+   * =========================================
+   * PRESUPUESTO POR ID
+   * =========================================
+   *
+   * Se utiliza para recuperar directamente el
+   * presupuesto aceptado. Evita depender de una
+   * consulta global del cliente cuando el trabajo
+   * ya avanzó hasta completed.
+   */
+
+  async getQuoteById(
+    quoteId: string
+  ): Promise<Quote | null> {
+
+
+    const cleanQuoteId =
+      quoteId.trim();
+
+
+    if (
+      !cleanQuoteId
+    ) {
+
+      return null;
+    }
+
+
+    const quoteSnapshot =
+      await getDoc(
+        doc(
+          firestore,
+          'quotes',
+          cleanQuoteId
+        )
+      );
+
+
+    if (
+      !quoteSnapshot.exists()
+    ) {
+
+      return null;
+    }
+
+
+    return this.mapQuote(
+      quoteSnapshot.data()
     );
   }
 
@@ -547,10 +600,7 @@ if (
 }
 
 
-    console.log(
-      '[ServiGo] Presupuesto aceptado por backend:',
-      response.data
-    );
+    
   }
 
 

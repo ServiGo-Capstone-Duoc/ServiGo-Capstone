@@ -20,6 +20,7 @@ import {
 
 import {
   doc,
+  getDoc,
   serverTimestamp,
   setDoc
 } from 'firebase/firestore';
@@ -84,9 +85,7 @@ export class PushNotificationService {
       !Capacitor.isNativePlatform()
     ) {
 
-      console.log(
-        '[ServiGo Push] Entorno web. Push nativo omitido.'
-      );
+      
 
       return;
     }
@@ -149,9 +148,7 @@ export class PushNotificationService {
     });
 
 
-    console.log(
-      '[ServiGo Push] Canal Android servigo_general creado.'
-    );
+    
 
 
     /*
@@ -204,9 +201,7 @@ export class PushNotificationService {
       .register();
 
 
-    console.log(
-      '[ServiGo Push] Registro solicitado.'
-    );
+    
   }
 
 
@@ -235,10 +230,7 @@ export class PushNotificationService {
       ) => {
 
 
-        console.log(
-          '[ServiGo Push] Token recibido:',
-          token.value
-        );
+        
 
 
         try {
@@ -296,10 +288,7 @@ export class PushNotificationService {
       ) => {
 
 
-        console.log(
-          '[ServiGo Push] Notificación recibida:',
-          notification
-        );
+        
       }
     );
 
@@ -319,10 +308,7 @@ export class PushNotificationService {
       ) => {
 
 
-        console.log(
-          '[ServiGo Push] Notificación pulsada:',
-          action
-        );
+        
 
 
         const data =
@@ -611,30 +597,45 @@ if (
       );
 
 
+    const existingToken =
+      await getDoc(
+        tokenRef
+      );
+
+
+    const payload: Record<string, unknown> = {
+
+      id:
+        tokenDocumentId,
+
+      userId:
+        user.uid,
+
+      token,
+
+      platform:
+        'android',
+
+      active:
+        true,
+
+      updatedAt:
+        serverTimestamp()
+    };
+
+
+    if (
+      !existingToken.exists()
+    ) {
+
+      payload['createdAt'] =
+        serverTimestamp();
+    }
+
+
     await setDoc(
       tokenRef,
-      {
-
-        id:
-          tokenDocumentId,
-
-        userId:
-          user.uid,
-
-        token,
-
-        platform:
-          'android',
-
-        active:
-          true,
-
-        updatedAt:
-          serverTimestamp(),
-
-        createdAt:
-          serverTimestamp()
-      },
+      payload,
       {
         merge:
           true
@@ -642,8 +643,6 @@ if (
     );
 
 
-    console.log(
-      '[ServiGo Push] Token guardado en Firestore.'
-    );
+    
   }
 }

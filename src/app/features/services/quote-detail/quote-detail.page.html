@@ -191,33 +191,56 @@
           class="technician-card"
         >
 
-          <div
-            class="avatar"
-          >
+          <div class="avatar">
+            <ng-container *ngIf="technicianProfile as professional">
+              <img
+                *ngIf="professional.photoUrl"
+                [src]="professional.photoUrl"
+                [alt]="item.technicianName"
+              />
+            </ng-container>
 
             <ion-icon
+              *ngIf="!technicianProfile || !technicianProfile.photoUrl"
               name="person-outline"
             ></ion-icon>
-
           </div>
 
+          <div class="technician-summary">
+            <span>PRESUPUESTO DE</span>
+            <h1>{{ item.technicianName }}</h1>
 
-          <div>
-
-            <span>
-              PRESUPUESTO DE
-            </span>
-
-
-            <h1>
-              {{ item.technicianName }}
-            </h1>
-
-
-            <p>
-              Técnico ServiGo
+            <p *ngIf="technicianProfile as professional">
+              {{ professional.publicDescription || 'Técnico verificado por ServiGo' }}
             </p>
 
+            <p *ngIf="!technicianProfile">
+              Técnico verificado por ServiGo
+            </p>
+
+            <div
+              class="technician-facts"
+              *ngIf="technicianProfile as professional"
+            >
+              <span>
+                <ion-icon name="ribbon-outline"></ion-icon>
+                {{ professional.experienceYears }} años de experiencia
+              </span>
+
+              <span>
+                <ion-icon name="location-outline"></ion-icon>
+                {{ professional.baseCommune }} · {{ professional.serviceRadiusKm }} km
+              </span>
+            </div>
+
+            <div
+              class="technician-specialties"
+              *ngIf="technicianProfile as professional"
+            >
+              <span *ngFor="let specialty of professional.specialties">
+                {{ specialty }}
+              </span>
+            </div>
           </div>
 
         </section>

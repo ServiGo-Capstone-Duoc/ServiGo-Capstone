@@ -35,6 +35,8 @@ import {
 
   FieldValue,
 
+  Timestamp,
+
   getFirestore
 
 } from 'firebase-admin/firestore';
@@ -46,6 +48,15 @@ import {
   getMessaging
 
 } from 'firebase-admin/messaging';
+
+
+import {
+  getAuth
+} from 'firebase-admin/auth';
+
+import {
+  getStorage
+} from 'firebase-admin/storage';
 
 
 import {
@@ -1147,7 +1158,7 @@ export const onServiceRequestCreated =
 
           .collection(
 
-            'technicianApplications'
+            'technicianProfiles'
 
           )
 
@@ -1157,7 +1168,7 @@ export const onServiceRequestCreated =
 
             '==',
 
-            'approved'
+            'active'
 
           )
 
@@ -1177,7 +1188,7 @@ export const onServiceRequestCreated =
 
         logger.info(
 
-          'No existen técnicos aprobados.'
+          'No existen perfiles técnicos activos.'
 
         );
 
@@ -1247,6 +1258,14 @@ export const onServiceRequestCreated =
 
 
 
+        const accountStatus =
+
+          application['accountStatus']
+
+          ?? 'active';
+
+
+
 
 
         /*
@@ -1262,6 +1281,12 @@ export const onServiceRequestCreated =
         if (
 
           !technicianId
+
+          ||
+
+          accountStatus !==
+
+            'active'
 
           ||
 
@@ -1558,6 +1583,19 @@ export const onServiceRequestCreated =
           userSnapshot.data()
 
           ?? {};
+
+
+
+        if (
+
+          user['status'] !==
+
+            'active'
+
+        ) {
+
+          continue;
+        }
 
 
 
@@ -3631,6 +3669,97 @@ export const acceptQuote =
               }
 
 
+              const laborAmount =
+                typeof quote['laborAmount'] === 'number'
+                  ? quote['laborAmount']
+                  : 0;
+
+
+              const materialsAmount =
+                typeof quote['materialsAmount'] === 'number'
+                  ? quote['materialsAmount']
+                  : 0;
+
+
+              const otherAmount =
+                typeof quote['otherAmount'] === 'number'
+                  ? quote['otherAmount']
+                  : 0;
+
+
+              const totalAmount =
+                typeof quote['totalAmount'] === 'number'
+                  ? quote['totalAmount']
+                  : 0;
+
+
+              if (
+                !Number.isFinite(
+                  laborAmount
+                )
+                ||
+                !Number.isFinite(
+                  materialsAmount
+                )
+                ||
+                !Number.isFinite(
+                  otherAmount
+                )
+                ||
+                !Number.isFinite(
+                  totalAmount
+                )
+                ||
+                laborAmount < 0
+                ||
+                materialsAmount < 0
+                ||
+                otherAmount < 0
+                ||
+                totalAmount <= 0
+                ||
+                totalAmount !==
+                  laborAmount
+                  + materialsAmount
+                  + otherAmount
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El presupuesto no contiene montos validos.'
+                );
+              }
+
+
+              const acceptedAt =
+                Timestamp.now();
+
+
+              const acceptedQuoteSnapshot = {
+                quoteId,
+                requestId,
+                clientId:
+                  quoteClientId,
+                technicianId,
+                technicianName:
+                  typeof quote['technicianName'] === 'string'
+                    ? quote['technicianName']
+                    : '',
+                laborAmount,
+                materialsAmount,
+                otherAmount,
+                totalAmount,
+                availableDate:
+                  quote['availableDate']
+                  ?? null,
+                comment:
+                  typeof quote['comment'] === 'string'
+                    ? quote['comment']
+                    : '',
+                acceptedAt
+              };
+
+
               const serviceRequestRef =
                 db
                   .collection(
@@ -3844,6 +3973,8 @@ export const acceptQuote =
 
                   acceptedQuoteId:
                     quoteId,
+
+                  acceptedQuoteSnapshot,
 
                   acceptedAt:
                     now,
@@ -4469,6 +4600,158 @@ export const updateJobStatus =
               }
 
 
+              const existingAcceptedQuoteSnapshot =
+                data[
+                  'acceptedQuoteSnapshot'
+                ];
+
+
+              let acceptedQuoteSnapshotForCompletion =
+                existingAcceptedQuoteSnapshot
+                &&
+                typeof existingAcceptedQuoteSnapshot === 'object'
+                  ? existingAcceptedQuoteSnapshot
+                  : null;
+
+
+              if (
+                !acceptedQuoteSnapshotForCompletion
+              ) {
+
+                const acceptedQuoteId =
+                  typeof data[
+                    'acceptedQuoteId'
+                  ] === 'string'
+                    ? data[
+                        'acceptedQuoteId'
+                      ]
+                    : '';
+
+
+                if (
+                  !acceptedQuoteId
+                ) {
+
+                  throw new HttpsError(
+                    'failed-precondition',
+                    'El trabajo no contiene un presupuesto aceptado.'
+                  );
+                }
+
+
+                const acceptedQuoteRef =
+                  db
+                    .collection(
+                      'quotes'
+                    )
+                    .doc(
+                      acceptedQuoteId
+                    );
+
+
+                const acceptedQuoteDocument =
+                  await transaction.get(
+                    acceptedQuoteRef
+                  );
+
+
+                if (
+                  !acceptedQuoteDocument.exists
+                ) {
+
+                  throw new HttpsError(
+                    'failed-precondition',
+                    'No fue posible recuperar el presupuesto aceptado.'
+                  );
+                }
+
+
+                const acceptedQuote =
+                  acceptedQuoteDocument.data()
+                  ?? {};
+
+
+                const laborAmount =
+                  typeof acceptedQuote['laborAmount'] === 'number'
+                    ? acceptedQuote['laborAmount']
+                    : 0;
+
+
+                const materialsAmount =
+                  typeof acceptedQuote['materialsAmount'] === 'number'
+                    ? acceptedQuote['materialsAmount']
+                    : 0;
+
+
+                const otherAmount =
+                  typeof acceptedQuote['otherAmount'] === 'number'
+                    ? acceptedQuote['otherAmount']
+                    : 0;
+
+
+                const totalAmount =
+                  typeof acceptedQuote['totalAmount'] === 'number'
+                    ? acceptedQuote['totalAmount']
+                    : 0;
+
+
+                if (
+                  acceptedQuote['requestId'] !== requestId
+                  ||
+                  acceptedQuote['clientId'] !== clientId
+                  ||
+                  acceptedQuote['technicianId'] !== technicianId
+                  ||
+                  acceptedQuote['status'] !== 'accepted'
+                  ||
+                  !Number.isFinite(
+                    totalAmount
+                  )
+                  ||
+                  totalAmount <= 0
+                  ||
+                  totalAmount !==
+                    laborAmount
+                    + materialsAmount
+                    + otherAmount
+                ) {
+
+                  throw new HttpsError(
+                    'failed-precondition',
+                    'El presupuesto aceptado no coincide con el trabajo.'
+                  );
+                }
+
+
+                acceptedQuoteSnapshotForCompletion = {
+                  quoteId:
+                    acceptedQuoteId,
+                  requestId,
+                  clientId,
+                  technicianId,
+                  technicianName:
+                    typeof acceptedQuote['technicianName'] === 'string'
+                      ? acceptedQuote['technicianName']
+                      : '',
+                  laborAmount,
+                  materialsAmount,
+                  otherAmount,
+                  totalAmount,
+                  availableDate:
+                    acceptedQuote['availableDate']
+                    ?? null,
+                  comment:
+                    typeof acceptedQuote['comment'] === 'string'
+                      ? acceptedQuote['comment']
+                      : '',
+                  acceptedAt:
+                    acceptedQuote['acceptedAt'] instanceof Timestamp
+                      ? acceptedQuote['acceptedAt']
+                      : Timestamp.now()
+                };
+              }
+
+
               transaction.update(
                 requestRef,
                 {
@@ -4478,6 +4761,9 @@ export const updateJobStatus =
 
                   completedAt:
                     now,
+
+                  acceptedQuoteSnapshot:
+                    acceptedQuoteSnapshotForCompletion,
 
                   updatedAt:
                     now
@@ -4997,20 +5283,43 @@ export const createWebpayTransaction =
             .get();
 
 
+        const storedQuote =
+          quoteSnapshot.exists
+            ? quoteSnapshot.data()
+            : null;
+
+
+        const storedAcceptedSnapshot =
+          serviceRequest[
+            'acceptedQuoteSnapshot'
+          ];
+
+
+        const acceptedSnapshot =
+          storedAcceptedSnapshot
+          &&
+          typeof storedAcceptedSnapshot === 'object'
+            ? storedAcceptedSnapshot as Record<string, unknown>
+            : null;
+
+
+        const quote =
+          storedQuote
+          ?? acceptedSnapshot
+          ?? {};
+
+
         if (
-          !quoteSnapshot.exists
+          !storedQuote
+          &&
+          !acceptedSnapshot
         ) {
 
           throw new HttpsError(
             'not-found',
-            'El presupuesto aceptado no existe.'
+            'No fue posible recuperar el presupuesto aceptado.'
           );
         }
-
-
-        const quote =
-          quoteSnapshot.data()
-          ?? {};
 
 
         /*
@@ -5034,6 +5343,13 @@ export const createWebpayTransaction =
             'technicianId'
           ] !==
             technicianId
+          ||
+          (
+            acceptedSnapshot
+            &&
+            acceptedSnapshot['quoteId'] !==
+              quoteId
+          )
         ) {
 
           throw new HttpsError(
@@ -5044,7 +5360,9 @@ export const createWebpayTransaction =
 
 
         if (
-          quote[
+          storedQuote
+          &&
+          storedQuote[
             'status'
           ] !==
           'accepted'
@@ -5061,6 +5379,11 @@ export const createWebpayTransaction =
          * =====================================
          * MONTO AUTORITATIVO
          * =====================================
+         *
+         * La cotización original es la fuente
+         * principal. El snapshot autoritativo
+         * guardado al aceptar funciona como
+         * respaldo histórico.
          */
 
         const amount =
@@ -7467,6 +7790,357 @@ export const geocodeAddress =
   );
 /*
  * ============================================================
+ * ELIMINAR CUENTA PROPIA
+ * ============================================================
+ *
+ * El cliente puede eliminar su cuenta solamente cuando no tiene
+ * servicios activos ni pagos pendientes. Las cuentas administrativas
+ * requieren intervención de otro superadministrador.
+ *
+ * Antes de borrar el perfil se anonimizan los datos personales de las
+ * solicitudes históricas. Los documentos transaccionales se conservan
+ * para mantener trazabilidad contable y operativa.
+ */
+
+export const deleteMyAccount =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async request => {
+
+      const userId =
+        request.auth?.uid;
+
+      if (
+        !userId
+      ) {
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para eliminar tu cuenta.'
+        );
+      }
+
+      const emailConfirmation =
+        typeof request.data?.email ===
+          'string'
+          ? request.data.email
+              .trim()
+              .toLowerCase()
+          : '';
+
+      const confirmation =
+        typeof request.data?.confirmation ===
+          'string'
+          ? request.data.confirmation
+              .trim()
+              .toUpperCase()
+          : '';
+
+      if (
+        confirmation !== 'ELIMINAR'
+      ) {
+        throw new HttpsError(
+          'invalid-argument',
+          'Debes escribir ELIMINAR para confirmar.'
+        );
+      }
+
+      const userRef =
+        db
+          .collection('users')
+          .doc(userId);
+
+      const userSnapshot =
+        await userRef.get();
+
+      if (
+        !userSnapshot.exists
+      ) {
+        throw new HttpsError(
+          'not-found',
+          'El perfil de usuario no existe.'
+        );
+      }
+
+      const userData =
+        userSnapshot.data()
+        ?? {};
+
+      const storedEmail =
+        typeof userData['email'] ===
+          'string'
+          ? userData['email']
+              .trim()
+              .toLowerCase()
+          : '';
+
+      if (
+        !storedEmail
+        || storedEmail !==
+          emailConfirmation
+      ) {
+        throw new HttpsError(
+          'permission-denied',
+          'El correo de confirmación no coincide con la cuenta.'
+        );
+      }
+
+      const roles =
+        Array.isArray(
+          userData['roles']
+        )
+          ? userData['roles']
+          : [];
+
+      if (
+        roles.includes('administrador')
+        || roles.includes('superadmin')
+      ) {
+        throw new HttpsError(
+          'failed-precondition',
+          'Las cuentas administrativas deben ser gestionadas por otro superadministrador.'
+        );
+      }
+
+      const [
+        clientRequests,
+        technicianRequests
+      ] = await Promise.all([
+        db
+          .collection('serviceRequests')
+          .where('clientId', '==', userId)
+          .get(),
+        db
+          .collection('serviceRequests')
+          .where(
+            'assignedTechnicianId',
+            '==',
+            userId
+          )
+          .get()
+      ]);
+
+      const activeStatuses =
+        new Set([
+          'published',
+          'matched',
+          'quoted',
+          'accepted',
+          'en_route',
+          'arrived',
+          'in_progress'
+        ]);
+
+      const hasActiveService =
+        [
+          ...clientRequests.docs,
+          ...technicianRequests.docs
+        ]
+          .some(documentSnapshot => {
+            const status =
+              documentSnapshot.data()['status'];
+
+            return typeof status === 'string'
+              && activeStatuses.has(status);
+          });
+
+      if (
+        hasActiveService
+      ) {
+        throw new HttpsError(
+          'failed-precondition',
+          'No puedes eliminar la cuenta mientras existan servicios activos.'
+        );
+      }
+
+      const hasPendingPayment =
+        clientRequests.docs
+          .some(documentSnapshot => {
+            const data =
+              documentSnapshot.data();
+
+            return data['status'] === 'completed'
+              && data['paymentStatus'] !== 'paid';
+          });
+
+      if (
+        hasPendingPayment
+      ) {
+        throw new HttpsError(
+          'failed-precondition',
+          'Existe al menos un servicio completado con pago pendiente.'
+        );
+      }
+
+      const requestImagePaths =
+        clientRequests.docs
+          .flatMap(documentSnapshot => {
+            const paths =
+              documentSnapshot.data()['photoPaths'];
+
+            return Array.isArray(paths)
+              ? paths.filter(
+                  (path): path is string =>
+                    typeof path === 'string'
+                    && path.startsWith(
+                      'service-request-images/'
+                    )
+                )
+              : [];
+          });
+
+      const [
+        deviceTokens,
+        applications,
+        technicianLocations
+      ] = await Promise.all([
+        db
+          .collection('deviceTokens')
+          .where('userId', '==', userId)
+          .get(),
+        db
+          .collection('technicianApplications')
+          .where('userId', '==', userId)
+          .get(),
+        db
+          .collection('technicianLocations')
+          .where('technicianId', '==', userId)
+          .get()
+      ]);
+
+      const applicationDocumentPrefixes =
+        applications.docs
+          .map(applicationDocument =>
+            `technician-application-documents/${applicationDocument.id}/${userId}/`
+          );
+
+      const writer =
+        db.bulkWriter();
+
+      for (
+        const requestDocument
+        of clientRequests.docs
+      ) {
+        writer.update(
+          requestDocument.ref,
+          {
+            clientName:
+              'Usuario eliminado',
+            address:
+              'Dirección eliminada',
+            latitude:
+              null,
+            longitude:
+              null,
+            photoUrls:
+              [],
+            photoPaths:
+              [],
+            updatedAt:
+              FieldValue.serverTimestamp()
+          }
+        );
+      }
+
+      for (
+        const tokenDocument
+        of deviceTokens.docs
+      ) {
+        writer.delete(
+          tokenDocument.ref
+        );
+      }
+
+      for (
+        const applicationDocument
+        of applications.docs
+      ) {
+        writer.delete(
+          applicationDocument.ref
+        );
+      }
+
+      writer.delete(
+        db
+          .collection('technicianProfiles')
+          .doc(userId)
+      );
+
+      for (
+        const locationDocument
+        of technicianLocations.docs
+      ) {
+        writer.delete(
+          locationDocument.ref
+        );
+      }
+
+      await writer.close();
+
+      try {
+        const bucket =
+          getStorage().bucket();
+
+        await Promise.all([
+          bucket.deleteFiles({
+            prefix:
+              `profile-avatars/${userId}/`
+          }),
+          ...applicationDocumentPrefixes.map(
+            prefix =>
+              bucket.deleteFiles({
+                prefix
+              })
+          ),
+          ...requestImagePaths.map(
+            path =>
+              bucket
+                .file(path)
+                .delete({
+                  ignoreNotFound:
+                    true
+                })
+          )
+        ]);
+      } catch (storageError) {
+        logger.warn(
+          'No fue posible limpiar todos los archivos al eliminar la cuenta.',
+          {
+            userId,
+            error:
+              storageError
+          }
+        );
+      }
+
+      await db.recursiveDelete(
+        userRef
+      );
+
+      await getAuth().deleteUser(
+        userId
+      );
+
+      logger.info(
+        'Cuenta eliminada por su propietario.',
+        {
+          userId
+        }
+      );
+
+      return {
+        deleted:
+          true
+      };
+    }
+  );
+
+
+/*
+ * ============================================================
  * CANCELAR SERVICIO
  * ============================================================
  *
@@ -7931,7 +8605,7 @@ export const cancelService =
                 'technicianLocations'
               )
               .doc(
-                result.assignedTechnicianId
+                result.requestId
               );
 
 

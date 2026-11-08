@@ -294,16 +294,10 @@ export class ServicesPage {
         );
 
 
-      console.log(
-        '[ServiGo] Servicios activos cliente:',
-        this.activeServices
-      );
+      
 
 
-      console.log(
-        '[ServiGo] Historial cliente:',
-        this.historyServices
-      );
+      
 
 
     } catch (error) {

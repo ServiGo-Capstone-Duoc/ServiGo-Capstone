@@ -47,7 +47,7 @@ ion-content {
   border: 0;
   border-radius: 13px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color:
     var(--servigo-blue);
@@ -97,11 +97,11 @@ ion-content {
 
   border-radius: 20px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   h2 {
     margin:
@@ -119,7 +119,7 @@ ion-content {
   ion-textarea {
     margin-top: 10px;
 
-    --background: #f7f9fc;
+    --background: var(--servigo-input-background);
 
     --padding-start: 13px;
     --padding-end: 13px;
@@ -143,11 +143,11 @@ ion-content {
   background:
     linear-gradient(
       135deg,
-      #0b73e0,
-      #0757b4
+      var(--servigo-blue),
+      var(--servigo-blue-dark)
     );
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 
   span {
     font-size: 9px;
@@ -167,9 +167,9 @@ ion-content {
 
   border-radius: 12px;
 
-  background: #fef2f2;
+  background: var(--servigo-error-soft);
 
-  color: #b91c1c;
+  color: var(--servigo-error-strong);
 
   font-size: 11px;
   font-weight: 700;
@@ -194,12 +194,12 @@ ion-content {
 
   border-radius: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: center;
 
   ion-icon {
-    color: #22c55e;
+    color: var(--servigo-success);
 
     font-size: 58px;
   }

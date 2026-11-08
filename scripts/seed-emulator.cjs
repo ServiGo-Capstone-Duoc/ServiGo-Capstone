@@ -110,6 +110,10 @@ const TECHNICIAN_EMAIL =
   'tecnico@servigo.test';
 
 
+const ADMIN_EMAIL =
+  'admin@servigo.test';
+
+
 /*
  * =========================================
  * CREAR O RECUPERAR USUARIO AUTH
@@ -273,6 +277,18 @@ async function seed() {
         photoUrl:
           null,
 
+        commune:
+          'Puente Alto',
+
+        address:
+          'Av. Concha y Toro 1234',
+
+        preferredContact:
+          'chat',
+
+        profileVersion:
+          2,
+
         roles: [
           'cliente'
         ],
@@ -355,6 +371,18 @@ async function seed() {
 
         photoUrl:
           null,
+
+        commune:
+          'Puente Alto',
+
+        address:
+          null,
+
+        preferredContact:
+          'chat',
+
+        profileVersion:
+          2,
 
         roles: [
           'cliente',
@@ -494,6 +522,140 @@ async function seed() {
 
   /*
    * =========================================
+   * 6. PERFIL PROFESIONAL ADMINISTRADO
+   * =========================================
+   */
+
+  await db
+    .collection(
+      'technicianProfiles'
+    )
+    .doc(
+      technicianId
+    )
+    .set(
+      {
+        userId:
+          technicianId,
+        displayName:
+          'Técnico Test',
+        photoUrl:
+          null,
+        specialties: [
+          'Electricidad'
+        ],
+        experienceYears:
+          5,
+        experienceDescription:
+          'Técnico de prueba para validar el flujo completo de ServiGo.',
+        baseCommune:
+          'Puente Alto',
+        serviceRadiusKm:
+          10,
+        hasCertifications:
+          false,
+        publicDescription:
+          'Especialista en instalaciones y reparaciones eléctricas domiciliarias.',
+        status:
+          'active',
+        accountStatus:
+          'active',
+        createdAt:
+          Timestamp.now(),
+        updatedAt:
+          Timestamp.now(),
+        createdBy:
+          'admin-test',
+        updatedBy:
+          'admin-test',
+        sourceApplicationId:
+          applicationId
+      },
+      {
+        merge:
+          true
+      }
+    );
+
+
+  console.log(
+    '[ServiGo Seed] Perfil profesional creado:',
+    technicianId
+  );
+
+
+  /*
+   * =========================================
+   * 7. USUARIO ADMINISTRADOR DE PRUEBA
+   * =========================================
+   */
+
+  const adminAuthUser =
+    await ensureAuthUser(
+      ADMIN_EMAIL,
+      'Administrador Test'
+    );
+
+
+  await db
+    .collection(
+      'users'
+    )
+    .doc(
+      adminAuthUser.uid
+    )
+    .set(
+      {
+        uid:
+          adminAuthUser.uid,
+        email:
+          ADMIN_EMAIL,
+        displayName:
+          'Administrador Test',
+        phone:
+          null,
+        photoUrl:
+          null,
+        commune:
+          null,
+        address:
+          null,
+        preferredContact:
+          'email',
+        profileVersion:
+          2,
+        roles: [
+          'cliente',
+          'administrador'
+        ],
+        status:
+          'active',
+        averageRating:
+          null,
+        ratingCount:
+          0,
+        createdAt:
+          Timestamp.now(),
+        updatedAt:
+          Timestamp.now(),
+        lastLoginAt:
+          Timestamp.now()
+      },
+      {
+        merge:
+          true
+      }
+    );
+
+
+  console.log(
+    '[ServiGo Seed] Administrador de prueba creado:',
+    adminAuthUser.uid
+  );
+
+
+  /*
+   * =========================================
    * RESUMEN
    * =========================================
    */
@@ -554,6 +716,28 @@ async function seed() {
   console.log(
     'UID:',
     technicianId
+  );
+
+
+  console.log('');
+
+  console.log(
+    'ADMINISTRADOR TEST'
+  );
+
+  console.log(
+    'Email:',
+    ADMIN_EMAIL
+  );
+
+  console.log(
+    'Password:',
+    TEST_PASSWORD
+  );
+
+  console.log(
+    'UID:',
+    adminAuthUser.uid
   );
 
 

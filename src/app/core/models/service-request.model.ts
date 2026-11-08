@@ -21,6 +21,30 @@ export type PaymentStatus =
   | 'paid';
 
 
+export interface AcceptedQuoteSnapshot {
+
+  quoteId: string;
+
+  requestId: string;
+
+  clientId: string;
+
+  technicianId: string;
+  technicianName: string;
+
+  laborAmount: number;
+  materialsAmount: number;
+  otherAmount: number;
+  totalAmount: number;
+
+  availableDate: Date | null;
+
+  comment: string;
+
+  acceptedAt: Date | null;
+}
+
+
 export interface ServiceRequest {
 
   id: string;
@@ -55,6 +79,16 @@ export interface ServiceRequest {
    * Presupuesto elegido por el cliente.
    */
   acceptedQuoteId: string | null;
+
+  /*
+   * Copia inmutable de los datos económicos
+   * aceptados. Se genera autoritativamente
+   * en Cloud Functions para conservar el
+   * monto y las condiciones durante todo el
+   * ciclo del servicio.
+   */
+  acceptedQuoteSnapshot?:
+    AcceptedQuoteSnapshot | null;
 
 
   /*

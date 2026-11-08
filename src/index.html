@@ -1,26 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
   <meta charset="utf-8" />
-  <title>Ionic App</title>
+  <title>ServiGo</title>
 
   <base href="/" />
 
+  <meta
+    name="description"
+    content="ServiGo conecta clientes con técnicos y prestadores de servicios confiables."
+  />
   <meta name="color-scheme" content="light dark" />
-  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#f5f7fb" />
+  <meta
+    name="viewport"
+    content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
   <meta name="format-detection" content="telephone=no" />
   <meta name="msapplication-tap-highlight" content="no" />
 
   <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
 
-  <!-- add to homescreen for ios -->
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <script>
+    (() => {
+      const storageKey = 'servigo-theme-preference';
+      let preference = 'system';
+
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+          preference = stored;
+        }
+      } catch {
+        preference = 'system';
+      }
+
+      const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+      const resolved = preference === 'system'
+        ? (systemDark ? 'dark' : 'light')
+        : preference;
+
+      const root = document.documentElement;
+      root.dataset.theme = resolved;
+      root.classList.toggle('ion-palette-dark', resolved === 'dark');
+      root.style.colorScheme = resolved;
+
+      const themeMeta = document.querySelector('meta[name="theme-color"]');
+      themeMeta?.setAttribute(
+        'content',
+        resolved === 'dark' ? '#0b1220' : '#f5f7fb'
+      );
+    })();
+  </script>
 </head>
 
 <body>
   <app-root></app-root>
+  <noscript>
+    ServiGo necesita JavaScript habilitado para funcionar.
+  </noscript>
 </body>
 
 </html>

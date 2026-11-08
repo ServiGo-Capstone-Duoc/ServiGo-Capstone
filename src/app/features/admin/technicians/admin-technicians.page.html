@@ -1,0 +1,363 @@
+<ion-content>
+  <main class="admin-technicians-page">
+
+    <header class="page-header">
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Volver a administración"
+        (click)="goBack()"
+      >
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+
+      <div class="header-copy">
+        <span class="eyebrow">ADMINISTRACIÓN</span>
+        <h1>Perfiles técnicos</h1>
+        <p>
+          Gestiona la información profesional visible, la cobertura y el estado operativo de cada técnico.
+        </p>
+      </div>
+    </header>
+
+    <div
+      class="message success"
+      role="status"
+      *ngIf="successMessage"
+    >
+      <ion-icon name="checkmark-circle-outline"></ion-icon>
+      <span>{{ successMessage }}</span>
+    </div>
+
+    <div
+      class="message error"
+      role="alert"
+      *ngIf="errorMessage"
+    >
+      <ion-icon name="close-circle-outline"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <section
+      class="catalog-card"
+      *ngIf="!selectedProfile"
+    >
+      <div class="catalog-heading">
+        <div>
+          <span class="eyebrow">CATÁLOGO PROFESIONAL</span>
+          <h2>{{ profiles.length }} técnicos registrados</h2>
+        </div>
+
+        <div class="heading-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="synchronizing"
+            (click)="synchronizeApproved()"
+          >
+            <ion-spinner
+              *ngIf="synchronizing"
+              name="crescent"
+            ></ion-spinner>
+            <ion-icon
+              *ngIf="!synchronizing"
+              name="sync-outline"
+            ></ion-icon>
+            Sincronizar aprobados
+          </button>
+
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Actualizar listado"
+            [disabled]="loading"
+            (click)="loadProfiles()"
+          >
+            <ion-icon name="refresh-outline"></ion-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <ion-searchbar
+          aria-label="Buscar técnico"
+          placeholder="Buscar por nombre, comuna o especialidad"
+          [debounce]="250"
+          (ionInput)="onSearch($event)"
+        ></ion-searchbar>
+
+        <ion-select
+          aria-label="Filtrar por estado"
+          interface="popover"
+          [value]="statusFilter"
+          (ionChange)="onStatusFilterChange($event.detail.value)"
+        >
+          <ion-select-option value="all">Todos los estados</ion-select-option>
+          <ion-select-option value="active">Activos</ion-select-option>
+          <ion-select-option value="inactive">Inactivos</ion-select-option>
+          <ion-select-option value="suspended">Suspendidos</ion-select-option>
+        </ion-select>
+      </div>
+
+      <div
+        class="loading-state"
+        *ngIf="loading"
+      >
+        <ion-spinner name="crescent"></ion-spinner>
+        <span>Cargando perfiles técnicos...</span>
+      </div>
+
+      <div
+        class="empty-state"
+        *ngIf="!loading && filteredProfiles.length === 0"
+      >
+        <ion-icon name="search-outline"></ion-icon>
+        <h3>No encontramos técnicos</h3>
+        <p>
+          Ajusta los filtros o sincroniza las postulaciones aprobadas de versiones anteriores.
+        </p>
+      </div>
+
+      <div
+        class="technician-grid"
+        *ngIf="!loading && filteredProfiles.length > 0"
+      >
+        <button
+          type="button"
+          class="technician-card"
+          *ngFor="let profile of filteredProfiles"
+          (click)="selectProfile(profile)"
+        >
+          <div class="avatar">
+            <img
+              *ngIf="profile.photoUrl"
+              [src]="profile.photoUrl"
+              [alt]="profile.displayName"
+            />
+            <ion-icon
+              *ngIf="!profile.photoUrl"
+              name="construct-outline"
+            ></ion-icon>
+          </div>
+
+          <div class="technician-copy">
+            <div class="name-row">
+              <strong>{{ profile.displayName }}</strong>
+              <span
+                class="status-badge"
+                [class.inactive]="profile.status === 'inactive'"
+                [class.suspended]="profile.status === 'suspended'"
+              >
+                {{ statusLabel(profile.status) }}
+              </span>
+            </div>
+
+            <span>
+              {{ profile.baseCommune }} · {{ profile.serviceRadiusKm }} km de cobertura
+            </span>
+
+            <div class="specialties">
+              <span *ngFor="let specialty of profile.specialties | slice:0:4">
+                {{ specialty }}
+              </span>
+            </div>
+          </div>
+
+          <ion-icon
+            class="edit-icon"
+            name="create-outline"
+          ></ion-icon>
+        </button>
+      </div>
+    </section>
+
+    <section
+      class="editor-card"
+      *ngIf="selectedProfile as profile"
+    >
+      <div class="editor-heading">
+        <button
+          type="button"
+          class="back-button"
+          (click)="closeEditor()"
+        >
+          <ion-icon name="arrow-back-outline"></ion-icon>
+          Volver al catálogo
+        </button>
+
+        <div>
+          <span class="eyebrow">PERFIL PROFESIONAL</span>
+          <h2>{{ profile.displayName }}</h2>
+          <p>
+            UID: {{ profile.userId }} · Cuenta {{ profile.accountStatus }}
+          </p>
+        </div>
+      </div>
+
+      <form
+        class="profile-form"
+        [formGroup]="form"
+        (ngSubmit)="save()"
+      >
+        <div class="form-grid">
+          <ion-input
+            fill="outline"
+            label="Nombre público"
+            labelPlacement="stacked"
+            formControlName="displayName"
+            maxlength="80"
+            autocomplete="name"
+          ></ion-input>
+
+          <ion-select
+            fill="outline"
+            label="Estado profesional"
+            labelPlacement="stacked"
+            formControlName="status"
+            interface="popover"
+          >
+            <ion-select-option value="active">Activo</ion-select-option>
+            <ion-select-option value="inactive">Inactivo</ion-select-option>
+            <ion-select-option value="suspended">Suspendido</ion-select-option>
+          </ion-select>
+
+          <ion-input
+            class="full-width"
+            fill="outline"
+            label="URL de fotografía"
+            labelPlacement="stacked"
+            formControlName="photoUrl"
+            maxlength="2048"
+            inputmode="url"
+          ></ion-input>
+
+          <ion-input
+            class="full-width"
+            fill="outline"
+            label="Especialidades"
+            labelPlacement="stacked"
+            helperText="Sepáralas con comas. Ejemplo: Electricidad, Línea blanca"
+            formControlName="specialtiesText"
+          ></ion-input>
+
+          <ion-input
+            fill="outline"
+            type="number"
+            label="Años de experiencia"
+            labelPlacement="stacked"
+            min="0"
+            max="60"
+            formControlName="experienceYears"
+          ></ion-input>
+
+          <ion-input
+            fill="outline"
+            label="Comuna base"
+            labelPlacement="stacked"
+            maxlength="80"
+            formControlName="baseCommune"
+          ></ion-input>
+
+          <ion-input
+            fill="outline"
+            type="number"
+            label="Radio de atención (km)"
+            labelPlacement="stacked"
+            min="1"
+            max="200"
+            formControlName="serviceRadiusKm"
+          ></ion-input>
+
+          <label class="toggle-field">
+            <span>
+              <strong>Certificaciones verificadas</strong>
+              <small>Visible para clientes en el perfil profesional.</small>
+            </span>
+            <ion-toggle formControlName="hasCertifications"></ion-toggle>
+          </label>
+
+          <ion-textarea
+            class="full-width"
+            fill="outline"
+            label="Resumen de experiencia"
+            labelPlacement="stacked"
+            autoGrow="true"
+            maxlength="1200"
+            formControlName="experienceDescription"
+          ></ion-textarea>
+
+          <ion-textarea
+            class="full-width"
+            fill="outline"
+            label="Descripción pública"
+            labelPlacement="stacked"
+            helperText="Texto que verá el cliente al consultar al técnico."
+            autoGrow="true"
+            maxlength="800"
+            formControlName="publicDescription"
+          ></ion-textarea>
+        </div>
+
+        <p class="validation-message" *ngIf="form.invalid && form.touched">
+          Revisa los campos obligatorios, los rangos y que exista al menos una especialidad.
+        </p>
+
+        <div class="form-actions">
+          <ion-button
+            type="submit"
+            [disabled]="saving || form.invalid"
+          >
+            <ion-spinner
+              *ngIf="saving"
+              name="crescent"
+            ></ion-spinner>
+            <span *ngIf="!saving">Guardar cambios</span>
+          </ion-button>
+
+          <button
+            type="button"
+            class="danger-link"
+            (click)="toggleDeleteConfirmation()"
+          >
+            <ion-icon name="trash-outline"></ion-icon>
+            Eliminar perfil profesional
+          </button>
+        </div>
+
+        <div
+          class="delete-confirmation"
+          *ngIf="showDeleteConfirmation"
+        >
+          <strong>¿Retirar a este técnico de ServiGo?</strong>
+          <p>
+            Se eliminará su perfil profesional y se retirará el rol técnico. Su cuenta de cliente y el historial transaccional permanecerán intactos.
+          </p>
+
+          <div>
+            <button
+              type="button"
+              class="secondary-button"
+              [disabled]="deleting"
+              (click)="toggleDeleteConfirmation()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              class="danger-button"
+              [disabled]="deleting"
+              (click)="deleteProfile()"
+            >
+              <ion-spinner
+                *ngIf="deleting"
+                name="crescent"
+              ></ion-spinner>
+              <span *ngIf="!deleting">Sí, retirar técnico</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+  </main>
+</ion-content>

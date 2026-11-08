@@ -344,10 +344,7 @@ export class OpportunityDetailPage
       }
 
 
-      console.log(
-        '[ServiGo] Oportunidad cargada:',
-        result
-      );
+      
 
 
     } catch (error) {

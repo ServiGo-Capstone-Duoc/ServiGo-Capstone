@@ -3,13 +3,17 @@ import {
 } from '@angular/common';
 
 import {
-  AfterViewInit,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   OnDestroy,
   OnInit,
   inject
 } from '@angular/core';
+
+import {
+  takeUntilDestroyed
+} from '@angular/core/rxjs-interop';
 
 import {
   FormBuilder,
@@ -126,13 +130,18 @@ interface GeocodeAddressResponse {
 export class NewRequestPage
   implements
     OnInit,
-    AfterViewInit,
-    OnDestroy {
+      OnDestroy {
 
 
   private readonly fb =
     inject(
       FormBuilder
+    );
+
+
+  private readonly destroyRef =
+    inject(
+      DestroyRef
     );
 
 
@@ -484,6 +493,11 @@ export class NewRequestPage
     this.form.controls
       .address
       .valueChanges
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef
+        )
+      )
       .subscribe(
         () => {
 
@@ -495,22 +509,17 @@ export class NewRequestPage
     this.form.controls
       .commune
       .valueChanges
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef
+        )
+      )
       .subscribe(
         () => {
 
           this.invalidateLocation();
         }
       );
-  }
-
-
-  ngAfterViewInit():
-    void {
-
-    /*
-     * El mapa se crea únicamente después
-     * de una búsqueda exitosa.
-     */
   }
 
 
@@ -864,16 +873,7 @@ export class NewRequestPage
       this.scheduleMapInitialization();
 
 
-      console.log(
-        '[ServiGo] Dirección localizada.',
-        {
-          commune,
-          latitude:
-            result.latitude,
-          longitude:
-            result.longitude
-        }
-      );
+      
 
 
     } catch (error: any) {
@@ -1008,9 +1008,7 @@ export class NewRequestPage
       .detectChanges();
 
 
-    console.log(
-      '[ServiGo] Domicilio confirmado para la solicitud.'
-    );
+    
   }
 
 
@@ -1629,10 +1627,7 @@ const container =
       }
 
 
-      console.log(
-        '[ServiGo] Solicitud publicada:',
-        this.requestId
-      );
+      
 
 
       this.success =

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { deleteObject, getBlob, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, getBlob, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { firebaseStorage } from '../firebase/firebase';
 
 @Injectable({ providedIn: 'root' })
@@ -50,6 +50,53 @@ export class MediaStorageService {
     const path = `chat-images/${requestId}/${senderId}/${messageId}/image.${extension}`;
     await uploadBytes(ref(firebaseStorage, path), file, { contentType: file.type });
     return path;
+  }
+
+
+  async uploadProfileAvatar(
+    userId: string,
+    file: File
+  ): Promise<string> {
+    const validationError = this.validateImage(file);
+    if (validationError) throw new Error(validationError);
+
+    const path = `profile-avatars/${userId}/avatar`;
+    const avatarRef = ref(firebaseStorage, path);
+
+    await uploadBytes(
+      avatarRef,
+      file,
+      {
+        contentType: file.type,
+        cacheControl: 'public,max-age=3600'
+      }
+    );
+
+    return getDownloadURL(avatarRef);
+  }
+
+  async deleteProfileAvatar(
+    userId: string
+  ): Promise<void> {
+    const avatarRef = ref(
+      firebaseStorage,
+      `profile-avatars/${userId}/avatar`
+    );
+
+    try {
+      await deleteObject(avatarRef);
+    } catch (error: unknown) {
+      const code =
+        typeof error === 'object'
+        && error !== null
+        && 'code' in error
+          ? String(error.code)
+          : '';
+
+      if (code !== 'storage/object-not-found') {
+        throw error;
+      }
+    }
   }
 
 

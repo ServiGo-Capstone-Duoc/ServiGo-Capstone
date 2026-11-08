@@ -34,7 +34,7 @@
       <span>Cargando notificaciones…</span>
     </section>
 
-    <ng-container *ngIf="!(loading$ | async)">
+    <ng-container *ngIf="(loading$ | async) === false">
       <section
         class="state-card error-state sg-card"
         *ngIf="error$ | async as errorMessage"
@@ -47,7 +47,7 @@
       <ng-container *ngIf="notifications$ | async as notifications">
         <section
           class="state-card empty-state sg-card"
-          *ngIf="notifications.length === 0 && !(error$ | async)"
+          *ngIf="notifications.length === 0 && (error$ | async) === ''"
         >
           <div class="empty-icon">
             <ion-icon name="notifications-outline"></ion-icon>

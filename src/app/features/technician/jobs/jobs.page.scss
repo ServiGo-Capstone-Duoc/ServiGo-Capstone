@@ -3,7 +3,7 @@
 }
 
 ion-content {
-  --background: #f5f7fb;
+  --background: var(--servigo-background);
 }
 
 .jobs-container {
@@ -39,16 +39,15 @@ ion-content {
   border: 0;
   border-radius: 16px;
 
-  background: #ffffff;
-  color: #0879ee;
+  background: var(--servigo-surface);
+  color: var(--servigo-blue);
 
   font-size: 24px;
 
   cursor: pointer;
 
   box-shadow:
-    0 6px 20px
-    rgba(30, 50, 80, 0.06);
+    var(--servigo-shadow-card);
 }
 
 .jobs-logo {
@@ -72,7 +71,7 @@ ion-content {
 
   margin-bottom: 8px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 12px;
   font-weight: 800;
@@ -85,7 +84,7 @@ ion-content {
     0
     8px;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 30px;
   font-weight: 800;
@@ -95,7 +94,7 @@ ion-content {
 .jobs-intro p {
   margin: 0;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 15px;
   line-height: 1.5;
@@ -120,11 +119,11 @@ ion-content {
 
   border:
     1px solid
-    #e4eaf2;
+    var(--servigo-border);
 
   border-radius: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: center;
 }
@@ -132,11 +131,11 @@ ion-content {
 .loading-state {
   gap: 14px;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 }
 
 .error-state {
-  color: #c62828;
+  color: var(--servigo-error);
 }
 
 
@@ -147,7 +146,7 @@ ion-content {
 .empty-state ion-icon {
   margin-bottom: 14px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 42px;
 }
@@ -158,7 +157,7 @@ ion-content {
     0
     8px;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 20px;
 }
@@ -168,7 +167,7 @@ ion-content {
 
   margin: 0;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 14px;
   line-height: 1.5;
@@ -204,11 +203,11 @@ ion-content {
 
   border:
     1px solid
-    #e1e8f1;
+    var(--servigo-border);
 
   border-radius: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color: inherit;
 
@@ -217,8 +216,7 @@ ion-content {
   cursor: pointer;
 
   box-shadow:
-    0 8px 28px
-    rgba(30, 50, 80, 0.04);
+    var(--servigo-shadow-card);
 
   transition:
     transform 0.15s ease,
@@ -230,8 +228,7 @@ ion-content {
     translateY(-2px);
 
   box-shadow:
-    0 12px 30px
-    rgba(30, 50, 80, 0.08);
+    var(--servigo-shadow-floating);
 }
 
 
@@ -262,9 +259,9 @@ ion-content {
 
   border-radius: 16px;
 
-  background: #eaf4ff;
+  background: var(--servigo-blue-light);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 25px;
 }
@@ -278,7 +275,7 @@ ion-content {
 
   margin-bottom: 3px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 10px;
   font-weight: 800;
@@ -288,7 +285,7 @@ ion-content {
 .job-main h2 {
   margin: 0;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 19px;
   font-weight: 800;
@@ -301,9 +298,9 @@ ion-content {
 
   border-radius: 999px;
 
-  background: #e8f8ef;
+  background: var(--servigo-success-soft);
 
-  color: #168447;
+  color: var(--servigo-success);
 
   font-size: 11px;
   font-weight: 800;
@@ -321,7 +318,7 @@ ion-content {
     18px
     0;
 
-  color: #5e697b;
+  color: var(--servigo-text-secondary);
 
   font-size: 14px;
   line-height: 1.5;
@@ -344,7 +341,7 @@ ion-content {
 
   border-bottom:
     1px solid
-    #edf0f4;
+    var(--servigo-surface-muted);
 }
 
 .job-meta span {
@@ -353,13 +350,13 @@ ion-content {
 
   gap: 5px;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 12px;
 }
 
 .job-meta ion-icon {
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 16px;
 }
@@ -378,7 +375,7 @@ ion-content {
 
   padding-top: 16px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 13px;
   font-weight: 800;
@@ -469,10 +466,10 @@ ion-content {
   margin-bottom: 24px;
   padding: 5px;
 
-  border: 1px solid #dbe5f0;
+  border: 1px solid var(--servigo-border);
   border-radius: 18px;
 
-  background: #eaf0f7;
+  background: var(--servigo-surface-muted);
 }
 
 
@@ -495,7 +492,7 @@ ion-content {
 
   background: transparent;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 13px;
   font-weight: 700;
@@ -506,13 +503,12 @@ ion-content {
 
 .services-view-switcher button.active,
 .jobs-view-switcher button.active {
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   box-shadow:
-    0 3px 12px
-    rgba(30, 60, 100, 0.08);
+    var(--servigo-shadow-card);
 }
 
 
@@ -531,9 +527,9 @@ ion-content {
 
   border-radius: 999px;
 
-  background: #dcecff;
+  background: var(--servigo-blue-light);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 11px;
 }
@@ -544,14 +540,14 @@ ion-content {
  * ========================================= */
 
 .status-badge.completed {
-  background: #e8f8ef;
+  background: var(--servigo-success-soft);
 
-  color: #168447;
+  color: var(--servigo-success);
 }
 
 
 .status-badge.cancelled {
-  background: #fdecec;
+  background: var(--servigo-error-soft);
 
-  color: #c63a3a;
+  color: var(--servigo-error);
 }

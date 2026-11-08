@@ -8,7 +8,9 @@ import {
 
 import {
   Geolocation,
-  Position
+  PermissionStatus,
+  Position,
+  PositionOptions
 } from '@capacitor/geolocation';
 
 import {
@@ -44,119 +46,67 @@ export class TechnicianLocationService {
       null;
 
 
+  private validatedPosition:
+    Position | null =
+      null;
+
+
+  private readonly positionOptions:
+    PositionOptions = {
+      enableHighAccuracy:
+        Capacitor.isNativePlatform(),
+
+      timeout:
+        20000,
+
+      maximumAge:
+        5000
+    };
+
+
   /*
    * =========================================
-   * COMPROBAR DISPONIBILIDAD GPS
+   * COMPROBAR DISPONIBILIDAD DE UBICACIÓN
    * =========================================
    *
-   * Se ejecuta ANTES de cambiar el trabajo
-   * desde accepted hacia en_route.
+   * Funciona tanto en navegador como en la
+   * aplicación nativa:
    *
-   * Objetivo:
+   * - En Android/iOS revisa y solicita permisos.
+   * - En web, getCurrentPosition() activa el
+   *   diálogo de permisos del navegador.
+   * - Si la ubicación del equipo está apagada,
+   *   devuelve un error explícito y NO permite
+   *   cambiar el trabajo a en_route.
    *
-   * - comprobar plataforma nativa
-   * - comprobar permisos
-   * - solicitar permisos si corresponde
-   * - verificar que exista una posición GPS
-   *
-   * IMPORTANTE:
-   *
-   * Este método NO publica la ubicación
-   * en Firestore.
+   * Este método todavía no publica datos.
    */
 
   async ensureLocationAvailable():
     Promise<void> {
 
 
-    if (
-      !Capacitor.isNativePlatform()
-    ) {
-
-      console.warn(
-        '[ServiGo Location] GPS nativo no disponible en web.'
-      );
-
-      return;
-    }
+    this.ensureBrowserSupport();
 
 
-    /*
-     * =====================================
-     * PERMISOS
-     * =====================================
-     */
+    try {
 
-    let permission =
-      await Geolocation
-        .checkPermissions();
+      await this.ensurePermission();
 
 
-    if (
-      permission.location ===
-        'prompt'
-      ||
-      permission.coarseLocation ===
-        'prompt'
-    ) {
-
-      permission =
+      this.validatedPosition =
         await Geolocation
-          .requestPermissions();
-    }
+          .getCurrentPosition(
+            this.positionOptions
+          );
 
 
-    if (
-      permission.location !==
-        'granted'
-      &&
-      permission.coarseLocation !==
-        'granted'
-    ) {
+    } catch (error) {
 
-      throw new Error(
-        'location-permission-denied'
+      throw this.normaliseLocationError(
+        error
       );
     }
-
-
-    /*
-     * =====================================
-     * COMPROBAR POSICIÓN
-     * =====================================
-     *
-     * Antes de cambiar el trabajo a en_route
-     * comprobamos que el dispositivo realmente
-     * pueda entregar una ubicación.
-     */
-
-    const position =
-      await Geolocation
-        .getCurrentPosition({
-          enableHighAccuracy:
-            true,
-
-          timeout:
-            15000,
-
-          maximumAge:
-            5000
-        });
-
-
-    console.log(
-      '[ServiGo Location] GPS disponible.',
-      {
-        latitude:
-          position.coords.latitude,
-
-        longitude:
-          position.coords.longitude,
-
-        accuracy:
-          position.coords.accuracy
-      }
-    );
   }
 
 
@@ -165,13 +115,8 @@ export class TechnicianLocationService {
    * INICIAR TRACKING
    * =========================================
    *
-   * Este método debe ejecutarse DESPUÉS
-   * de que Functions cambie:
-   *
-   * accepted -> en_route
-   *
-   * De esa forma Firestore Rules permite
-   * publicar technicianLocations.
+   * Debe invocarse después de que Functions
+   * haya cambiado el estado a en_route.
    */
 
   async startTracking(
@@ -180,21 +125,8 @@ export class TechnicianLocationService {
   ): Promise<void> {
 
 
-    if (
-      !Capacitor.isNativePlatform()
-    ) {
+    this.ensureBrowserSupport();
 
-      console.warn(
-        '[ServiGo Location] Tracking GPS nativo omitido en web.'
-      );
-
-      return;
-    }
-
-
-    /*
-     * Evita crear dos watchers simultáneos.
-     */
 
     if (
       this.watchId
@@ -204,52 +136,89 @@ export class TechnicianLocationService {
     }
 
 
-    this.technicianId =
-      technicianId;
+    try {
+
+      await this.ensurePermission();
 
 
-    this.requestId =
-      requestId;
+      const initialPosition =
+        this.validatedPosition
+        ?? await Geolocation
+          .getCurrentPosition(
+            this.positionOptions
+          );
 
 
-    /*
-     * =====================================
-     * PERMISOS
-     * =====================================
-     *
-     * Aunque ensureLocationAvailable()
-     * normalmente ya los comprobó,
-     * startTracking también se protege
-     * para poder funcionar de forma segura
-     * si se invoca independientemente.
-     */
-
-    let permission =
-      await Geolocation
-        .checkPermissions();
+      this.technicianId =
+        technicianId;
 
 
-    if (
-      permission.location ===
-        'prompt'
-      ||
-      permission.coarseLocation ===
-        'prompt'
-    ) {
+      this.requestId =
+        requestId;
 
-      permission =
+
+      this.validatedPosition =
+        null;
+
+
+      await this.publishPosition(
+        initialPosition
+      );
+
+
+      this.watchId =
         await Geolocation
-          .requestPermissions();
-    }
+          .watchPosition(
+            this.positionOptions,
+
+            (
+              position,
+              error
+            ) => {
 
 
-    if (
-      permission.location !==
-        'granted'
-      &&
-      permission.coarseLocation !==
-        'granted'
-    ) {
+              if (
+                error
+              ) {
+
+                console.warn(
+                  '[ServiGo Location] No fue posible actualizar la ubicación:',
+                  this.normaliseLocationError(
+                    error
+                  ).message
+                );
+
+                return;
+              }
+
+
+              if (
+                !position
+              ) {
+
+                return;
+              }
+
+
+              void this.publishPosition(
+                position
+              ).catch(
+                publishError => {
+
+                  console.error(
+                    '[ServiGo Location] Error publicando ubicación:',
+                    publishError
+                  );
+                }
+              );
+            }
+          );
+
+
+    } catch (error) {
+
+      this.watchId =
+        null;
 
       this.technicianId =
         null;
@@ -257,164 +226,14 @@ export class TechnicianLocationService {
       this.requestId =
         null;
 
+      this.validatedPosition =
+        null;
 
-      throw new Error(
-        'location-permission-denied'
+
+      throw this.normaliseLocationError(
+        error
       );
     }
-
-
-    /*
-     * =====================================
-     * POSICIÓN INICIAL
-     * =====================================
-     *
-     * Esta posición SÍ se publica porque
-     * para este momento el servicio ya debe
-     * encontrarse en estado en_route.
-     */
-
-    const initialPosition =
-      await Geolocation
-        .getCurrentPosition({
-          enableHighAccuracy:
-            true,
-
-          timeout:
-            15000,
-
-          maximumAge:
-            5000
-        });
-
-
-    await this.publishPosition(
-      initialPosition
-    );
-
-
-    console.log(
-      '[ServiGo Location] Posición inicial publicada.',
-      {
-        latitude:
-          initialPosition.coords.latitude,
-
-        longitude:
-          initialPosition.coords.longitude,
-
-        accuracy:
-          initialPosition.coords.accuracy
-      }
-    );
-
-
-    /*
-     * =====================================
-     * WATCH GPS
-     * =====================================
-     */
-
-    this.watchId =
-      await Geolocation
-        .watchPosition(
-          {
-            enableHighAccuracy:
-              true,
-
-            timeout:
-              15000,
-
-            maximumAge:
-              5000
-          },
-
-          async (
-            position,
-            error
-          ) => {
-
-
-            /*
-             * =================================
-             * ERROR GPS
-             * =================================
-             */
-
-            if (
-              error
-            ) {
-
-              console.error(
-                '[ServiGo Location] Error GPS:',
-                error
-              );
-
-              return;
-            }
-
-
-            /*
-             * =================================
-             * SIN POSICIÓN
-             * =================================
-             */
-
-            if (
-              !position
-            ) {
-
-              return;
-            }
-
-
-            /*
-             * =================================
-             * PUBLICAR POSICIÓN
-             * =================================
-             */
-
-            try {
-
-              await this.publishPosition(
-                position
-              );
-
-
-              console.log(
-                '[ServiGo Location] Ubicación actualizada.',
-                {
-                  latitude:
-                    position.coords.latitude,
-
-                  longitude:
-                    position.coords.longitude,
-
-                  accuracy:
-                    position.coords.accuracy
-                }
-              );
-
-
-            } catch (publishError) {
-
-              console.error(
-                '[ServiGo Location] Error publicando ubicación:',
-                publishError
-              );
-            }
-          }
-        );
-
-
-    console.log(
-      '[ServiGo Location] Tracking iniciado.',
-      {
-        technicianId,
-        requestId,
-        watchId:
-          this.watchId
-      }
-    );
   }
 
 
@@ -422,29 +241,15 @@ export class TechnicianLocationService {
    * =========================================
    * DETENER TRACKING
    * =========================================
-   *
-   * Se utiliza cuando el técnico registra
-   * su llegada al domicilio.
-   *
-   * Además de detener watchPosition(),
-   * eliminamos technicianLocations/{uid}
-   * para que el cliente deje inmediatamente
-   * de tener acceso a la posición.
    */
 
   async stopTracking():
     Promise<void> {
 
 
-    const technicianId =
-      this.technicianId;
+    const requestId =
+      this.requestId;
 
-
-    /*
-     * =====================================
-     * DETENER WATCH
-     * =====================================
-     */
 
     if (
       this.watchId
@@ -469,10 +274,6 @@ export class TechnicianLocationService {
     }
 
 
-    /*
-     * Limpiamos estado local.
-     */
-
     this.watchId =
       null;
 
@@ -482,22 +283,19 @@ export class TechnicianLocationService {
     this.requestId =
       null;
 
+    this.validatedPosition =
+      null;
 
-    /*
-     * =====================================
-     * ELIMINAR UBICACIÓN COMPARTIDA
-     * =====================================
-     */
 
     if (
-      technicianId
+      requestId
     ) {
 
       const locationRef =
         doc(
           firestore,
           'technicianLocations',
-          technicianId
+          requestId
         );
 
 
@@ -505,11 +303,6 @@ export class TechnicianLocationService {
 
         await deleteDoc(
           locationRef
-        );
-
-
-        console.log(
-          '[ServiGo Location] Ubicación compartida eliminada.'
         );
 
 
@@ -529,12 +322,246 @@ export class TechnicianLocationService {
 
   /*
    * =========================================
+   * PERMISOS
+   * =========================================
+   */
+
+  private async ensurePermission():
+    Promise<void> {
+
+
+    let permission:
+      PermissionStatus | null =
+        null;
+
+
+    try {
+
+      permission =
+        await Geolocation
+          .checkPermissions();
+
+
+    } catch (error) {
+
+      /*
+       * Algunos navegadores no implementan la
+       * Permissions API, pero sí Geolocation.
+       * En web continuamos y dejamos que
+       * getCurrentPosition() solicite el permiso.
+       */
+
+      if (
+        Capacitor.isNativePlatform()
+      ) {
+
+        throw error;
+      }
+    }
+
+
+    if (
+      !permission
+    ) {
+
+      return;
+    }
+
+
+    if (
+      permission.location === 'denied'
+      &&
+      permission.coarseLocation === 'denied'
+    ) {
+
+      throw new Error(
+        'location-permission-denied'
+      );
+    }
+
+
+    if (
+      Capacitor.isNativePlatform()
+      &&
+      (
+        permission.location === 'prompt'
+        ||
+        permission.location === 'prompt-with-rationale'
+        ||
+        permission.coarseLocation === 'prompt'
+        ||
+        permission.coarseLocation === 'prompt-with-rationale'
+      )
+    ) {
+
+      const requestedPermission =
+        await Geolocation
+          .requestPermissions();
+
+
+      if (
+        requestedPermission.location !== 'granted'
+        &&
+        requestedPermission.coarseLocation !== 'granted'
+      ) {
+
+        throw new Error(
+          'location-permission-denied'
+        );
+      }
+    }
+  }
+
+
+  private ensureBrowserSupport():
+    void {
+
+
+    if (
+      Capacitor.isNativePlatform()
+    ) {
+
+      return;
+    }
+
+
+    if (
+      typeof navigator === 'undefined'
+      ||
+      !navigator.geolocation
+    ) {
+
+      throw new Error(
+        'location-not-supported'
+      );
+    }
+  }
+
+
+  private normaliseLocationError(
+    error: unknown
+  ): Error {
+
+
+    if (
+      error instanceof Error
+      &&
+      (
+        error.message === 'location-permission-denied'
+        ||
+        error.message === 'location-unavailable'
+        ||
+        error.message === 'location-timeout'
+        ||
+        error.message === 'location-not-supported'
+      )
+    ) {
+
+      return error;
+    }
+
+
+    const candidate =
+      error as {
+        code?: string | number;
+        message?: string;
+      };
+
+
+    const code =
+      candidate?.code;
+
+
+    const message =
+      candidate?.message
+        ?.toLowerCase()
+      ?? '';
+
+
+    if (
+      code === 1
+      ||
+      code === '1'
+      ||
+      code === 'OS-PLUG-GLOC-0003'
+      ||
+      message.includes(
+        'permission'
+      )
+      ||
+      message.includes(
+        'denied'
+      )
+    ) {
+
+      return new Error(
+        'location-permission-denied'
+      );
+    }
+
+
+    if (
+      code === 3
+      ||
+      code === '3'
+      ||
+      code === 'OS-PLUG-GLOC-0010'
+      ||
+      message.includes(
+        'timeout'
+      )
+      ||
+      message.includes(
+        'timed out'
+      )
+    ) {
+
+      return new Error(
+        'location-timeout'
+      );
+    }
+
+
+    if (
+      code === 2
+      ||
+      code === '2'
+      ||
+      code === 'OS-PLUG-GLOC-0007'
+      ||
+      code === 'OS-PLUG-GLOC-0009'
+      ||
+      code === 'OS-PLUG-GLOC-0017'
+      ||
+      message.includes(
+        'unavailable'
+      )
+      ||
+      message.includes(
+        'disabled'
+      )
+      ||
+      message.includes(
+        'location services'
+      )
+    ) {
+
+      return new Error(
+        'location-unavailable'
+      );
+    }
+
+
+    return new Error(
+      'location-unavailable'
+    );
+  }
+
+
+  /*
+   * =========================================
    * PUBLICAR POSICIÓN
    * =========================================
-   *
-   * Solo mantiene la última posición.
-   *
-   * NO generamos historial GPS.
    */
 
   private async publishPosition(
@@ -551,12 +578,6 @@ export class TechnicianLocationService {
       return;
     }
 
-
-    /*
-     * =====================================
-     * VALIDACIÓN LOCAL
-     * =====================================
-     */
 
     const latitude =
       position.coords.latitude;
@@ -596,30 +617,17 @@ export class TechnicianLocationService {
     }
 
 
-    /*
-     * =====================================
-     * DOCUMENTO FIRESTORE
-     * =====================================
-     */
-
     const locationRef =
       doc(
         firestore,
         'technicianLocations',
-        this.technicianId
+        this.requestId
       );
 
-
-    /*
-     * =====================================
-     * PUBLICAR
-     * =====================================
-     */
 
     await setDoc(
       locationRef,
       {
-
         technicianId:
           this.technicianId,
 

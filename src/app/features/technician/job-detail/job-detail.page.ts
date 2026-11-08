@@ -350,13 +350,7 @@ export class JobDetailPage {
     }
 
 
-    console.log(
-      '[ServiGo Location] Trabajo en_route detectado. Reanudando tracking...',
-      {
-        requestId:
-          this.job.id
-      }
-    );
+    
 
 
     try {
@@ -406,16 +400,7 @@ export class JobDetailPage {
         );
 
 
-      console.log(
-        '[ServiGo Location] Tracking reanudado correctamente.',
-        {
-          technicianId:
-            user.uid,
-
-          requestId:
-            this.job.id
-        }
-      );
+      
 
 
     } catch (error: any) {
@@ -426,20 +411,11 @@ export class JobDetailPage {
       );
 
 
-      if (
-        error?.message ===
-        'location-permission-denied'
-      ) {
-
-        this.actionError =
-          'Activa el permiso de ubicación para continuar compartiendo tu llegada.';
-
-
-      } else {
-
-        this.actionError =
-          'No pudimos reanudar el seguimiento de ubicación.';
-      }
+      this.actionError =
+        this.getLocationErrorMessage(
+          error,
+          'No pudimos reanudar el seguimiento de ubicación.'
+        );
 
 
       this.cdr
@@ -575,16 +551,7 @@ export class JobDetailPage {
         );
 
 
-      console.log(
-        '[ServiGo Location] Técnico en camino y compartiendo ubicación.',
-        {
-          technicianId:
-            user.uid,
-
-          requestId:
-            this.job.id
-        }
-      );
+      
 
 
     } catch (error: any) {
@@ -595,23 +562,19 @@ export class JobDetailPage {
       );
 
 
-      if (
-        error?.message ===
-        'location-permission-denied'
-      ) {
-
-        this.actionError =
-          'Debes permitir el acceso a tu ubicación para iniciar el viaje.';
+      const locationMessage =
+        this.getLocationErrorMessage(
+          error,
+          ''
+        );
 
 
-      } else {
-
-        this.actionError =
-          this.getActionErrorMessage(
-            error,
-            'No pudimos iniciar el desplazamiento.'
-          );
-      }
+      this.actionError =
+        locationMessage
+        || this.getActionErrorMessage(
+          error,
+          'No pudimos iniciar el desplazamiento.'
+        );
 
 
     } finally {
@@ -718,9 +681,7 @@ export class JobDetailPage {
         .stopTracking();
 
 
-      console.log(
-        '[ServiGo Location] Llegada registrada. Tracking detenido.'
-      );
+      
 
 
     } catch (error: any) {
@@ -1139,9 +1100,7 @@ export class JobDetailPage {
         '';
 
 
-      console.log(
-        '[ServiGo] Trabajo cancelado por el técnico.'
-      );
+      
 
 
     } catch (error: any) {
@@ -1295,6 +1254,48 @@ export class JobDetailPage {
    * ERRORES DE ACCIÓN
    * =========================================
    */
+
+  private getLocationErrorMessage(
+    error: any,
+    fallback: string
+  ): string {
+
+
+    const message =
+      error?.message
+      ?? '';
+
+
+    switch (
+      message
+    ) {
+
+      case 'location-permission-denied':
+
+        return 'Debes permitir el acceso a tu ubicación para compartir el viaje con el cliente.';
+
+
+      case 'location-unavailable':
+
+        return 'Activa la ubicación de tu equipo o dispositivo e inténtalo nuevamente.';
+
+
+      case 'location-timeout':
+
+        return 'No pudimos obtener tu ubicación a tiempo. Revisa la señal y vuelve a intentarlo.';
+
+
+      case 'location-not-supported':
+
+        return 'Este navegador o dispositivo no permite compartir la ubicación.';
+
+
+      default:
+
+        return fallback;
+    }
+  }
+
 
   private getActionErrorMessage(
     error: any,

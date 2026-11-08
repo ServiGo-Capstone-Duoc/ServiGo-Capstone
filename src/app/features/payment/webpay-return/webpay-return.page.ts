@@ -181,22 +181,7 @@ private readonly cdr =
       '';
 
 
-    console.log(
-      '[ServiGo Webpay] Retorno recibido:',
-      {
-        hasTokenWs:
-          !!tokenWs,
-
-        hasTbkToken:
-          !!tbkToken,
-
-        hasTbkOrdenCompra:
-          !!tbkOrdenCompra,
-
-        hasTbkIdSesion:
-          !!tbkIdSesion
-      }
-    );
+    
 
 
     /*
@@ -301,10 +286,7 @@ private readonly cdr =
         );
 
 
-    console.log(
-      '[ServiGo Webpay] COMMIT recibido:',
-      result
-    );
+    
 
 
     this.result =

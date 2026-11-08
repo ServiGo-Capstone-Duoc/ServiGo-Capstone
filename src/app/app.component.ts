@@ -1,6 +1,7 @@
 import {
   Component,
-  OnInit
+  OnInit,
+  inject
 } from '@angular/core';
 
 import {
@@ -11,6 +12,10 @@ import {
 import {
   SessionService
 } from './core/services/session.service';
+
+import {
+  ThemeService
+} from './core/services/theme.service';
 
 @Component({
   selector:
@@ -30,10 +35,18 @@ import {
 export class AppComponent
   implements OnInit {
 
-  constructor(
-    private readonly sessionService:
-      SessionService
-  ) {}
+  private readonly sessionService =
+    inject(SessionService);
+
+
+  private readonly themeService =
+    inject(ThemeService);
+
+
+  constructor() {
+
+    this.themeService.initialize();
+  }
 
   async ngOnInit(): Promise<void> {
 

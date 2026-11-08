@@ -1,4 +1,6 @@
-import { Injectable } from '@angular/core';
+import {
+  Injectable
+} from '@angular/core';
 
 import {
   BehaviorSubject,
@@ -10,15 +12,31 @@ import {
   Timestamp,
   doc,
   getDoc,
-  onSnapshot
+  onSnapshot,
+  serverTimestamp,
+  updateDoc
 } from 'firebase/firestore';
 
 import {
+  httpsCallable
+} from 'firebase/functions';
+
+import {
+  updateProfile
+} from 'firebase/auth';
+
+import {
+  firebaseAuth,
+  firebaseFunctions,
   firestore
 } from '../firebase/firebase';
 
 import {
-  ServiGoUser
+  ClientProfileInput,
+  PreferredContactChannel,
+  ServiGoUser,
+  UserRole,
+  UserStatus
 } from '../models/user.model';
 
 @Injectable({
@@ -31,13 +49,15 @@ export class ProfileService {
       null
     );
 
-  readonly profile$: Observable<ServiGoUser | null> =
-    this.profileSubject.asObservable();
+  readonly profile$:
+    Observable<ServiGoUser | null> =
+      this.profileSubject.asObservable();
 
   private unsubscribeProfile:
     (() => void) | null = null;
 
-  get currentProfile(): ServiGoUser | null {
+  get currentProfile():
+    ServiGoUser | null {
 
     return this.profileSubject.value;
   }
@@ -55,8 +75,9 @@ export class ProfileService {
         )
       );
 
-    if (!snapshot.exists()) {
-
+    if (
+      !snapshot.exists()
+    ) {
       return null;
     }
 
@@ -78,9 +99,11 @@ export class ProfileService {
           'users',
           uid
         ),
-        (snapshot) => {
+        snapshot => {
 
-          if (!snapshot.exists()) {
+          if (
+            !snapshot.exists()
+          ) {
 
             this.profileSubject.next(
               null
@@ -89,19 +112,16 @@ export class ProfileService {
             return;
           }
 
-          const profile =
+          this.profileSubject.next(
             this.mapProfile(
               snapshot.data()
-            );
-
-          this.profileSubject.next(
-            profile
+            )
           );
         },
-        (error) => {
+        error => {
 
           console.error(
-            'Error escuchando perfil ServiGo:',
+            '[ServiGo] Error escuchando el perfil:',
             error
           );
 
@@ -110,6 +130,139 @@ export class ProfileService {
           );
         }
       );
+  }
+
+  async updateOwnProfile(
+    uid: string,
+    input: ClientProfileInput
+  ): Promise<void> {
+
+    const currentUser =
+      firebaseAuth.currentUser;
+
+    if (
+      !currentUser
+      || currentUser.uid !== uid
+    ) {
+      throw new Error(
+        'profile/session-mismatch'
+      );
+    }
+
+    const displayName =
+      input.displayName
+        .trim()
+        .replace(
+          /\s+/g,
+          ' '
+        );
+
+    if (
+      displayName.length < 2
+      || displayName.length > 80
+    ) {
+      throw new Error(
+        'profile/invalid-display-name'
+      );
+    }
+
+    const phone =
+      this.normalizeNullableText(
+        input.phone,
+        24
+      );
+
+    const commune =
+      this.normalizeNullableText(
+        input.commune,
+        80
+      );
+
+    const address =
+      this.normalizeNullableText(
+        input.address,
+        160
+      );
+
+    const photoUrl =
+      this.normalizeNullableText(
+        input.photoUrl,
+        2048
+      );
+
+    const preferredContact =
+      this.normalizePreferredContact(
+        input.preferredContact
+      );
+
+    await updateDoc(
+      doc(
+        firestore,
+        'users',
+        uid
+      ),
+      {
+        displayName,
+        phone,
+        photoUrl,
+        commune,
+        address,
+        preferredContact,
+        profileVersion: 2,
+        updatedAt:
+          serverTimestamp()
+      }
+    );
+
+    try {
+
+      await updateProfile(
+        currentUser,
+        {
+          displayName,
+          photoURL:
+            photoUrl
+        }
+      );
+
+    } catch (error) {
+
+      console.warn(
+        '[ServiGo] El perfil se guardó, pero Auth no pudo sincronizarse:',
+        error
+      );
+    }
+  }
+
+  async deleteOwnAccount(
+    emailConfirmation: string,
+    confirmationText: string
+  ): Promise<void> {
+
+    const callable =
+      httpsCallable<
+        {
+          email: string;
+          confirmation: string;
+        },
+        {
+          deleted: boolean;
+        }
+      >(
+        firebaseFunctions,
+        'deleteMyAccount'
+      );
+
+    await callable({
+      email:
+        emailConfirmation
+          .trim()
+          .toLowerCase(),
+      confirmation:
+        confirmationText
+          .trim()
+          .toUpperCase()
+    });
   }
 
   clearProfile(): void {
@@ -134,63 +287,121 @@ export class ProfileService {
     }
   }
 
+  private normalizeNullableText(
+    value: string | null,
+    maxLength: number
+  ): string | null {
+
+    const normalized =
+      value
+        ?.trim()
+        .replace(
+          /\s+/g,
+          ' '
+        )
+      ?? '';
+
+    if (
+      !normalized
+    ) {
+      return null;
+    }
+
+    return normalized.slice(
+      0,
+      maxLength
+    );
+  }
+
+  private normalizePreferredContact(
+    value: PreferredContactChannel
+  ): PreferredContactChannel {
+
+    if (
+      value === 'phone'
+      || value === 'email'
+    ) {
+      return value;
+    }
+
+    return 'chat';
+  }
+
   private mapProfile(
     data: DocumentData
   ): ServiGoUser {
 
     return {
-
       uid:
         data['uid'] ?? '',
-
       email:
         data['email'] ?? '',
-
       displayName:
         data['displayName'] ?? '',
-
       phone:
         data['phone'] ?? null,
-
       photoUrl:
         data['photoUrl'] ?? null,
-
+      commune:
+        data['commune'] ?? null,
+      address:
+        data['address'] ?? null,
+      preferredContact:
+        this.normalizePreferredContact(
+          data['preferredContact']
+        ),
       roles:
         Array.isArray(
           data['roles']
         )
-          ? data['roles']
+          ? data['roles'] as UserRole[]
           : [],
-
       status:
-        data['status'] ??
-        'blocked',
-
+        this.mapStatus(
+          data['status']
+        ),
       averageRating:
-        data['averageRating'] ??
-        null,
-
+        typeof data['averageRating'] ===
+          'number'
+          ? data['averageRating']
+          : null,
       ratingCount:
         Number(
-          data['ratingCount'] ??
-          0
+          data['ratingCount'] ?? 0
         ),
-
+      profileVersion:
+        Number(
+          data['profileVersion'] ?? 1
+        ),
       createdAt:
         this.toDate(
           data['createdAt']
         ),
-
       updatedAt:
         this.toDate(
           data['updatedAt']
         ),
-
       lastLoginAt:
         this.toDate(
           data['lastLoginAt']
         )
     };
+  }
+
+  private mapStatus(
+    value: unknown
+  ): UserStatus {
+
+    if (
+      value === 'active'
+      || value === 'pending'
+      || value === 'suspended'
+      || value === 'blocked'
+    ) {
+      return value;
+    }
+
+    return 'blocked';
   }
 
   private toDate(
@@ -200,14 +411,12 @@ export class ProfileService {
     if (
       value instanceof Timestamp
     ) {
-
       return value.toDate();
     }
 
     if (
       value instanceof Date
     ) {
-
       return value;
     }
 

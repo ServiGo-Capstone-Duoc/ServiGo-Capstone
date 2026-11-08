@@ -3,7 +3,7 @@
 }
 
 ion-content {
-  --background: #f5f7fb;
+  --background: var(--servigo-background);
 }
 
 .chat-container {
@@ -46,9 +46,9 @@ ion-content {
   border: 0;
   border-radius: 15px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 23px;
 
@@ -65,9 +65,9 @@ ion-content {
 
   border-radius: 14px;
 
-  background: #eaf4ff;
+  background: var(--servigo-blue-light);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 22px;
 }
@@ -82,7 +82,7 @@ ion-content {
 .chat-title strong {
   overflow: hidden;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 17px;
 
@@ -91,7 +91,7 @@ ion-content {
 }
 
 .chat-title span {
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 11px;
 }
@@ -106,14 +106,14 @@ ion-content {
 
   gap: 10px;
 
-  border: 1px solid #e1e8f1;
+  border: 1px solid var(--servigo-border);
   border-radius: 22px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 }
 
 .error-state {
-  color: #c62828;
+  color: var(--servigo-error);
 }
 
 .messages-area {
@@ -141,13 +141,13 @@ ion-content {
 
   gap: 5px;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   text-align: center;
 }
 
 .chat-empty strong {
-  color: #202b3c;
+  color: var(--servigo-text);
 }
 
 .chat-empty span {
@@ -171,18 +171,18 @@ ion-content {
     10px
     13px;
 
-  border: 1px solid #e1e8f1;
+  border: 1px solid var(--servigo-border);
   border-radius:
     5px
     17px
     17px
     17px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 }
 
 .message-row.own .message-bubble {
-  border-color: #0879ee;
+  border-color: var(--servigo-blue);
 
   border-radius:
     17px
@@ -190,9 +190,9 @@ ion-content {
     17px
     17px;
 
-  background: #0879ee;
+  background: var(--servigo-blue);
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 }
 
 .message-author {
@@ -200,7 +200,7 @@ ion-content {
 
   margin-bottom: 4px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 10px;
   font-weight: 800;
@@ -221,7 +221,7 @@ ion-content {
 
   margin-top: 5px;
 
-  color: #8a94a4;
+  color: var(--servigo-text-tertiary);
 
   font-size: 9px;
 
@@ -230,12 +230,7 @@ ion-content {
 
 .message-row.own .message-bubble small {
   color:
-    rgba(
-      255,
-      255,
-      255,
-      0.72
-    );
+    var(--servigo-on-primary-muted);
 }
 
 .composer {
@@ -253,14 +248,13 @@ ion-content {
 
   padding: 10px;
 
-  border: 1px solid #dfe7f0;
+  border: 1px solid var(--servigo-border);
   border-radius: 20px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   box-shadow:
-    0 -5px 20px
-    rgba(30, 50, 80, 0.06);
+    var(--servigo-shadow-top);
 }
 
 .composer textarea {
@@ -282,7 +276,7 @@ ion-content {
 
   background: transparent;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font: inherit;
 
@@ -302,9 +296,9 @@ ion-content {
   border: 0;
   border-radius: 15px;
 
-  background: #0879ee;
+  background: var(--servigo-blue);
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 
   font-size: 21px;
 
@@ -347,10 +341,10 @@ ion-content {
   border-radius: 16px;
 
   background:
-    #f8fafc;
+    var(--servigo-surface-soft);
 
   border:
-    1px solid #e2e8f0;
+    1px solid var(--servigo-border);
 
   text-align: center;
 }
@@ -358,7 +352,7 @@ ion-content {
 
 .chat-readonly strong {
   color:
-    #334155;
+    var(--servigo-text);
 
   font-size:
     0.9rem;
@@ -370,7 +364,7 @@ ion-content {
 
 .chat-readonly span {
   color:
-    #64748b;
+    var(--servigo-text-secondary);
 
   font-size:
     0.82rem;
@@ -392,8 +386,8 @@ ion-content {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: #eef6ff;
-  color: #0879ee;
+  background: var(--servigo-blue-soft);
+  color: var(--servigo-blue);
   font-size: 20px;
 }
 
@@ -432,10 +426,10 @@ ion-content {
   z-index: 5;
   margin-bottom: 8px;
   padding: 10px;
-  border: 1px solid #dfe7f0;
+  border: 1px solid var(--servigo-border);
   border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 -5px 20px rgba(30, 50, 80, 0.08);
+  background: var(--servigo-surface);
+  box-shadow: var(--servigo-shadow-top);
 }
 
 .chat-image-preview img {
@@ -444,7 +438,7 @@ ion-content {
   max-height: 220px;
   object-fit: contain;
   border-radius: 13px;
-  background: #f5f7fb;
+  background: var(--servigo-background);
 }
 
 .chat-image-preview__actions {
@@ -461,15 +455,15 @@ ion-content {
 }
 
 .preview-cancel {
-  border: 1px solid #dfe7f0;
-  background: #fff;
-  color: #526070;
+  border: 1px solid var(--servigo-border);
+  background: var(--servigo-surface);
+  color: var(--servigo-text-secondary);
 }
 
 .preview-send {
   border: 0;
-  background: #0879ee;
-  color: #fff;
+  background: var(--servigo-blue);
+  color: var(--servigo-on-primary);
 }
 
 .chat-image-viewer {
@@ -480,7 +474,7 @@ ion-content {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(9, 16, 28, 0.92);
+  background: var(--servigo-media-overlay);
 }
 
 .chat-image-viewer img {
@@ -501,7 +495,7 @@ ion-content {
   justify-content: center;
   border: 0;
   border-radius: 50%;
-  background: rgba(255,255,255,.14);
-  color: #fff;
+  background: var(--servigo-media-control);
+  color: var(--servigo-on-media);
   font-size: 24px;
 }

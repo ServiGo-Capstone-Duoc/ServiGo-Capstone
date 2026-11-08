@@ -3,7 +3,7 @@
 }
 
 ion-content {
-  --background: #f5f7fb;
+  --background: var(--servigo-background);
 }
 
 .job-detail-container {
@@ -41,8 +41,8 @@ ion-content {
   border: 0;
   border-radius: 16px;
 
-  background: #ffffff;
-  color: #0879ee;
+  background: var(--servigo-surface);
+  color: var(--servigo-blue);
 
   font-size: 24px;
 
@@ -75,15 +75,15 @@ ion-content {
 
   border:
     1px solid
-    #e2e8f0;
+    var(--servigo-border);
 
   border-radius: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 }
 
 .error-state {
-  color: #c62828;
+  color: var(--servigo-error);
 }
 
 
@@ -98,11 +98,11 @@ ion-content {
 
   border:
     1px solid
-    #e1e8f1;
+    var(--servigo-border);
 
   border-radius: 24px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 }
 
 .job-summary-card > span {
@@ -110,7 +110,7 @@ ion-content {
 
   margin-bottom: 16px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 11px;
   font-weight: 800;
@@ -141,9 +141,9 @@ ion-content {
 
   border-radius: 18px;
 
-  background: #eaf4ff;
+  background: var(--servigo-blue-light);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 28px;
 }
@@ -154,7 +154,7 @@ ion-content {
     0
     7px;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 27px;
   font-weight: 800;
@@ -163,7 +163,7 @@ ion-content {
 .job-title p {
   margin: 0;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 14px;
   line-height: 1.5;
@@ -178,7 +178,7 @@ ion-content {
     0
     20px;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 19px;
   font-weight: 700;
@@ -196,7 +196,7 @@ ion-content {
 
   border-bottom:
     1px solid
-    #edf0f4;
+    var(--servigo-surface-muted);
 }
 
 .info-row:last-child {
@@ -206,7 +206,7 @@ ion-content {
 .info-row > ion-icon {
   margin-top: 2px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 22px;
 }
@@ -219,19 +219,19 @@ ion-content {
 }
 
 .info-row span {
-  color: #7b8493;
+  color: var(--servigo-text-secondary);
 
   font-size: 11px;
 }
 
 .info-row strong {
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 14px;
 }
 
 .info-row small {
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 12px;
 }
@@ -240,9 +240,9 @@ ion-content {
 /* STATUS */
 
 .status-card {
-  border-color: #cfe4fb;
+  border-color: color-mix(in srgb, var(--servigo-blue) 26%, var(--servigo-border));
 
-  background: #f7fbff;
+  background: var(--servigo-blue-soft);
 }
 
 .status-card > span {
@@ -250,7 +250,7 @@ ion-content {
 
   margin-bottom: 6px;
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 10px;
   font-weight: 800;
@@ -260,7 +260,7 @@ ion-content {
 .status-card strong {
   display: block;
 
-  color: #202b3c;
+  color: var(--servigo-text);
 
   font-size: 20px;
 }
@@ -271,7 +271,7 @@ ion-content {
     0
     0;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 14px;
   line-height: 1.5;
@@ -318,9 +318,9 @@ ion-content {
 
 .cancellation-card {
   padding: 22px;
-  background: #fff;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  background: var(--servigo-surface);
+  border: 1px solid var(--servigo-border);
+  box-shadow: var(--servigo-shadow-card);
 }
 
 .cancellation-summary {
@@ -346,12 +346,12 @@ ion-content {
 
 .cancellation-summary span,
 .cancellation-form > span {
-  color: #64748b;
+  color: var(--servigo-text-secondary);
 }
 
 .cancellation-summary strong {
   display: block;
-  color: #0f172a;
+  color: var(--servigo-text);
   font-size: 1rem;
 }
 
@@ -364,7 +364,7 @@ ion-content {
 
 .cancellation-summary p,
 .cancellation-form p {
-  color: #64748b;
+  color: var(--servigo-text-secondary);
 }
 
 .open-cancellation-button,
@@ -382,9 +382,9 @@ ion-content {
 .open-cancellation-button {
   flex: 0 0 auto;
   padding: 0 18px;
-  color: #b42318;
-  background: #fff1f0;
-  border: 1px solid rgba(180, 35, 24, 0.16);
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border: 1px solid var(--servigo-error-border);
 }
 
 .open-cancellation-button:hover:not(:disabled),
@@ -402,7 +402,7 @@ ion-content {
 
 .cancellation-form h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--servigo-text);
   font-size: 1.25rem;
 }
 
@@ -412,34 +412,34 @@ ion-content {
   margin-top: 18px;
   padding: 14px 16px;
   resize: vertical;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--servigo-border-strong);
   border-radius: 14px;
   outline: none;
-  background: #fff;
-  color: #0f172a;
+  background: var(--servigo-surface);
+  color: var(--servigo-text);
   font: inherit;
   line-height: 1.5;
   box-sizing: border-box;
 }
 
 .cancellation-reason:focus {
-  border-color: #94a3b8;
-  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
+  border-color: var(--servigo-text-tertiary);
+  box-shadow: var(--servigo-focus-ring);
 }
 
 .cancellation-counter {
   display: block;
   margin-top: 6px;
   text-align: right;
-  color: #94a3b8;
+  color: var(--servigo-text-tertiary);
 }
 
 .cancellation-error {
   margin-top: 12px;
   padding: 11px 13px;
   border-radius: 12px;
-  color: #b42318;
-  background: #fff1f0;
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -458,15 +458,15 @@ ion-content {
 
 .cancel-back-button {
   padding: 0 18px;
-  color: #334155;
-  background: #f1f5f9;
+  color: var(--servigo-text);
+  background: var(--servigo-surface-hover);
 }
 
 .confirm-cancellation-button {
   min-width: 190px;
   padding: 0 20px;
-  color: #fff;
-  background: #b42318;
+  color: var(--servigo-on-primary);
+  background: var(--servigo-error-strong);
 }
 
 .confirm-cancellation-button ion-spinner {
@@ -479,9 +479,9 @@ ion-content {
   align-items: flex-start;
   gap: 14px;
   padding: 20px;
-  color: #7f1d1d;
-  background: #fff7f7;
-  border: 1px solid rgba(185, 28, 28, 0.18);
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border: 1px solid var(--servigo-error-border);
 }
 
 .cancelled-card > ion-icon {
@@ -492,17 +492,17 @@ ion-content {
 }
 
 .cancelled-card span {
-  color: #b42318;
+  color: var(--servigo-error-strong);
 }
 
 .cancelled-card strong {
   display: block;
-  color: #7f1d1d;
+  color: var(--servigo-error-strong);
   font-size: 1rem;
 }
 
 .cancelled-card p {
-  color: #991b1b;
+  color: var(--servigo-error-strong);
 }
 
 @media (max-width: 640px) {

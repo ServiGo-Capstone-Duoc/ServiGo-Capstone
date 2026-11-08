@@ -329,6 +329,34 @@ export const routes: Routes = [
       },
 
 
+      {
+        path:
+          'profile/edit',
+
+        loadComponent: () =>
+          import(
+            './features/profile/edit-profile/edit-profile.page'
+          )
+            .then(
+              m => m.EditProfilePage
+            )
+      },
+
+
+      {
+        path:
+          'settings',
+
+        loadComponent: () =>
+          import(
+            './features/settings/settings.page'
+          )
+            .then(
+              m => m.SettingsPage
+            )
+      },
+
+
       /*
        * -------------------------------------
        * POSTULACIÓN TÉCNICA
@@ -518,6 +546,31 @@ export const routes: Routes = [
 
       {
         path:
+          'admin/technicians',
+
+        canActivate: [
+          roleGuard
+        ],
+
+        data: {
+          roles: [
+            'administrador',
+            'superadmin'
+          ]
+        },
+
+        loadComponent: () =>
+          import(
+            './features/admin/technicians/admin-technicians.page'
+          )
+            .then(
+              m => m.AdminTechniciansPage
+            )
+      },
+
+
+      {
+        path:
           'admin',
 
         canActivate: [
@@ -557,9 +610,5 @@ export const routes: Routes = [
 
     redirectTo:
       'app/home'
-  },
-  {
-    path: 'webpay-return',
-    loadComponent: () => import('./features/payment/webpay-return/webpay-return.page').then( m => m.WebpayReturnPage)
   }
 ];

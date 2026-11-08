@@ -3,7 +3,7 @@
 .servigo-header { box-shadow: none; }
 
 ion-toolbar {
-  --background: rgba(255, 255, 255, 0.98);
+  --background: color-mix(in srgb, var(--servigo-surface) 98%, transparent);
   --border-width: 0;
   min-height: 60px;
   border-bottom: 1px solid var(--servigo-border);
@@ -51,7 +51,7 @@ ion-toolbar {
   display: grid;
   place-items: center;
   padding: 0 4px;
-  border: 2px solid #fff;
+  border: 2px solid var(--servigo-surface);
   border-radius: 999px;
   background: var(--servigo-yellow);
   color: var(--servigo-text);
@@ -126,10 +126,10 @@ ion-content { --background: var(--servigo-background); }
   border-radius: var(--servigo-radius-md);
   background: var(--servigo-surface);
   color: var(--servigo-text);
-  box-shadow: 0 5px 16px rgba(23, 32, 51, .035);
+  box-shadow: var(--servigo-shadow-card);
   transition: transform .16s ease, border-color .16s ease, background .16s ease;
 }
-.category-card:active { transform: scale(.97); background: var(--servigo-blue-light); border-color: #cfe5ff; }
+.category-card:active { transform: scale(.97); background: var(--servigo-blue-light); border-color: var(--servigo-blue-light); }
 .category-card span {
   width: 100%;
   overflow: hidden;
@@ -163,18 +163,18 @@ ion-content { --background: var(--servigo-background); }
 .location-visual {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(145deg, #e8f3ff, #f5f9ff);
+  background: linear-gradient(145deg, var(--servigo-blue-light), var(--servigo-blue-soft));
 }
 .map-grid {
   position: absolute; inset: -20px; opacity: .55;
-  background-image: linear-gradient(rgba(11,115,224,.09) 1px,transparent 1px), linear-gradient(90deg,rgba(11,115,224,.09) 1px,transparent 1px);
+  background-image: linear-gradient(rgba(var(--servigo-blue-rgb), .09) 1px,transparent 1px), linear-gradient(90deg,rgba(var(--servigo-blue-rgb), .09) 1px,transparent 1px);
   background-size: 26px 26px; transform: rotate(-8deg);
 }
 .location-pin {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
   width: 48px; height: 48px; display: grid; place-items: center;
-  border-radius: 16px; background: var(--servigo-blue); color: #fff;
-  box-shadow: 0 10px 24px rgba(11,115,224,.24);
+  border-radius: 16px; background: var(--servigo-blue); color: var(--servigo-on-primary);
+  box-shadow: 0 10px 24px rgba(var(--servigo-blue-rgb), .24);
 }
 .location-pin ion-icon { font-size: 24px; }
 .location-copy {
@@ -187,7 +187,7 @@ ion-content { --background: var(--servigo-background); }
   --background: var(--servigo-blue);
   --background-hover: var(--servigo-blue-dark);
   --border-radius: var(--servigo-radius-md);
-  --box-shadow: 0 10px 22px rgba(11,115,224,.18);
+  --box-shadow: 0 10px 22px rgba(var(--servigo-blue-rgb), .18);
   min-height: 54px;
   margin-top: 14px;
   font-size: 14px;

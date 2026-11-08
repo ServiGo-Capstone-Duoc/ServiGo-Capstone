@@ -232,16 +232,10 @@ export class JobsPage {
         historyJobs;
 
 
-      console.log(
-        '[ServiGo] Trabajos activos:',
-        this.activeJobs
-      );
+      
 
 
-      console.log(
-        '[ServiGo] Historial técnico:',
-        this.historyJobs
-      );
+      
 
 
     } catch (error) {

@@ -1,26 +1,70 @@
-/* ServiGo Design System v1 */
-:root {
+/*
+ * ServiGo Design System v2
+ * -------------------------------------------------------------
+ * Los componentes consumen tokens semánticos. El valor de cada
+ * token cambia según el tema, evitando colores aislados y
+ * manteniendo contraste consistente en claro y oscuro.
+ */
+
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
   --servigo-blue: #0b73e0;
+  --servigo-blue-rgb: 11, 115, 224;
   --servigo-blue-dark: #0757b4;
   --servigo-blue-light: #eaf4ff;
+  --servigo-blue-soft: #f4f9ff;
   --servigo-yellow: #ffc21a;
   --servigo-orange: #ff9f00;
+  --servigo-on-primary: #ffffff;
+  --servigo-on-primary-muted: rgba(255, 255, 255, 0.78);
+  --servigo-on-primary-subtle: rgba(255, 255, 255, 0.26);
+  --servigo-on-media: #ffffff;
+  --servigo-on-media-muted: rgba(255, 255, 255, 0.76);
+  --servigo-media-overlay: rgba(8, 15, 28, 0.94);
+  --servigo-media-control: rgba(255, 255, 255, 0.15);
 
   --servigo-background: #f5f7fb;
+  --servigo-background-elevated: #eef2f7;
   --servigo-surface: #ffffff;
+  --servigo-surface-elevated: #ffffff;
   --servigo-surface-soft: #f8fafc;
+  --servigo-surface-muted: #eef2f7;
+  --servigo-surface-hover: #f1f5f9;
+  --servigo-input-background: #f7f9fc;
   --servigo-text: #172033;
   --servigo-text-secondary: #667085;
   --servigo-text-tertiary: #98a2b3;
+  --servigo-text-disabled: #a8b1bf;
   --servigo-border: #e5eaf1;
   --servigo-border-strong: #d7dee8;
+  --servigo-divider: rgba(23, 32, 51, 0.08);
+  --servigo-overlay: rgba(15, 23, 42, 0.52);
 
   --servigo-success: #168447;
+  --servigo-success-strong: #137a42;
   --servigo-success-soft: #eaf8f0;
+  --servigo-success-border: #bde9cf;
   --servigo-warning: #d98500;
+  --servigo-warning-strong: #9a6700;
   --servigo-warning-soft: #fff6df;
+  --servigo-warning-border: #f5d68a;
+  --servigo-warning-ring: rgba(255, 194, 26, 0.18);
   --servigo-error: #c63a3a;
+  --servigo-error-strong: #b42318;
   --servigo-error-soft: #fdecec;
+  --servigo-error-border: #fecaca;
+  --servigo-info: #0b73e0;
+  --servigo-info-soft: #eaf4ff;
+
+  --servigo-focus-ring: 0 0 0 3px rgba(11, 115, 224, 0.22);
+  --servigo-shadow-card: 0 8px 24px rgba(23, 32, 51, 0.06);
+  --servigo-shadow-floating: 0 14px 34px rgba(23, 32, 51, 0.12);
+  --servigo-shadow-dialog: 0 24px 64px rgba(23, 32, 51, 0.18);
+  --servigo-shadow-primary: 0 8px 20px rgba(var(--servigo-blue-rgb), 0.20);
+  --servigo-shadow-primary-strong: 0 11px 24px rgba(var(--servigo-blue-rgb), 0.26);
+  --servigo-shadow-top: 0 -5px 20px rgba(23, 32, 51, 0.08);
 
   --servigo-radius-sm: 12px;
   --servigo-radius-md: 16px;
@@ -35,9 +79,6 @@
   --servigo-space-5: 20px;
   --servigo-space-6: 24px;
   --servigo-space-8: 32px;
-
-  --servigo-shadow-card: 0 8px 24px rgba(23, 32, 51, 0.06);
-  --servigo-shadow-floating: 0 14px 34px rgba(23, 32, 51, 0.12);
 
   --servigo-page-max: 720px;
   --servigo-tabbar-height: 72px;
@@ -57,5 +98,97 @@
   --ion-color-secondary-tint: #ffc831;
 
   --ion-background-color: var(--servigo-background);
+  --ion-background-color-rgb: 245, 247, 251;
   --ion-text-color: var(--servigo-text);
+  --ion-text-color-rgb: 23, 32, 51;
+  --ion-item-background: var(--servigo-surface);
+  --ion-card-background: var(--servigo-surface);
+  --ion-toolbar-background: var(--servigo-surface);
+  --ion-tab-bar-background: var(--servigo-surface);
+  --ion-border-color: var(--servigo-border);
+}
+
+:root.ion-palette-dark,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --servigo-blue: #63adff;
+  --servigo-blue-rgb: 99, 173, 255;
+  --servigo-blue-dark: #8ec4ff;
+  --servigo-blue-light: #142c49;
+  --servigo-blue-soft: #0f2239;
+  --servigo-yellow: #ffd05a;
+  --servigo-orange: #ffb84d;
+  --servigo-on-primary: #06182b;
+  --servigo-on-primary-muted: rgba(6, 24, 43, 0.76);
+  --servigo-on-primary-subtle: rgba(6, 24, 43, 0.26);
+  --servigo-on-media: #ffffff;
+  --servigo-on-media-muted: rgba(255, 255, 255, 0.76);
+  --servigo-media-overlay: rgba(3, 8, 18, 0.96);
+  --servigo-media-control: rgba(255, 255, 255, 0.16);
+
+  --servigo-background: #0b1220;
+  --servigo-background-elevated: #101a2b;
+  --servigo-surface: #121d2e;
+  --servigo-surface-elevated: #18253a;
+  --servigo-surface-soft: #162235;
+  --servigo-surface-muted: #1c2a40;
+  --servigo-surface-hover: #213149;
+  --servigo-input-background: #0f1a2a;
+  --servigo-text: #f4f7fb;
+  --servigo-text-secondary: #bdc8d8;
+  --servigo-text-tertiary: #8f9db0;
+  --servigo-text-disabled: #66758a;
+  --servigo-border: #26364d;
+  --servigo-border-strong: #354861;
+  --servigo-divider: rgba(214, 226, 242, 0.10);
+  --servigo-overlay: rgba(2, 6, 15, 0.74);
+
+  --servigo-success: #55d28a;
+  --servigo-success-strong: #74e29f;
+  --servigo-success-soft: #102d20;
+  --servigo-success-border: #1e5b3a;
+  --servigo-warning: #ffc75a;
+  --servigo-warning-strong: #ffdb86;
+  --servigo-warning-soft: #33270f;
+  --servigo-warning-border: #6c541d;
+  --servigo-warning-ring: rgba(255, 208, 90, 0.22);
+  --servigo-error: #ff7b78;
+  --servigo-error-strong: #ff9b98;
+  --servigo-error-soft: #35191d;
+  --servigo-error-border: #6b3034;
+  --servigo-info: #7abaff;
+  --servigo-info-soft: #142c49;
+
+  --servigo-focus-ring: 0 0 0 3px rgba(99, 173, 255, 0.28);
+  --servigo-shadow-card: 0 10px 26px rgba(0, 0, 0, 0.26);
+  --servigo-shadow-floating: 0 18px 44px rgba(0, 0, 0, 0.40);
+  --servigo-shadow-dialog: 0 28px 72px rgba(0, 0, 0, 0.52);
+  --servigo-shadow-primary: 0 8px 22px rgba(var(--servigo-blue-rgb), 0.18);
+  --servigo-shadow-primary-strong: 0 12px 28px rgba(var(--servigo-blue-rgb), 0.24);
+  --servigo-shadow-top: 0 -8px 28px rgba(0, 0, 0, 0.32);
+
+  --ion-color-primary: #63adff;
+  --ion-color-primary-rgb: 99, 173, 255;
+  --ion-color-primary-contrast: #06182b;
+  --ion-color-primary-contrast-rgb: 6, 24, 43;
+  --ion-color-primary-shade: #5798e0;
+  --ion-color-primary-tint: #73b5ff;
+
+  --ion-color-secondary: #ffd05a;
+  --ion-color-secondary-rgb: 255, 208, 90;
+  --ion-color-secondary-contrast: #172033;
+  --ion-color-secondary-contrast-rgb: 23, 32, 51;
+  --ion-color-secondary-shade: #e0b74f;
+  --ion-color-secondary-tint: #ffd56b;
+
+  --ion-background-color: var(--servigo-background);
+  --ion-background-color-rgb: 11, 18, 32;
+  --ion-text-color: var(--servigo-text);
+  --ion-text-color-rgb: 244, 247, 251;
+  --ion-item-background: var(--servigo-surface);
+  --ion-card-background: var(--servigo-surface);
+  --ion-toolbar-background: var(--servigo-surface);
+  --ion-tab-bar-background: var(--servigo-surface);
+  --ion-border-color: var(--servigo-border);
 }
