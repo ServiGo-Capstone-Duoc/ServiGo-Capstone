@@ -78,9 +78,14 @@ console.log(
  * =========================================
  */
 
+const emulatorProjectId =
+  process.env.GCLOUD_PROJECT
+  || process.env.GOOGLE_CLOUD_PROJECT
+  || 'servigo-dev';
+
 initializeApp({
   projectId:
-    'servigo-dev'
+    emulatorProjectId
 });
 
 
@@ -108,6 +113,30 @@ const CLIENT_EMAIL =
 
 const TECHNICIAN_EMAIL =
   'tecnico@servigo.test';
+
+
+const ADMIN_EMAIL =
+  'admin@servigo.test';
+
+
+const SERVICE_CATALOG = [
+  ['gasfiteria-fugas', 'Hogar y Reparaciones Generales', 'Gasfitería y fugas de agua', 20000, 35000, 10],
+  ['electricidad-basica', 'Hogar y Reparaciones Generales', 'Electricidad básica', 20000, 45000, 20],
+  ['cerrajeria-accesos', 'Hogar y Reparaciones Generales', 'Cerrajería y accesos', 15000, 30000, 30],
+  ['carpinteria-reparaciones', 'Hogar y Reparaciones Generales', 'Carpintería y reparaciones menores', 15000, 25000, 40],
+  ['linea-blanca-mayor', 'Electrodomésticos y Línea Blanca', 'Lavadoras, secadoras y refrigeradores', 15000, 25000, 50],
+  ['cocinas-hornos', 'Electrodomésticos y Línea Blanca', 'Cocinas, hornos y encimeras', 15000, 25000, 60],
+  ['electrodomesticos-menores', 'Electrodomésticos y Línea Blanca', 'Electrodomésticos menores', 10000, 15000, 70],
+  ['aire-acondicionado', 'Climatización y Calefacción', 'Aire acondicionado', 25000, 40000, 80],
+  ['calefont-termos', 'Climatización y Calefacción', 'Calefont y termos eléctricos', 20000, 35000, 90],
+  ['calderas-calefaccion', 'Climatización y Calefacción', 'Calderas y calefacción central', 30000, 50000, 100],
+  ['soporte-computacional', 'Tecnología y Redes', 'Soporte computacional a domicilio', 20000, 35000, 110],
+  ['redes-wifi', 'Tecnología y Redes', 'Redes Wi-Fi y cableado', 25000, 45000, 120],
+  ['camaras-alarmas', 'Tecnología y Redes', 'Cámaras de seguridad y alarmas', 25000, 40000, 130],
+  ['techumbres-impermeabilizacion', 'Construcción e Inspecciones Especializadas', 'Techumbres, canaletas e impermeabilización', 25000, 40000, 140],
+  ['certificacion-electrica-te1', 'Construcción e Inspecciones Especializadas', 'Certificación eléctrica TE1 / SEC', 50000, 120000, 150],
+  ['inspeccion-vivienda', 'Construcción e Inspecciones Especializadas', 'Inspección técnica de vivienda', 120000, 300000, 160]
+];
 
 
 /*
@@ -273,6 +302,18 @@ async function seed() {
         photoUrl:
           null,
 
+        commune:
+          'Puente Alto',
+
+        address:
+          'Av. Concha y Toro 1234',
+
+        preferredContact:
+          'chat',
+
+        profileVersion:
+          2,
+
         roles: [
           'cliente'
         ],
@@ -355,6 +396,18 @@ async function seed() {
 
         photoUrl:
           null,
+
+        commune:
+          'Puente Alto',
+
+        address:
+          null,
+
+        preferredContact:
+          'chat',
+
+        profileVersion:
+          2,
 
         roles: [
           'cliente',
@@ -494,6 +547,172 @@ async function seed() {
 
   /*
    * =========================================
+   * 6. PERFIL PROFESIONAL ADMINISTRADO
+   * =========================================
+   */
+
+  await db
+    .collection(
+      'technicianProfiles'
+    )
+    .doc(
+      technicianId
+    )
+    .set(
+      {
+        userId:
+          technicianId,
+        displayName:
+          'Técnico Test',
+        photoUrl:
+          null,
+        specialties: [
+          'Electricidad'
+        ],
+        experienceYears:
+          5,
+        experienceDescription:
+          'Técnico de prueba para validar el flujo completo de ServiGo.',
+        baseCommune:
+          'Puente Alto',
+        serviceRadiusKm:
+          10,
+        hasCertifications:
+          false,
+        publicDescription:
+          'Especialista en instalaciones y reparaciones eléctricas domiciliarias.',
+        status:
+          'active',
+        accountStatus:
+          'active',
+        createdAt:
+          Timestamp.now(),
+        updatedAt:
+          Timestamp.now(),
+        createdBy:
+          'admin-test',
+        updatedBy:
+          'admin-test',
+        sourceApplicationId:
+          applicationId
+      },
+      {
+        merge:
+          true
+      }
+    );
+
+
+  console.log(
+    '[ServiGo Seed] Perfil profesional creado:',
+    technicianId
+  );
+
+
+  /*
+   * =========================================
+   * 7. USUARIO ADMINISTRADOR DE PRUEBA
+   * =========================================
+   */
+
+  const adminAuthUser =
+    await ensureAuthUser(
+      ADMIN_EMAIL,
+      'Administrador Test'
+    );
+
+
+  await db
+    .collection(
+      'users'
+    )
+    .doc(
+      adminAuthUser.uid
+    )
+    .set(
+      {
+        uid:
+          adminAuthUser.uid,
+        email:
+          ADMIN_EMAIL,
+        displayName:
+          'Administrador Test',
+        phone:
+          null,
+        photoUrl:
+          null,
+        commune:
+          null,
+        address:
+          null,
+        preferredContact:
+          'email',
+        profileVersion:
+          2,
+        roles: [
+          'cliente',
+          'administrador'
+        ],
+        status:
+          'active',
+        averageRating:
+          null,
+        ratingCount:
+          0,
+        createdAt:
+          Timestamp.now(),
+        updatedAt:
+          Timestamp.now(),
+        lastLoginAt:
+          Timestamp.now()
+      },
+      {
+        merge:
+          true
+      }
+    );
+
+
+  console.log(
+    '[ServiGo Seed] Administrador de prueba creado:',
+    adminAuthUser.uid
+  );
+
+
+  /*
+   * =========================================
+   * 8. TARIFARIO EDITABLE
+   * =========================================
+   */
+
+  for (const [id, group, name, visitFeeMin, visitFeeMax, sortOrder] of SERVICE_CATALOG) {
+    await db
+      .collection('serviceCatalog')
+      .doc(id)
+      .set(
+        {
+          id,
+          group,
+          name,
+          visitFeeMin,
+          visitFeeMax,
+          active: true,
+          sortOrder,
+          updatedAt: Timestamp.now()
+        },
+        { merge: true }
+      );
+  }
+
+  console.log(
+    '[ServiGo Seed] Tarifario cargado:',
+    SERVICE_CATALOG.length,
+    'categorías'
+  );
+
+
+  /*
+   * =========================================
    * RESUMEN
    * =========================================
    */
@@ -554,6 +773,28 @@ async function seed() {
   console.log(
     'UID:',
     technicianId
+  );
+
+
+  console.log('');
+
+  console.log(
+    'ADMINISTRADOR TEST'
+  );
+
+  console.log(
+    'Email:',
+    ADMIN_EMAIL
+  );
+
+  console.log(
+    'Password:',
+    TEST_PASSWORD
+  );
+
+  console.log(
+    'UID:',
+    adminAuthUser.uid
   );
 
 

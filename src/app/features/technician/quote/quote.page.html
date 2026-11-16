@@ -206,7 +206,27 @@
 
 
           <ion-input
-            label="Mano de obra"
+            label="Valor visita técnica"
+            labelPlacement="stacked"
+            type="number"
+            inputmode="numeric"
+            [min]="visitFeeMin"
+            [max]="visitFeeMax"
+            formControlName="visitFeeAmount"
+          ></ion-input>
+
+          <p class="fee-hint">
+            Rango permitido para {{ catalogLabel }}:
+            ${{ visitFeeMin | number:'1.0-0' }} – ${{ visitFeeMax | number:'1.0-0' }}.
+          </p>
+
+          <div class="form-error" *ngIf="form.controls.visitFeeAmount.touched && form.controls.visitFeeAmount.invalid">
+            El valor de visita debe estar dentro del rango definido para la categoría.
+          </div>
+
+
+          <ion-input
+            label="Mano de obra adicional"
             labelPlacement="stacked"
             type="number"
             inputmode="numeric"
@@ -262,24 +282,34 @@
         </section>
 
 
-        <!-- DISPONIBILIDAD -->
+        <!-- HORARIO DEL CLIENTE -->
 
         <section
-          class="form-card"
+          class="form-card schedule-card"
         >
 
           <h2>
-            Disponibilidad
+            Horario solicitado por el cliente
           </h2>
 
+          <div class="schedule-window">
+            <strong>{{ scheduleStartLabel }}</strong>
+            <span>Ventana máxima de llegada: hasta {{ scheduleEndLabel }}</span>
+          </div>
 
-          <ion-input
-            label="Fecha disponible"
-            labelPlacement="stacked"
-            type="date"
-            [min]="today"
-            formControlName="availableDate"
-          ></ion-input>
+          <label class="schedule-acceptance">
+            <input
+              type="checkbox"
+              formControlName="scheduleAccepted"
+            />
+            <span>
+              Acepto el horario solicitado y entiendo que debo llegar dentro de la ventana máxima de 2 horas.
+            </span>
+          </label>
+
+          <div class="form-error" *ngIf="form.controls.scheduleAccepted.touched && form.controls.scheduleAccepted.invalid">
+            Debes aceptar el horario solicitado para enviar el presupuesto.
+          </div>
 
 
           <ion-textarea
@@ -314,6 +344,7 @@
           class="send-button"
           [disabled]="
             sending ||
+            !catalogAvailable ||
             form.invalid ||
             totalAmount <= 0
           "

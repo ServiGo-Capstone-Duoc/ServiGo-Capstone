@@ -54,7 +54,8 @@ import {
 } from '../../../core/services/quote.service';
 
 import {
-  PaymentService
+  PaymentService,
+  ServicePaymentSummaryResponse
 } from '../../../core/services/payment.service';
 
 import {
@@ -84,6 +85,7 @@ import {
 } from '../../../core/models/quote.model';
 
 import {
+  AcceptedQuoteSnapshot,
   ServiceRequest
 } from '../../../core/models/service-request.model';
 
@@ -168,6 +170,11 @@ export class ServiceDetailPage implements OnDestroy {
     Quote[] =
       [];
 
+
+  private acceptedQuoteRecord:
+    Quote | null =
+      null;
+
 /*
  * =========================================
  * PAGO WEBPAY PLUS
@@ -180,6 +187,16 @@ processingPayment =
 
 paymentError =
   '';
+
+
+paymentSummary:
+  ServicePaymentSummaryResponse | null =
+    null;
+
+
+loadingPaymentSummary =
+  false;
+
 
   review:
     ServiceReview | null =
@@ -245,6 +262,19 @@ paymentError =
     false;
 
 
+  trackingUnavailable =
+    false;
+
+
+  trackingError =
+    '';
+
+
+  private trackingWaitTimer:
+    ReturnType<typeof setTimeout> | null =
+      null;
+
+
   technicianLatitude:
     number | null =
       null;
@@ -258,6 +288,15 @@ paymentError =
   locationUpdatedAt:
     Date | null =
       null;
+
+
+  technicianLocationSource:
+    'gps' | 'fallback' | null =
+      null;
+
+
+  technicianFallbackReason =
+    '';
 
 
   distanceKm:
@@ -469,6 +508,18 @@ paymentError =
           );
 
 
+      await this.loadAcceptedQuoteRecord();
+
+
+      if (
+        this.request.acceptedQuoteId
+        || this.request.acceptedQuoteSnapshot
+        || this.request.status === 'completed'
+      ) {
+        await this.refreshPaymentSummary();
+      }
+
+
       /*
        * =====================================
        * EVALUACIÓN
@@ -564,16 +615,38 @@ paymentError =
             snapshot.data();
 
 
+          const currentRequest =
+            this.request;
+
+          if (!currentRequest) {
+            return;
+          }
+
+
           const previousStatus =
-            this.request.status;
+            currentRequest.status;
 
 
-          this.request = {
-            ...this.request,
+          const previousAcceptedQuoteId =
+            currentRequest.acceptedQuoteId;
+
+
+          const previousSnapshotQuoteId =
+            currentRequest.acceptedQuoteSnapshot
+              ?.quoteId
+            ?? null;
+
+
+          const previousPaymentStatus =
+            currentRequest.paymentStatus;
+
+
+          const updatedRequest: ServiceRequest = {
+            ...currentRequest,
 
             status:
               data['status']
-              ?? this.request.status,
+              ?? currentRequest.status,
 
             assignedTechnicianId:
               data['assignedTechnicianId']
@@ -583,15 +656,20 @@ paymentError =
               data['acceptedQuoteId']
               ?? null,
 
+            acceptedQuoteSnapshot:
+              this.mapAcceptedQuoteSnapshot(
+                data['acceptedQuoteSnapshot']
+              ),
+
             latitude:
               typeof data['latitude'] === 'number'
                 ? data['latitude']
-                : this.request.latitude,
+                : currentRequest.latitude,
 
             longitude:
               typeof data['longitude'] === 'number'
                 ? data['longitude']
-                : this.request.longitude,
+                : currentRequest.longitude,
 
             paymentStatus:
               data['paymentStatus'] === 'paid'
@@ -601,12 +679,50 @@ paymentError =
             paymentId:
               typeof data['paymentId'] === 'string'
                 ? data['paymentId']
+                : null,
+
+            scheduledAt:
+              this.toDateValue(
+                data['scheduledAt']
+              ),
+
+            arrivalWindowEndAt:
+              this.toDateValue(
+                data['arrivalWindowEndAt']
+              ),
+
+            cancellationPenaltyPercent:
+              data['cancellationPenaltyPercent'] === 50
+              || data['cancellationPenaltyPercent'] === 100
+              || data['cancellationPenaltyPercent'] === 0
+                ? data['cancellationPenaltyPercent']
+                : null,
+
+            cancellationPenaltyAmount:
+              typeof data['cancellationPenaltyAmount'] === 'number'
+                ? data['cancellationPenaltyAmount']
+                : null,
+
+            cancellationPenaltyBaseAmount:
+              typeof data['cancellationPenaltyBaseAmount'] === 'number'
+                ? data['cancellationPenaltyBaseAmount']
+                : null,
+
+            cancellationPenaltyStatus:
+              data['cancellationPenaltyStatus'] === 'not_applicable'
+              || data['cancellationPenaltyStatus'] === 'pending'
+              || data['cancellationPenaltyStatus'] === 'paid'
+              || data['cancellationPenaltyStatus'] === 'waived'
+                ? data['cancellationPenaltyStatus']
                 : null
           };
 
+          this.request =
+            updatedRequest;
+
 
           if (
-            this.request.status ===
+            updatedRequest.status ===
               'en_route'
           ) {
 
@@ -622,10 +738,45 @@ paymentError =
           if (
             previousStatus !== 'completed'
             &&
-            this.request.status === 'completed'
+            updatedRequest.status === 'completed'
           ) {
 
             void this.loadReviewIfNeeded();
+          }
+
+
+          if (
+            updatedRequest.acceptedQuoteId
+            &&
+            (
+              previousAcceptedQuoteId !==
+                updatedRequest.acceptedQuoteId
+              ||
+              !this.acceptedQuote
+            )
+          ) {
+
+            void this.refreshQuotesForCurrentRequest();
+          }
+
+
+          const currentSnapshotQuoteId =
+            updatedRequest.acceptedQuoteSnapshot
+              ?.quoteId
+            ?? null;
+
+
+          if (
+            updatedRequest.status === 'completed'
+            && (
+              previousStatus !== updatedRequest.status
+              || previousAcceptedQuoteId !== updatedRequest.acceptedQuoteId
+              || previousSnapshotQuoteId !== currentSnapshotQuoteId
+              || previousPaymentStatus !== updatedRequest.paymentStatus
+              || !this.paymentSummary
+            )
+          ) {
+            void this.refreshPaymentSummary();
           }
 
 
@@ -640,6 +791,175 @@ paymentError =
           );
         }
       );
+  }
+
+
+  private async refreshQuotesForCurrentRequest():
+    Promise<void> {
+
+
+    if (
+      !this.request
+    ) {
+
+      return;
+    }
+
+
+    try {
+
+      const [
+        quotes
+      ] =
+        await Promise.all([
+          this.quoteService
+            .getQuotesForRequest(
+              this.request.id,
+              this.request.clientId
+            ),
+          this.loadAcceptedQuoteRecord()
+        ]);
+
+
+      this.quotes =
+        quotes;
+
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo] Error actualizando presupuestos:',
+        error
+      );
+
+
+    } finally {
+
+      this.cdr
+        .detectChanges();
+    }
+  }
+
+
+  private async loadAcceptedQuoteRecord():
+    Promise<void> {
+
+
+    this.acceptedQuoteRecord =
+      null;
+
+
+    const acceptedQuoteId =
+      this.request
+        ?.acceptedQuoteId;
+
+
+    if (
+      !acceptedQuoteId
+    ) {
+
+      return;
+    }
+
+
+    try {
+
+      this.acceptedQuoteRecord =
+        await this.quoteService
+          .getQuoteById(
+            acceptedQuoteId
+          );
+
+
+    } catch (error) {
+
+      console.warn(
+        '[ServiGo] No fue posible recuperar directamente el presupuesto aceptado:',
+        error
+      );
+    }
+  }
+
+
+  private async refreshPaymentSummary(
+    showUserError = false
+  ): Promise<boolean> {
+
+    if (
+      !this.request
+      || this.loadingPaymentSummary
+    ) {
+      return false;
+    }
+
+    this.loadingPaymentSummary =
+      true;
+
+    if (
+      showUserError
+    ) {
+      this.paymentError =
+        '';
+    }
+
+    try {
+      const summary =
+        await this.paymentService
+          .getServicePaymentSummary(
+            this.request.id
+          );
+
+      this.paymentSummary =
+        summary;
+
+      this.request = {
+        ...this.request,
+        acceptedQuoteId:
+          summary.quoteId
+          ?? this.request.acceptedQuoteId,
+        assignedTechnicianId:
+          summary.technicianId
+          ?? this.request.assignedTechnicianId,
+        paymentStatus:
+          summary.paymentStatus,
+        paymentId:
+          summary.paymentId
+          ?? this.request.paymentId
+          ?? null
+      };
+
+      return summary.available;
+
+    } catch (error) {
+      console.error(
+        '[ServiGo] Error validando resumen económico:',
+        error
+      );
+
+      if (
+        showUserError
+      ) {
+        this.paymentError =
+          'No pudimos validar el monto con el servidor. Revisa tu conexión e inténtalo nuevamente.';
+      }
+
+      return false;
+
+    } finally {
+      this.loadingPaymentSummary =
+        false;
+
+      this.cdr.detectChanges();
+    }
+  }
+
+
+  async retryPaymentSummary():
+    Promise<void> {
+
+    await this.refreshPaymentSummary(
+      true
+    );
   }
 
 
@@ -673,15 +993,30 @@ paymentError =
     }
 
 
+    this.trackingActive =
+      false;
+
+
     this.trackingWaiting =
       true;
+
+
+    this.trackingUnavailable =
+      false;
+
+
+    this.trackingError =
+      '';
+
+
+    this.startTrackingWaitTimer();
 
 
     const locationRef =
       doc(
         firestore,
         'technicianLocations',
-        this.request.assignedTechnicianId
+        this.request.id
       );
 
 
@@ -698,12 +1033,12 @@ paymentError =
             this.trackingActive =
               false;
 
-            this.trackingWaiting =
-              true;
 
             this.clearTechnicianPosition();
 
+
             this.cdr.detectChanges();
+
 
             return;
           }
@@ -731,6 +1066,9 @@ paymentError =
           }
 
 
+          this.clearTrackingWaitTimer();
+
+
           this.technicianLatitude =
             latitude;
 
@@ -745,12 +1083,32 @@ paymentError =
               : new Date();
 
 
+          this.technicianLocationSource =
+            data['source'] === 'fallback'
+              ? 'fallback'
+              : 'gps';
+
+
+          this.technicianFallbackReason =
+            typeof data['fallbackReason'] === 'string'
+              ? data['fallbackReason']
+              : '';
+
+
           this.trackingActive =
             true;
 
 
           this.trackingWaiting =
             false;
+
+
+          this.trackingUnavailable =
+            false;
+
+
+          this.trackingError =
+            '';
 
 
           this.updateDistanceAndEta();
@@ -775,6 +1133,9 @@ paymentError =
           );
 
 
+          this.clearTrackingWaitTimer();
+
+
           this.trackingActive =
             false;
 
@@ -783,9 +1144,70 @@ paymentError =
             false;
 
 
+          this.trackingUnavailable =
+            false;
+
+
+          this.trackingError =
+            'No pudimos consultar la ubicación compartida. Intenta nuevamente en unos segundos.';
+
+
           this.cdr.detectChanges();
         }
       );
+  }
+
+
+  private startTrackingWaitTimer():
+    void {
+
+
+    this.clearTrackingWaitTimer();
+
+
+    this.trackingWaitTimer =
+      setTimeout(
+        () => {
+
+          if (
+            this.trackingActive
+          ) {
+
+            return;
+          }
+
+
+          this.trackingWaiting =
+            false;
+
+
+          this.trackingUnavailable =
+            true;
+
+
+          this.cdr.detectChanges();
+        },
+        8000
+      );
+  }
+
+
+  private clearTrackingWaitTimer():
+    void {
+
+
+    if (
+      this.trackingWaitTimer
+    ) {
+
+      clearTimeout(
+        this.trackingWaitTimer
+      );
+
+
+      this.trackingWaitTimer =
+        null;
+    }
   }
 
 
@@ -879,10 +1301,10 @@ paymentError =
       const technicianIcon =
         L.divIcon({
           className:
-            '',
+            'servigo-map-icon',
 
           html:
-            '<div style="width:42px;height:42px;border-radius:50%;background:#0b73e0;color:#fff;display:grid;place-items:center;font-size:21px;border:3px solid #fff;box-shadow:0 5px 18px rgba(15,23,42,.25)">🚗</div>',
+            '<div class="servigo-map-marker servigo-map-marker--technician" aria-label="Ubicación del técnico">🚗</div>',
 
           iconSize:
             [42, 42],
@@ -895,10 +1317,10 @@ paymentError =
       const destinationIcon =
         L.divIcon({
           className:
-            '',
+            'servigo-map-icon',
 
           html:
-            '<div style="width:42px;height:42px;border-radius:50%;background:#fff;color:#0b73e0;display:grid;place-items:center;font-size:21px;border:3px solid #0b73e0;box-shadow:0 5px 18px rgba(15,23,42,.20)">🏠</div>',
+            '<div class="servigo-map-marker servigo-map-marker--destination" aria-label="Destino del servicio">🏠</div>',
 
           iconSize:
             [42, 42],
@@ -1245,12 +1667,23 @@ paymentError =
     }
 
 
+    this.clearTrackingWaitTimer();
+
+
     this.trackingActive =
       false;
 
 
     this.trackingWaiting =
       false;
+
+
+    this.trackingUnavailable =
+      false;
+
+
+    this.trackingError =
+      '';
 
 
     this.clearTechnicianPosition();
@@ -1271,6 +1704,12 @@ paymentError =
 
     this.locationUpdatedAt =
       null;
+
+    this.technicianLocationSource =
+      null;
+
+    this.technicianFallbackReason =
+      '';
 
     this.distanceKm =
       null;
@@ -1331,6 +1770,58 @@ paymentError =
     return ['published','matched','quoted','accepted','en_route','arrived'].includes(this.request.status);
   }
 
+  get cancellationPenaltyPreviewPercent(): 0 | 50 | 100 {
+    if (!this.request) { return 0; }
+
+    const base =
+      this.request.acceptedQuoteSnapshot?.visitFeeAmount
+      ?? 0;
+
+    const scheduledAt =
+      this.request.scheduledAt;
+
+    if (
+      base <= 0
+      ||
+      !(scheduledAt instanceof Date)
+    ) {
+      return 0;
+    }
+
+    const now = new Date();
+    const difference =
+      scheduledAt.getTime() - now.getTime();
+
+    if (
+      difference <= 60 * 60 * 1000
+    ) {
+      return 100;
+    }
+
+    if (
+      now.getFullYear() === scheduledAt.getFullYear()
+      && now.getMonth() === scheduledAt.getMonth()
+      && now.getDate() === scheduledAt.getDate()
+    ) {
+      return 50;
+    }
+
+    return 0;
+  }
+
+
+  get cancellationPenaltyPreviewAmount(): number {
+    const base =
+      this.request?.acceptedQuoteSnapshot?.visitFeeAmount
+      ?? 0;
+
+    return Math.round(
+      base *
+      (this.cancellationPenaltyPreviewPercent / 100)
+    );
+  }
+
+
   openCancellationForm(): void {
     if (!this.canCancelService || this.cancellingService) { return; }
     this.cancellationError = '';
@@ -1357,12 +1848,28 @@ paymentError =
     this.cancellationError = '';
     this.cdr.detectChanges();
     try {
-      await this.requestService.cancelService(this.request.id, reason);
-      this.request = { ...this.request, status: 'cancelled' };
+      const result =
+        await this.requestService.cancelService(
+          this.request.id,
+          reason
+        );
+
+      this.request = {
+        ...this.request,
+        status: 'cancelled',
+        cancellationPenaltyPercent:
+          result.cancellationPenaltyPercent,
+        cancellationPenaltyAmount:
+          result.cancellationPenaltyAmount,
+        cancellationPenaltyBaseAmount:
+          result.cancellationPenaltyBaseAmount,
+        cancellationPenaltyStatus:
+          result.cancellationPenaltyStatus
+      };
       this.showCancellationForm = false;
       this.cancellationReason = '';
       this.stopLocationListener();
-      console.log('[ServiGo] Solicitud cancelada por el cliente.');
+      
     } catch (error: any) {
       console.error('[ServiGo] Error cancelando solicitud:', error);
       if (error?.code === 'functions/failed-precondition') {
@@ -1412,34 +1919,425 @@ paymentError =
 
 /*
  * =========================================
+ * PRESUPUESTOS VISIBLES
+ * =========================================
+ */
+
+get displayQuotes():
+  Quote[] {
+
+
+  const result =
+    [
+      ...this.quotes
+    ];
+
+
+  const acceptedQuote =
+    this.acceptedQuote;
+
+
+  if (
+    acceptedQuote
+    &&
+    !result.some(
+      quote =>
+        quote.id ===
+        acceptedQuote.id
+    )
+  ) {
+
+    result.push(
+      acceptedQuote
+    );
+  }
+
+
+  return result.sort(
+    (
+      a,
+      b
+    ) =>
+      (
+        b.createdAt
+          ?.getTime()
+        ?? 0
+      )
+      -
+      (
+        a.createdAt
+          ?.getTime()
+        ?? 0
+      )
+  );
+}
+
+
+/*
+ * =========================================
  * PRESUPUESTO ACEPTADO
  * =========================================
+ *
+ * Orden de recuperación:
+ *
+ * 1. Documento individual de quotes.
+ * 2. Resultado de la consulta de propuestas.
+ * 3. Snapshot autoritativo guardado al aceptar.
  */
 
 get acceptedQuote():
   Quote | null {
 
+  if (
+    !this.request
+  ) {
+    return null;
+  }
+
+  const acceptedQuoteId =
+    this.request.acceptedQuoteId
+    ?? this.request.acceptedQuoteSnapshot?.quoteId
+    ?? this.paymentSummary?.quoteId
+    ?? '';
+
+  if (
+    acceptedQuoteId
+    && this.acceptedQuoteRecord
+    && this.acceptedQuoteRecord.id === acceptedQuoteId
+  ) {
+    return this.acceptedQuoteRecord;
+  }
+
+  if (
+    acceptedQuoteId
+  ) {
+    const quoteFromList =
+      this.quotes.find(
+        quote =>
+          quote.id === acceptedQuoteId
+      );
+
+    if (
+      quoteFromList
+    ) {
+      return quoteFromList;
+    }
+  }
+
+  const quoteFromSnapshot =
+    this.quoteFromAcceptedSnapshot(
+      this.request.acceptedQuoteSnapshot
+      ?? null,
+      acceptedQuoteId
+    );
+
+  if (
+    quoteFromSnapshot
+  ) {
+    return quoteFromSnapshot;
+  }
+
+  return this.quoteFromPaymentSummary();
+}
+
+
+get paymentAmount():
+  number | null {
+
+  const summaryAmount =
+    this.paymentSummary?.totalAmount;
+
+  if (
+    this.paymentSummary?.available
+    && typeof summaryAmount === 'number'
+    && Number.isFinite(summaryAmount)
+    && summaryAmount > 0
+  ) {
+    return summaryAmount;
+  }
+
+  const localAmount =
+    this.acceptedQuote?.totalAmount;
+
+  return typeof localAmount === 'number'
+    && Number.isFinite(localAmount)
+    && localAmount > 0
+      ? localAmount
+      : null;
+}
+
+
+get paymentReady():
+  boolean {
 
   if (
     !this.request
+    || this.request.status !== 'completed'
+    || this.request.paymentStatus === 'paid'
+  ) {
+    return false;
+  }
+
+  if (
+    this.paymentSummary
+  ) {
+    return this.paymentSummary.available
+      && this.paymentSummary.eligible
+      && this.paymentAmount !== null;
+  }
+
+  return this.paymentAmount !== null;
+}
+
+
+get paymentUnavailableMessage():
+  string {
+
+  switch (
+    this.paymentSummary?.reason
+  ) {
+    case 'service_not_completed':
+      return 'El técnico debe finalizar el trabajo antes de iniciar el pago.';
+
+    case 'already_paid':
+      return 'Este servicio ya tiene un pago aprobado.';
+
+    case 'accepted_quote_unavailable':
+      return 'No pudimos reconstruir el presupuesto aceptado. Actualiza la pantalla o solicita revisión antes de pagar.';
+
+    default:
+      return 'No pudimos validar todavía el monto aceptado. Reintenta la consulta.';
+  }
+}
+
+
+private quoteFromAcceptedSnapshot(
+  snapshot: AcceptedQuoteSnapshot | null,
+  acceptedQuoteId: string
+): Quote | null {
+
+  if (
+    !snapshot
+    || !this.request
+    || !acceptedQuoteId
+    || snapshot.quoteId !== acceptedQuoteId
+    || snapshot.requestId !== this.request.id
+    || snapshot.clientId !== this.request.clientId
+    || !Number.isFinite(snapshot.totalAmount)
+    || snapshot.totalAmount <= 0
+  ) {
+    return null;
+  }
+
+  return {
+    id: snapshot.quoteId,
+    requestId: snapshot.requestId,
+    clientId: snapshot.clientId,
+    technicianId: snapshot.technicianId,
+    technicianName: snapshot.technicianName,
+    visitFeeAmount: snapshot.visitFeeAmount,
+    laborAmount: snapshot.laborAmount,
+    materialsAmount: snapshot.materialsAmount,
+    otherAmount: snapshot.otherAmount,
+    totalAmount: snapshot.totalAmount,
+    availableDate: snapshot.availableDate,
+    scheduleAccepted: true,
+    comment: snapshot.comment,
+    status: 'accepted',
+    createdAt: snapshot.acceptedAt,
+    updatedAt: snapshot.acceptedAt
+  };
+}
+
+
+private quoteFromPaymentSummary():
+  Quote | null {
+
+  const summary =
+    this.paymentSummary;
+
+  if (
+    !this.request
+    || !summary?.available
+    || !summary.quoteId
+    || !summary.technicianId
+    || typeof summary.totalAmount !== 'number'
+    || !Number.isFinite(summary.totalAmount)
+    || summary.totalAmount <= 0
+  ) {
+    return null;
+  }
+
+  return {
+    id: summary.quoteId,
+    requestId: this.request.id,
+    clientId: this.request.clientId,
+    technicianId: summary.technicianId,
+    technicianName: summary.technicianName ?? '',
+    visitFeeAmount: summary.visitFeeAmount ?? 0,
+    laborAmount: summary.laborAmount ?? 0,
+    materialsAmount: summary.materialsAmount ?? 0,
+    otherAmount: summary.otherAmount ?? 0,
+    totalAmount: summary.totalAmount,
+    availableDate: null,
+    scheduleAccepted: true,
+    comment: '',
+    status: 'accepted',
+    createdAt: null,
+    updatedAt: null
+  };
+}
+
+
+private mapAcceptedQuoteSnapshot(
+  value: unknown
+): AcceptedQuoteSnapshot | null {
+
+
+  if (
+    !value
     ||
-    !this.request.acceptedQuoteId
+    typeof value !== 'object'
   ) {
 
     return null;
   }
 
 
-  return (
-    this.quotes.find(
-      quote =>
-        quote.id ===
-        this.request
-          ?.acceptedQuoteId
+  const data =
+    value as Record<string, unknown>;
+
+
+  const quoteId =
+    typeof data['quoteId'] === 'string'
+      ? data['quoteId']
+      : '';
+
+
+  const requestId =
+    typeof data['requestId'] === 'string'
+      ? data['requestId']
+      : '';
+
+
+  const clientId =
+    typeof data['clientId'] === 'string'
+      ? data['clientId']
+      : '';
+
+
+  const technicianId =
+    typeof data['technicianId'] === 'string'
+      ? data['technicianId']
+      : '';
+
+
+  const totalAmount =
+    Number(
+      data['totalAmount']
+      ?? 0
+    );
+
+
+  if (
+    !quoteId
+    ||
+    !requestId
+    ||
+    !clientId
+    ||
+    !technicianId
+    ||
+    !Number.isFinite(
+      totalAmount
     )
-    ?? null
-  );
+    ||
+    totalAmount <= 0
+  ) {
+
+    return null;
+  }
+
+
+  return {
+    quoteId,
+    requestId,
+    clientId,
+    technicianId,
+
+    technicianName:
+      typeof data['technicianName'] === 'string'
+        ? data['technicianName']
+        : '',
+
+    visitFeeAmount:
+      Number(
+        data['visitFeeAmount']
+        ?? 0
+      ),
+
+    laborAmount:
+      Number(
+        data['laborAmount']
+        ?? 0
+      ),
+
+    materialsAmount:
+      Number(
+        data['materialsAmount']
+        ?? 0
+      ),
+
+    otherAmount:
+      Number(
+        data['otherAmount']
+        ?? 0
+      ),
+
+    totalAmount,
+
+    availableDate:
+      this.toDateValue(
+        data['availableDate']
+      ),
+
+    comment:
+      typeof data['comment'] === 'string'
+        ? data['comment']
+        : '',
+
+    acceptedAt:
+      this.toDateValue(
+        data['acceptedAt']
+      )
+  };
 }
+
+
+private toDateValue(
+  value: unknown
+): Date | null {
+
+
+  if (
+    value instanceof Date
+  ) {
+
+    return value;
+  }
+
+
+  if (
+    value instanceof Timestamp
+  ) {
+
+    return value.toDate();
+  }
+
+
+  return null;
+}
+
 /*
  * =========================================
  * PAGAR SERVICIO
@@ -1523,17 +2421,23 @@ async payService():
 
   /*
    * =====================================
-   * PRESUPUESTO ACEPTADO
+   * RESUMEN ECONÓMICO AUTORITATIVO
    * =====================================
    */
 
+  await this.refreshPaymentSummary(
+    true
+  );
+
+  const amount =
+    this.paymentAmount;
+
   if (
-    !this.acceptedQuote
+    !this.paymentReady
+    || amount === null
   ) {
-
     this.paymentError =
-      'No encontramos el presupuesto aceptado para este servicio.';
-
+      this.paymentUnavailableMessage;
 
     return;
   }
@@ -1548,7 +2452,7 @@ async payService():
   const confirmed =
     window.confirm(
       `Serás redirigido a Webpay para pagar ${this.formatCurrency(
-        this.acceptedQuote.totalAmount
+        amount
       )}. ¿Deseas continuar?`
     );
 
@@ -1771,10 +2675,7 @@ async payService():
         'Gracias. Tu evaluación fue registrada correctamente.';
 
 
-      console.log(
-        '[ServiGo] Evaluación registrada:',
-        result
-      );
+      
 
 
     } catch (error: any) {
@@ -1847,9 +2748,38 @@ async payService():
   }
 
 
+  isQuoteDetailAvailable(
+    quoteId: string
+  ): boolean {
+
+
+    return (
+      this.acceptedQuoteRecord
+        ?.id ===
+        quoteId
+      ||
+      this.quotes.some(
+        quote =>
+          quote.id ===
+          quoteId
+      )
+    );
+  }
+
+
   async openQuote(
     quote: Quote
   ): Promise<void> {
+
+
+    if (
+      !this.isQuoteDetailAvailable(
+        quote.id
+      )
+    ) {
+
+      return;
+    }
 
 
     await this.router.navigate(

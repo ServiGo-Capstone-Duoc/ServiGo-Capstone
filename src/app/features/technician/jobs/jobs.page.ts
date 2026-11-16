@@ -232,16 +232,10 @@ export class JobsPage {
         historyJobs;
 
 
-      console.log(
-        '[ServiGo] Trabajos activos:',
-        this.activeJobs
-      );
+      
 
 
-      console.log(
-        '[ServiGo] Historial técnico:',
-        this.historyJobs
-      );
+      
 
 
     } catch (error) {
@@ -364,6 +358,67 @@ export class JobsPage {
       default:
         return status;
     }
+  }
+
+
+
+
+  /*
+   * =========================================
+   * ESTADO ECONÓMICO
+   * =========================================
+   */
+
+  getPaymentLabel(
+    job: ServiceRequest
+  ): string {
+
+    return job.paymentStatus === 'paid'
+      ? 'Pagado'
+      : 'Pago pendiente';
+  }
+
+
+  getPaymentAmount(
+    job: ServiceRequest
+  ): number | null {
+
+    if (
+      typeof job.paidAmount === 'number'
+      && job.paidAmount > 0
+    ) {
+      return job.paidAmount;
+    }
+
+    const snapshotAmount =
+      job.acceptedQuoteSnapshot?.totalAmount;
+
+    return typeof snapshotAmount === 'number'
+      && snapshotAmount > 0
+        ? snapshotAmount
+        : null;
+  }
+
+
+  formatCurrency(
+    amount: number | null
+  ): string {
+
+    if (
+      amount === null
+      || amount <= 0
+    ) {
+      return 'Monto no disponible';
+    }
+
+    return new Intl.NumberFormat(
+      'es-CL',
+      {
+        style: 'currency',
+        currency: 'CLP',
+        maximumFractionDigits: 0
+      }
+    ).format(amount);
   }
 
 

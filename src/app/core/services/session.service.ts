@@ -1,5 +1,6 @@
 import {
-  Injectable
+  Injectable,
+  inject
 } from '@angular/core';
 
 import {
@@ -35,16 +36,16 @@ export class SessionService {
       null;
 
 
-  constructor(
-    private readonly authService:
-      AuthService,
+  private readonly authService =
+    inject(AuthService);
 
-    private readonly profileService:
-      ProfileService,
 
-    private readonly notificationService:
-      NotificationService
-  ) {}
+  private readonly profileService =
+    inject(ProfileService);
+
+
+  private readonly notificationService =
+    inject(NotificationService);
 
 
   async initialize():

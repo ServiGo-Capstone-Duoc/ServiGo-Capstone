@@ -24,6 +24,7 @@ import {
   IonContent,
   IonIcon,
   IonInput,
+  IonProgressBar,
   IonSpinner,
   IonTextarea
 } from '@ionic/angular';
@@ -35,9 +36,13 @@ import {
 import {
   arrowBackOutline,
   checkmarkCircle,
+  cloudUploadOutline,
   constructOutline,
+  documentAttachOutline,
+  documentTextOutline,
   locationOutline,
-  documentTextOutline
+  shieldCheckmarkOutline,
+  trashOutline
 } from 'ionicons/icons';
 
 import {
@@ -52,28 +57,32 @@ import {
   TechnicianApplicationService
 } from '../../../core/services/technician-application.service';
 
+import {
+  TechnicianApplicationSelectedFiles,
+  TechnicianDocumentService
+} from '../../../core/services/technician-document.service';
+
+import {
+  TechnicianApplicationDocumentCategory
+} from '../../../core/models/technician-application.model';
 
 @Component({
   selector: 'app-application',
-
   templateUrl:
     './application.page.html',
-
   styleUrls: [
     './application.page.scss'
   ],
-
   standalone: true,
-
   imports: [
     CommonModule,
     ReactiveFormsModule,
-
     IonButton,
     IonCheckbox,
     IonContent,
     IonIcon,
     IonInput,
+    IonProgressBar,
     IonSpinner,
     IonTextarea
   ]
@@ -97,16 +106,23 @@ export class ApplicationPage {
       TechnicianApplicationService
     );
 
+  private readonly documentService =
+    inject(
+      TechnicianDocumentService
+    );
+
   private readonly cdr =
     inject(ChangeDetectorRef);
 
-
   loading = false;
-
   success = false;
-
   errorMessage = '';
+  uploadProgress = 0;
+  uploadingFileName = '';
 
+  readonly acceptedFileTypes =
+    this.documentService
+      .acceptedFileTypes;
 
   readonly specialties = [
     'Electricidad',
@@ -119,39 +135,44 @@ export class ApplicationPage {
     'Línea blanca'
   ];
 
-
   selectedSpecialties:
     string[] = [];
 
+  documentFiles:
+    TechnicianApplicationSelectedFiles = {
+      identity: [],
+      professional: [],
+      additional: []
+    };
 
   form =
     this.fb.nonNullable.group({
-
       fullName: [
         this.profileService
           .currentProfile
-          ?.displayName ?? '',
+          ?.displayName
+          ?? '',
         [
           Validators.required,
           Validators.minLength(2)
         ]
       ],
-
       rut: [
         '',
         [
           Validators.required
         ]
       ],
-
       phone: [
-        '',
+        this.profileService
+          .currentProfile
+          ?.phone
+          ?? '',
         [
           Validators.required,
           Validators.minLength(8)
         ]
       ],
-
       experienceYears: [
         0,
         [
@@ -160,7 +181,6 @@ export class ApplicationPage {
           Validators.max(60)
         ]
       ],
-
       experienceDescription: [
         '',
         [
@@ -168,14 +188,15 @@ export class ApplicationPage {
           Validators.minLength(20)
         ]
       ],
-
       baseCommune: [
-        '',
+        this.profileService
+          .currentProfile
+          ?.commune
+          ?? '',
         [
           Validators.required
         ]
       ],
-
       serviceRadiusKm: [
         10,
         [
@@ -184,33 +205,26 @@ export class ApplicationPage {
           Validators.max(100)
         ]
       ],
-
-      hasIdentification: [
-        false
-      ],
-
-      hasCertifications: [
-        false
-      ],
-
       termsAccepted: [
         false,
         Validators.requiredTrue
       ]
     });
 
-
   constructor() {
 
     addIcons({
       arrowBackOutline,
       checkmarkCircle,
+      cloudUploadOutline,
       constructOutline,
+      documentAttachOutline,
+      documentTextOutline,
       locationOutline,
-      documentTextOutline
+      shieldCheckmarkOutline,
+      trashOutline
     });
   }
-
 
   toggleSpecialty(
     specialty: string
@@ -224,7 +238,6 @@ export class ApplicationPage {
           specialty
         )
     ) {
-
       this.selectedSpecialties =
         this.selectedSpecialties
           .filter(
@@ -241,27 +254,127 @@ export class ApplicationPage {
     ];
   }
 
-
   isSelected(
     specialty: string
   ): boolean {
 
-    return this
-      .selectedSpecialties
+    return this.selectedSpecialties
       .includes(
         specialty
       );
   }
 
+  onFilesSelected(
+    event: Event,
+    category:
+      TechnicianApplicationDocumentCategory
+  ): void {
 
-  private getInvalidFields(): string[] {
+    const input =
+      event.target as HTMLInputElement;
+
+    const selectedFiles =
+      Array.from(
+        input.files
+        ?? []
+      );
+
+    input.value = '';
+
+    if (
+      selectedFiles.length === 0
+    ) {
+      return;
+    }
+
+    try {
+      const mergedFiles =
+        this.documentService
+          .validateAndMergeFiles(
+            category,
+            this.documentFiles[
+              category
+            ],
+            selectedFiles
+          );
+
+      this.documentFiles = {
+        ...this.documentFiles,
+        [category]:
+          mergedFiles
+      };
+
+      this.errorMessage = '';
+
+    } catch (error) {
+      this.errorMessage =
+        this.documentErrorMessage(
+          error
+        );
+    }
+  }
+
+  removeFile(
+    category:
+      TechnicianApplicationDocumentCategory,
+    index: number
+  ): void {
+
+    this.documentFiles = {
+      ...this.documentFiles,
+      [category]:
+        this.documentFiles[
+          category
+        ].filter(
+          (
+            _file,
+            fileIndex
+          ) =>
+            fileIndex !== index
+        )
+    };
+
+    this.errorMessage = '';
+  }
+
+  formatFileSize(
+    bytes: number
+  ): string {
+
+    return this.documentService
+      .formatFileSize(
+        bytes
+      );
+  }
+
+  get totalDocumentCount():
+    number {
+
+    return this.documentFiles
+      .identity.length
+      + this.documentFiles
+        .professional.length
+      + this.documentFiles
+        .additional.length;
+  }
+
+  get documentsReady():
+    boolean {
+
+    return this.documentFiles
+      .identity.length > 0
+      && this.documentFiles
+        .professional.length > 0;
+  }
+
+  private getInvalidFields():
+    string[] {
 
     const invalidFields:
       string[] = [];
 
     const controls =
       this.form.controls;
-
 
     if (
       controls.fullName.invalid
@@ -271,7 +384,6 @@ export class ApplicationPage {
       );
     }
 
-
     if (
       controls.rut.invalid
     ) {
@@ -279,7 +391,6 @@ export class ApplicationPage {
         'RUT'
       );
     }
-
 
     if (
       controls.phone.invalid
@@ -289,7 +400,6 @@ export class ApplicationPage {
       );
     }
 
-
     if (
       controls.experienceYears.invalid
     ) {
@@ -297,7 +407,6 @@ export class ApplicationPage {
         'Años de experiencia'
       );
     }
-
 
     if (
       controls.experienceDescription.invalid
@@ -307,7 +416,6 @@ export class ApplicationPage {
       );
     }
 
-
     if (
       controls.baseCommune.invalid
     ) {
@@ -315,7 +423,6 @@ export class ApplicationPage {
         'Comuna base'
       );
     }
-
 
     if (
       controls.serviceRadiusKm.invalid
@@ -325,6 +432,32 @@ export class ApplicationPage {
       );
     }
 
+    if (
+      this.selectedSpecialties
+        .length === 0
+    ) {
+      invalidFields.push(
+        'Especialidad'
+      );
+    }
+
+    if (
+      this.documentFiles
+        .identity.length === 0
+    ) {
+      invalidFields.push(
+        'Documento de identidad'
+      );
+    }
+
+    if (
+      this.documentFiles
+        .professional.length === 0
+    ) {
+      invalidFields.push(
+        'Título o respaldo profesional'
+      );
+    }
 
     if (
       controls.termsAccepted.invalid
@@ -334,28 +467,11 @@ export class ApplicationPage {
       );
     }
 
-
-    if (
-      this.selectedSpecialties
-        .length === 0
-    ) {
-
-      invalidFields.push(
-        'Especialidad'
-      );
-    }
-
-
     return invalidFields;
   }
 
-
-  async submit(): Promise<void> {
-
-    console.log(
-      '[ServiGo] CLICK ENVIAR SOLICITUD'
-    );
-
+  async submit():
+    Promise<void> {
 
     if (
       this.loading
@@ -363,45 +479,32 @@ export class ApplicationPage {
       return;
     }
 
-
     this.errorMessage = '';
-
     this.form.markAllAsTouched();
-
 
     const invalidFields =
       this.getInvalidFields();
 
-
     if (
       invalidFields.length > 0
     ) {
-
       this.errorMessage =
-        'Revisa los siguientes campos: ' +
-        invalidFields.join(', ') +
-        '.';
-
-
-      console.warn(
-        '[ServiGo] Campos inválidos:',
-        invalidFields
-      );
-
+        'Revisa los siguientes campos: '
+        + invalidFields.join(', ')
+        + '.';
 
       this.cdr.detectChanges();
 
       return;
     }
 
-
     const user =
       this.authService
         .getCurrentUser();
 
-
-    if (!user) {
-
+    if (
+      !user
+    ) {
       this.errorMessage =
         'Tu sesión no está disponible. Vuelve a iniciar sesión.';
 
@@ -410,113 +513,247 @@ export class ApplicationPage {
       return;
     }
 
-
     this.loading = true;
+    this.uploadProgress = 0;
+    this.uploadingFileName = '';
 
     this.cdr.detectChanges();
 
+    let applicationId:
+      string | null = null;
 
-    console.log(
-      '[ServiGo] Enviando postulación...',
-      user.uid
-    );
+    let documentsUploaded =
+      false;
 
+    let applicationCreated =
+      false;
 
     try {
+      this.documentService
+        .validateSelection(
+          this.documentFiles
+        );
+
+      applicationId =
+        await this.applicationService
+          .prepareApplication(
+            user.uid
+          );
+
+      const documentSummary =
+        await this.documentService
+          .uploadDocuments(
+            applicationId,
+            user.uid,
+            this.documentFiles,
+            progress => {
+              this.uploadProgress =
+                progress.percent;
+
+              this.uploadingFileName =
+                progress.fileName;
+
+              this.cdr.detectChanges();
+            }
+          );
+
+      documentsUploaded = true;
 
       const values =
         this.form.getRawValue();
 
+      await this.applicationService
+        .createApplication(
+          user.uid,
+          applicationId,
+          {
+            ...values,
+            specialties:
+              this.selectedSpecialties
+          },
+          documentSummary
+        );
 
-      const applicationId =
-        await this.applicationService
-          .createApplication(
-            user.uid,
-            {
-              ...values,
-
-              specialties:
-                this.selectedSpecialties
-            }
-          );
-
-
-      console.log(
-        '[ServiGo] Postulación creada:',
-        applicationId
-      );
-
-
+      applicationCreated = true;
       this.success = true;
-
       this.errorMessage = '';
 
-
-    } catch (error: any) {
+    } catch (error) {
+      if (
+        applicationId
+        && documentsUploaded
+        && !applicationCreated
+      ) {
+        await this.documentService
+          .deleteDraftDocuments(
+            applicationId,
+            user.uid
+          )
+          .catch(
+            cleanupError => {
+              console.warn(
+                '[ServiGo] No fue posible limpiar documentos temporales:',
+                cleanupError
+              );
+            }
+          );
+      }
 
       console.error(
         '[ServiGo] Error postulación:',
         error
       );
 
-
-      if (
-        error?.message ===
-        'application-already-pending'
-      ) {
-
-        this.errorMessage =
-          'Ya tienes una solicitud pendiente de revisión.';
-
-      } else if (
-        error?.message ===
-        'specialties-required'
-      ) {
-
-        this.errorMessage =
-          'Selecciona al menos una especialidad.';
-
-      } else if (
-        error?.message ===
-        'terms-not-accepted'
-      ) {
-
-        this.errorMessage =
-          'Debes aceptar los términos de ServiGo.';
-
-      } else if (
-        error?.code ===
-        'permission-denied'
-      ) {
-
-        this.errorMessage =
-          'Firebase rechazó la solicitud por permisos.';
-
-      } else {
-
-        this.errorMessage =
-          'No pudimos enviar tu solicitud. Intenta nuevamente.';
-      }
-
+      this.errorMessage =
+        this.applicationErrorMessage(
+          error
+        );
 
     } finally {
-
       this.loading = false;
-
-      /*
-       * Firebase puede finalizar fuera del ciclo
-       * normal de detección de cambios de Angular.
-       * Forzamos aquí la actualización de la interfaz.
-       */
+      this.uploadingFileName = '';
       this.cdr.detectChanges();
     }
   }
 
-
-  async back(): Promise<void> {
+  async back():
+    Promise<void> {
 
     await this.router.navigateByUrl(
       '/app/profile'
     );
+  }
+
+  private applicationErrorMessage(
+    error: unknown
+  ): string {
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : '';
+
+    const code =
+      typeof error === 'object'
+      && error !== null
+      && 'code' in error
+        ? String(
+            (
+              error as {
+                code: unknown;
+              }
+            ).code
+          )
+        : '';
+
+    if (
+      message ===
+      'application-already-pending'
+    ) {
+      return 'Ya tienes una solicitud pendiente de revisión.';
+    }
+
+    if (
+      message ===
+      'application-already-approved'
+    ) {
+      return 'Tu perfil técnico ya fue aprobado.';
+    }
+
+    if (
+      message ===
+      'specialties-required'
+    ) {
+      return 'Selecciona al menos una especialidad.';
+    }
+
+    if (
+      message ===
+      'terms-not-accepted'
+    ) {
+      return 'Debes aceptar los términos de ServiGo.';
+    }
+
+    if (
+      message.startsWith(
+        'document-'
+      )
+      || message.endsWith(
+        '-document-required'
+      )
+    ) {
+      return this.documentErrorMessage(
+        error
+      );
+    }
+
+    if (
+      code.includes(
+        'storage/unauthorized'
+      )
+      || code.includes(
+        'permission-denied'
+      )
+    ) {
+      return 'No tienes permisos para cargar o registrar esta documentación.';
+    }
+
+    if (
+      code.includes(
+        'storage/retry-limit-exceeded'
+      )
+      || code.includes(
+        'unavailable'
+      )
+    ) {
+      return 'La conexión se interrumpió durante la carga. Intenta nuevamente.';
+    }
+
+    return 'No pudimos enviar tu solicitud. Intenta nuevamente.';
+  }
+
+  private documentErrorMessage(
+    error: unknown
+  ): string {
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : '';
+
+    switch (
+      message
+    ) {
+      case 'identity-document-required':
+        return 'Adjunta al menos una imagen o PDF de tu identificación vigente.';
+
+      case 'professional-document-required':
+        return 'Adjunta tu título, certificado, licencia o un respaldo de experiencia profesional.';
+
+      case 'document-too-large':
+        return 'Cada documento puede pesar como máximo 8 MB.';
+
+      case 'document-invalid-type':
+        return 'Solo se permiten archivos PDF, JPG, PNG o WEBP.';
+
+      case 'document-empty':
+        return 'Uno de los archivos seleccionados está vacío.';
+
+      case 'document-limit-identity':
+        return 'Puedes adjuntar hasta 2 archivos de identificación.';
+
+      case 'document-limit-professional':
+        return 'Puedes adjuntar hasta 3 respaldos profesionales.';
+
+      case 'document-limit-additional':
+        return 'Puedes adjuntar hasta 3 certificaciones adicionales.';
+
+      case 'document-total-limit':
+      case 'document-limit-exceeded':
+        return 'Puedes adjuntar un máximo de 8 documentos en total.';
+
+      default:
+        return 'No fue posible procesar uno de los documentos seleccionados.';
+    }
   }
 }

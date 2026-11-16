@@ -1,0 +1,490 @@
+:host {
+  display: block;
+  min-height: 100%;
+  color: var(--servigo-text);
+}
+
+ion-content {
+  --background: var(--servigo-background);
+}
+
+.admin-technicians-page {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  padding: 24px 18px calc(var(--servigo-tabbar-height) + 36px);
+}
+
+.page-header,
+.catalog-heading,
+.editor-heading,
+.name-row,
+.heading-actions,
+.form-actions,
+.delete-confirmation > div {
+  display: flex;
+  align-items: center;
+}
+
+.page-header {
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.header-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--servigo-blue);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 6px;
+  font-size: clamp(25px, 5vw, 34px);
+  line-height: 1.12;
+}
+
+h2 {
+  margin-bottom: 4px;
+  font-size: 21px;
+}
+
+.header-copy p,
+.editor-heading p {
+  margin-bottom: 0;
+  color: var(--servigo-text-secondary);
+  line-height: 1.5;
+}
+
+.icon-button,
+.back-button,
+.secondary-button,
+.danger-link,
+.danger-button,
+.technician-card {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.icon-button {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  place-items: center;
+  color: var(--servigo-text);
+  background: var(--servigo-surface);
+  border: 1px solid var(--servigo-border);
+  border-radius: 14px;
+  box-shadow: var(--servigo-shadow-card);
+}
+
+.icon-button ion-icon {
+  font-size: 21px;
+}
+
+.icon-button:disabled,
+.secondary-button:disabled,
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 13px 15px;
+  margin-bottom: 16px;
+  border: 1px solid transparent;
+  border-radius: var(--servigo-radius-sm);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.message ion-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 19px;
+}
+
+.message.success {
+  color: var(--servigo-success-strong);
+  background: var(--servigo-success-soft);
+  border-color: var(--servigo-success-border);
+}
+
+.message.error {
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border-color: var(--servigo-error-border);
+}
+
+.catalog-card,
+.editor-card {
+  padding: 20px;
+  background: var(--servigo-surface);
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-lg);
+  box-shadow: var(--servigo-shadow-card);
+}
+
+.catalog-heading {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.heading-actions {
+  gap: 9px;
+}
+
+.secondary-button,
+.back-button,
+.danger-button {
+  display: inline-flex;
+  min-height: 42px;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.secondary-button,
+.back-button {
+  color: var(--servigo-blue);
+  background: var(--servigo-blue-soft);
+  border: 1px solid rgba(var(--servigo-blue-rgb), 0.24);
+}
+
+.back-button {
+  align-self: flex-start;
+  margin-bottom: 16px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+ion-searchbar {
+  --background: var(--servigo-input-background);
+  --color: var(--servigo-text);
+  --placeholder-color: var(--servigo-text-tertiary);
+  --icon-color: var(--servigo-text-secondary);
+  --box-shadow: none;
+  padding: 0;
+}
+
+.filters ion-select {
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--servigo-text);
+  background: var(--servigo-input-background);
+  border: 1px solid var(--servigo-border);
+  border-radius: 12px;
+}
+
+.loading-state,
+.empty-state {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  color: var(--servigo-text-secondary);
+  text-align: center;
+}
+
+.empty-state ion-icon {
+  color: var(--servigo-blue);
+  font-size: 40px;
+}
+
+.empty-state h3,
+.empty-state p {
+  margin-bottom: 0;
+}
+
+.technician-grid {
+  display: grid;
+  gap: 11px;
+}
+
+.technician-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 34px;
+  gap: 13px;
+  align-items: center;
+  width: 100%;
+  padding: 14px;
+  color: var(--servigo-text);
+  text-align: left;
+  background: var(--servigo-surface-soft);
+  border: 1px solid var(--servigo-border);
+  border-radius: 16px;
+  transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+
+.technician-card:hover {
+  background: var(--servigo-surface-hover);
+  border-color: var(--servigo-border-strong);
+  transform: translateY(-1px);
+}
+
+.avatar {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  overflow: hidden;
+  place-items: center;
+  color: var(--servigo-blue);
+  background: var(--servigo-blue-light);
+  border-radius: 50%;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar ion-icon {
+  font-size: 25px;
+}
+
+.technician-copy {
+  min-width: 0;
+}
+
+.name-row {
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.name-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.technician-copy > span {
+  color: var(--servigo-text-secondary);
+  font-size: 13px;
+}
+
+.status-badge {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  color: var(--servigo-success-strong);
+  background: var(--servigo-success-soft);
+  border: 1px solid var(--servigo-success-border);
+  border-radius: var(--servigo-radius-pill);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.status-badge.inactive {
+  color: var(--servigo-warning-strong);
+  background: var(--servigo-warning-soft);
+  border-color: var(--servigo-warning-border);
+}
+
+.status-badge.suspended {
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border-color: var(--servigo-error-border);
+}
+
+.specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.specialties span {
+  padding: 4px 7px;
+  color: var(--servigo-blue-dark);
+  background: var(--servigo-blue-light);
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.edit-icon {
+  color: var(--servigo-text-tertiary);
+  font-size: 20px;
+}
+
+.editor-heading {
+  display: block;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--servigo-border);
+}
+
+.profile-form,
+.form-grid {
+  display: grid;
+  gap: 15px;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+ion-input,
+ion-select,
+ion-textarea {
+  --background: var(--servigo-input-background);
+  --color: var(--servigo-text);
+  --placeholder-color: var(--servigo-text-tertiary);
+  --border-color: var(--servigo-border);
+  --highlight-color-focused: var(--servigo-blue);
+}
+
+.toggle-field {
+  display: flex;
+  min-height: 76px;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px;
+  background: var(--servigo-input-background);
+  border: 1px solid var(--servigo-border);
+  border-radius: 12px;
+}
+
+.toggle-field span {
+  display: grid;
+  gap: 3px;
+}
+
+.toggle-field small {
+  color: var(--servigo-text-secondary);
+  line-height: 1.35;
+}
+
+.validation-message {
+  margin-bottom: 0;
+  color: var(--servigo-error);
+  font-size: 13px;
+}
+
+.form-actions {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.danger-link {
+  display: inline-flex;
+  min-height: 42px;
+  gap: 7px;
+  align-items: center;
+  padding: 0 8px;
+  color: var(--servigo-error);
+  background: transparent;
+  font-weight: 800;
+}
+
+.delete-confirmation {
+  padding: 16px;
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border: 1px solid var(--servigo-error-border);
+  border-radius: var(--servigo-radius-md);
+}
+
+.delete-confirmation p {
+  margin: 6px 0 14px;
+  color: var(--servigo-text-secondary);
+  line-height: 1.5;
+}
+
+.delete-confirmation > div {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.danger-button {
+  color: var(--servigo-on-primary);
+  background: var(--servigo-error);
+}
+
+@media (max-width: 720px) {
+  .catalog-heading,
+  .heading-actions {
+    align-items: stretch;
+  }
+
+  .catalog-heading {
+    flex-direction: column;
+  }
+
+  .heading-actions {
+    justify-content: space-between;
+  }
+
+  .filters,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-technicians-page {
+    padding-inline: 13px;
+  }
+
+  .catalog-card,
+  .editor-card {
+    padding: 15px;
+  }
+
+  .technician-card {
+    grid-template-columns: 46px minmax(0, 1fr) 22px;
+    padding: 12px;
+  }
+
+  .avatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .name-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -34,7 +34,7 @@ ion-content {
 
   border-bottom:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   .admin-logo {
     width: 118px;
@@ -82,21 +82,21 @@ ion-content {
 }
 
 .admin-message.success {
-  background: #ecfdf5;
+  background: var(--servigo-success-soft);
 
-  color: #15803d;
+  color: var(--servigo-success-strong);
 
   border:
-    1px solid #bbf7d0;
+    1px solid var(--servigo-success-border);
 }
 
 .admin-message.error {
-  background: #fef2f2;
+  background: var(--servigo-error-soft);
 
-  color: #b91c1c;
+  color: var(--servigo-error-strong);
 
   border:
-    1px solid #fecaca;
+    1px solid var(--servigo-error-border);
 }
 
 
@@ -141,7 +141,7 @@ ion-content {
   border: 0;
   border-radius: 12px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   color:
     var(--servigo-blue);
@@ -170,11 +170,11 @@ ion-content {
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   border-radius: 18px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: left;
 
@@ -266,9 +266,9 @@ ion-content {
 
   border-radius: 12px;
 
-  background: #fff7d6;
+  background: var(--servigo-warning-soft);
 
-  color: #9a6700;
+  color: var(--servigo-warning-strong);
 
   font-size: 9px;
   font-weight: 800;
@@ -288,7 +288,7 @@ ion-content {
     var(--servigo-text-secondary);
 
   ion-icon {
-    color: #22c55e;
+    color: var(--servigo-success);
 
     font-size: 50px;
   }
@@ -378,11 +378,11 @@ ion-content {
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   border-radius: 18px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   > p {
     color:
@@ -432,7 +432,7 @@ ion-content {
 }
 
 .reject-card ion-textarea {
-  --background: #f7f9fc;
+  --background: var(--servigo-input-background);
 
   --padding-start: 12px;
   --padding-end: 12px;
@@ -494,5 +494,252 @@ ion-content {
   .admin-actions {
     grid-template-columns:
       1fr;
+  }
+}
+.admin-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.technicians-button {
+  display: inline-flex;
+  min-height: 42px;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  color: var(--servigo-blue);
+  background: var(--servigo-blue-soft);
+  border: 1px solid rgba(var(--servigo-blue-rgb), 0.22);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.technicians-button ion-icon {
+  font-size: 18px;
+}
+
+@media (max-width: 640px) {
+  .admin-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .technicians-button {
+    width: 100%;
+  }
+}
+
+/* REVISIÓN DE DOCUMENTOS */
+
+.documents-title {
+  align-items: flex-start;
+
+  > div {
+    min-width: 0;
+    flex: 1;
+    display: grid;
+    gap: 3px;
+
+    span {
+      color: var(--servigo-text-secondary);
+      font-size: 9px;
+    }
+  }
+}
+
+.review-status {
+  flex: 0 0 auto;
+
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  background: var(--servigo-warning-soft);
+  color: var(--servigo-warning-strong);
+
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+
+  &.ready {
+    background: var(--servigo-success-soft);
+    color: var(--servigo-success-strong);
+  }
+}
+
+.documents-loading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 12px;
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 12px;
+
+  background: var(--servigo-surface-soft);
+  color: var(--servigo-text-secondary);
+
+  font-size: 10px;
+
+  ion-spinner {
+    width: 18px;
+    height: 18px;
+    color: var(--servigo-blue);
+  }
+}
+
+.document-warning {
+  margin-bottom: 10px;
+  padding: 11px 12px;
+
+  border: 1px solid var(--servigo-warning-border);
+  border-radius: 12px;
+
+  background: var(--servigo-warning-soft);
+  color: var(--servigo-warning-strong);
+
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.review-document-list {
+  display: grid;
+  gap: 8px;
+}
+
+.review-document {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px;
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 13px;
+
+  background: var(--servigo-surface-soft);
+}
+
+.review-document-icon {
+  width: 36px;
+  height: 36px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+  background: var(--servigo-blue-light);
+  color: var(--servigo-blue);
+
+  ion-icon {
+    font-size: 20px;
+  }
+}
+
+.review-document-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+
+  span {
+    color: var(--servigo-blue);
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  strong {
+    overflow: hidden;
+    color: var(--servigo-text);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    overflow: hidden;
+    color: var(--servigo-text-tertiary);
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.review-document-actions {
+  display: flex;
+  gap: 5px;
+
+  button {
+    width: 34px;
+    height: 34px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid var(--servigo-border);
+    border-radius: 10px;
+
+    background: var(--servigo-surface);
+    color: var(--servigo-blue);
+
+    cursor: pointer;
+
+    ion-icon {
+      font-size: 17px;
+    }
+
+    ion-spinner {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+  }
+}
+
+.declared-document-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+
+  margin-top: 12px;
+  padding-top: 10px;
+
+  border-top: 1px solid var(--servigo-border);
+
+  color: var(--servigo-text-secondary);
+  font-size: 9px;
+
+  strong {
+    color: var(--servigo-text);
+  }
+}
+
+@media (max-width: 520px) {
+  .documents-title {
+    flex-wrap: wrap;
+  }
+
+  .review-status {
+    margin-left: 27px;
+  }
+
+  .review-document {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .review-document-actions {
+    grid-column: 2;
+    justify-content: flex-end;
   }
 }

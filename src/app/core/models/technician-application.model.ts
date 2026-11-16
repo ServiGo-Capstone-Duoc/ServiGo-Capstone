@@ -3,6 +3,29 @@ export type TechnicianApplicationStatus =
   | 'approved'
   | 'rejected';
 
+export type TechnicianApplicationDocumentCategory =
+  | 'identity'
+  | 'professional'
+  | 'additional';
+
+export interface TechnicianApplicationDocument {
+  id: string;
+  applicationId: string;
+  userId: string;
+  category: TechnicianApplicationDocumentCategory;
+  originalName: string;
+  storagePath: string;
+  contentType: string;
+  size: number;
+  uploadedAt: Date | null;
+}
+
+export interface TechnicianApplicationDocumentSummary {
+  identificationDocumentCount: number;
+  professionalDocumentCount: number;
+  additionalDocumentCount: number;
+}
+
 export interface TechnicianApplication {
   id: string;
   userId: string;
@@ -21,6 +44,13 @@ export interface TechnicianApplication {
 
   hasIdentification: boolean;
   hasCertifications: boolean;
+
+  documentsSubmitted: boolean;
+  documentsSubmittedAt: Date | null;
+  documentVersion: number;
+  identificationDocumentCount: number;
+  professionalDocumentCount: number;
+  additionalDocumentCount: number;
 
   termsAccepted: boolean;
 

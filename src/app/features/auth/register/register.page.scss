@@ -1,14 +1,11 @@
 :host {
-  --servigo-blue: #0b73e0;
-  --servigo-blue-dark: #0757b4;
-  --servigo-yellow: #ffc21a;
-  --servigo-background: #f6f8fb;
-  --servigo-text: #1f2937;
-  --servigo-muted: #6b7280;
+  display: block;
+  color: var(--servigo-text);
 }
 
 ion-content {
-  --background: var(--servigo-background);
+  --background: var(--servigo-surface-soft);
+  --color: var(--servigo-text);
 }
 
 .auth-shell {
@@ -33,7 +30,7 @@ ion-content {
   p {
     margin: 0 auto;
     max-width: 340px;
-    color: var(--servigo-muted);
+    color: var(--servigo-text-secondary);
     line-height: 1.45;
   }
 }
@@ -58,12 +55,12 @@ ion-content {
   margin: 0 auto;
   padding: 24px;
 
-  background: #ffffff;
-  border: 1px solid #e5eaf1;
+  background: var(--servigo-surface);
+  border: 1px solid var(--servigo-border);
   border-radius: 24px;
 
   box-shadow:
-    0 12px 40px rgba(31, 41, 55, 0.08);
+    var(--servigo-shadow-card);
 }
 
 .heading {
@@ -77,16 +74,16 @@ ion-content {
 
   p {
     margin: 0;
-    color: var(--servigo-muted);
+    color: var(--servigo-text-secondary);
     line-height: 1.45;
   }
 }
 
 ion-item {
-  --background: #f8fafc;
+  --background: var(--servigo-surface-soft);
   --border-radius: 14px;
   --color: var(--servigo-text);
-  --placeholder-color: #667085;
+  --placeholder-color: var(--servigo-text-secondary);
   --placeholder-opacity: 1;
 
   margin-bottom: 14px;
@@ -94,30 +91,71 @@ ion-item {
 
 ion-input {
   --color: var(--servigo-text);
-  --placeholder-color: #667085;
+  --placeholder-color: var(--servigo-text-secondary);
   --placeholder-opacity: 1;
 }
 
-ion-button[type='submit'] {
+.primary-submit-button {
   --background: var(--servigo-blue);
   --background-hover: var(--servigo-blue-dark);
+  --background-activated: var(--servigo-blue-dark);
+  --color: var(--servigo-on-primary);
+  --border-color: transparent;
   --border-radius: 14px;
+  --border-style: solid;
+  --border-width: 1px;
+  --box-shadow: var(--servigo-shadow-primary);
 
   min-height: 50px;
   margin-top: 22px;
 
-  font-weight: 700;
+  color: var(--servigo-on-primary);
+  opacity: 1;
+  font-weight: 800;
+
+  &::part(native) {
+    color: var(--servigo-on-primary);
+    background:
+      linear-gradient(
+        135deg,
+        var(--servigo-blue) 0%,
+        var(--servigo-blue-dark) 100%
+      );
+  }
+}
+
+.primary-submit-button[disabled] {
+  --background: var(--servigo-surface-muted);
+  --background-hover: var(--servigo-surface-muted);
+  --background-activated: var(--servigo-surface-muted);
+  --color: var(--servigo-text-secondary);
+  --border-color: var(--servigo-border-strong);
+  --box-shadow: none;
+
+  color: var(--servigo-text-secondary);
+  opacity: 1;
+
+  &::part(native) {
+    color: var(--servigo-text-secondary);
+    background: var(--servigo-surface-muted);
+    border-color: var(--servigo-border-strong);
+    opacity: 1;
+  }
+}
+
+.primary-submit-button ion-spinner {
+  --color: currentColor;
 }
 
 .google-button {
-  --background: #ffffff;
-  --background-hover: #f8fafc;
-  --background-activated: #f1f5f9;
-  --border-color: #d7dee8;
+  --background: var(--servigo-surface);
+  --background-hover: var(--servigo-surface-soft);
+  --background-activated: var(--servigo-surface-hover);
+  --border-color: var(--servigo-border-strong);
   --border-radius: 14px;
   --border-style: solid;
   --border-width: 1px;
-  --color: #172033;
+  --color: var(--servigo-text);
 
   min-height: 50px;
   margin: 0;
@@ -134,11 +172,11 @@ ion-button[type='submit'] {
   height: 25px;
   margin-right: 10px;
 
-  border: 1px solid #d7dee8;
+  border: 1px solid var(--servigo-border-strong);
   border-radius: 50%;
 
-  background: #ffffff;
-  color: #4285f4;
+  background: var(--servigo-surface);
+  color: var(--servigo-blue);
 
   font-size: 16px;
   font-weight: 900;
@@ -151,7 +189,7 @@ ion-button[type='submit'] {
 
   margin: 20px 0;
 
-  color: var(--servigo-muted);
+  color: var(--servigo-text-secondary);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -162,7 +200,7 @@ ion-button[type='submit'] {
     content: '';
     flex: 1;
     height: 1px;
-    background: #e5eaf1;
+    background: var(--servigo-border);
   }
 
   span {
@@ -173,7 +211,7 @@ ion-button[type='submit'] {
 .secondary-action {
   margin-top: 18px;
   text-align: center;
-  color: var(--servigo-muted);
+  color: var(--servigo-text-secondary);
 }
 
 .register-error {
@@ -182,10 +220,10 @@ ion-button[type='submit'] {
 
   border-radius: 12px;
 
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--servigo-error-soft);
+  border: 1px solid var(--servigo-error-border);
 
-  color: #b91c1c;
+  color: var(--servigo-error-strong);
 
   font-size: 14px;
   font-weight: 600;

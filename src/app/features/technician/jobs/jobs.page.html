@@ -338,6 +338,31 @@
 
 
         <div
+          class="job-payment"
+          *ngIf="job.status === 'completed'"
+        >
+
+          <div>
+            <span>Pago</span>
+            <strong
+              [class.paid]="job.paymentStatus === 'paid'"
+              [class.pending]="job.paymentStatus !== 'paid'"
+            >
+              {{ getPaymentLabel(job) }}
+            </strong>
+          </div>
+
+          <div
+            class="job-payment-amount"
+            *ngIf="getPaymentAmount(job) as amount"
+          >
+            {{ formatCurrency(amount) }}
+          </div>
+
+        </div>
+
+
+        <div
           class="job-footer"
         >
 

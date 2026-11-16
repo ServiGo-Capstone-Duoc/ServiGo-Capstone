@@ -56,7 +56,7 @@ ion-content {
   background:
     var(--servigo-blue);
 
-  color: #ffffff;
+  color: var(--servigo-on-primary);
 
   font-size: 10px;
   font-weight: 800;
@@ -110,11 +110,11 @@ ion-content {
 
   border:
     1px solid
-    rgba(11, 115, 224, 0.08);
+    rgba(var(--servigo-blue-rgb), 0.08);
 
   border-radius: 19px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   text-align: left;
 
@@ -185,7 +185,7 @@ ion-content {
 
   border-radius: 11px;
 
-  background: #f1f5f9;
+  background: var(--servigo-surface-hover);
 
   color:
     var(--servigo-text-secondary);
@@ -256,7 +256,7 @@ ion-content {
 
   border-radius: 12px;
 
-  background: #f7f9fc;
+  background: var(--servigo-input-background);
 
   color:
     var(--servigo-text-secondary);
@@ -311,7 +311,7 @@ ion-content {
 
   border-radius: 20px;
 
-  background: #ffffff;
+  background: var(--servigo-surface);
 
   h2 {
     color:
@@ -340,7 +340,7 @@ ion-content {
     background:
       var(--servigo-blue);
 
-    color: #ffffff;
+    color: var(--servigo-on-primary);
 
     font-size: 10px;
     font-weight: 800;
@@ -376,10 +376,10 @@ ion-content {
   margin-bottom: 24px;
   padding: 5px;
 
-  border: 1px solid #dbe5f0;
+  border: 1px solid var(--servigo-border);
   border-radius: 18px;
 
-  background: #eaf0f7;
+  background: var(--servigo-surface-muted);
 }
 
 
@@ -402,7 +402,7 @@ ion-content {
 
   background: transparent;
 
-  color: #697386;
+  color: var(--servigo-text-secondary);
 
   font-size: 13px;
   font-weight: 700;
@@ -413,13 +413,12 @@ ion-content {
 
 .services-view-switcher button.active,
 .jobs-view-switcher button.active {
-  background: #ffffff;
+  background: var(--servigo-surface);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   box-shadow:
-    0 3px 12px
-    rgba(30, 60, 100, 0.08);
+    var(--servigo-shadow-card);
 }
 
 
@@ -438,9 +437,9 @@ ion-content {
 
   border-radius: 999px;
 
-  background: #dcecff;
+  background: var(--servigo-blue-light);
 
-  color: #0879ee;
+  color: var(--servigo-blue);
 
   font-size: 11px;
 }
@@ -451,16 +450,16 @@ ion-content {
  * ========================================= */
 
 .status-badge.completed {
-  background: #e8f8ef;
+  background: var(--servigo-success-soft);
 
-  color: #168447;
+  color: var(--servigo-success);
 }
 
 
 .status-badge.cancelled {
-  background: #fdecec;
+  background: var(--servigo-error-soft);
 
-  color: #c63a3a;
+  color: var(--servigo-error);
 }
 /* =========================================
  * SERVIGO DESIGN SYSTEM V1 - CLIENTE
@@ -474,13 +473,13 @@ ion-content {
 .new-service-button {
   min-height: 44px; padding: 0 14px; gap: 7px;
   border-radius: var(--servigo-radius-md);
-  font-size: 12px; box-shadow: 0 8px 18px rgba(11,115,224,.16);
+  font-size: 12px; box-shadow: 0 8px 18px rgba(var(--servigo-blue-rgb), .16);
 }
 .services-intro { margin-bottom: 20px; }
 .services-intro > span { font-size: 11px; letter-spacing: .08em; }
 .services-intro h1 { margin: 5px 0 7px; font-size: 28px; line-height: 1.05; letter-spacing: -.02em; }
 .services-intro p { font-size: 14px; line-height: 1.45; }
-.services-view-switcher { margin-bottom: 20px; border-color: var(--servigo-border); background: #edf2f7; }
+.services-view-switcher { margin-bottom: 20px; border-color: var(--servigo-border); background: var(--servigo-surface-muted); }
 .services-view-switcher button { min-height: 46px; font-size: 13px; }
 .service-card {
   margin-bottom: 12px; padding: 16px; border-color: var(--servigo-border);

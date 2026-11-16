@@ -1,0 +1,79 @@
+SERVIGO - ARCHIVOS CRÍTICOS NUEVOS O MODIFICADOS PARA FIREBASE REAL
+===================================================================
+
+CONFIGURACIÓN Y DESPLIEGUE
+-------------------------
+.gitignore
+README.md
+angular.json
+capacitor.config.ts
+firebase.json
+firestore.indexes.json
+firestore.rules
+storage.rules
+tsconfig.app.json
+tsconfig.spec.json
+functions/.env.example
+functions/.env.servigo-dev.example
+scripts/check-production-config.ps1
+scripts/deploy-real-firebase.ps1
+scripts/validate-production-source.ps1
+
+UBICACIÓN Y CONTINUIDAD
+----------------------
+src/app/core/config/location-fallback.config.ts
+src/app/core/config/location-fallback.config.spec.ts
+src/app/core/services/technician-location.service.ts
+src/app/features/services/new-request/new-request.page.ts
+src/app/features/services/new-request/new-request.page.html
+src/app/features/services/new-request/new-request.page.scss
+src/app/features/services/service-detail/service-detail.page.ts
+src/app/features/services/service-detail/service-detail.page.html
+src/app/features/services/service-detail/service-detail.page.scss
+src/app/features/technician/job-detail/job-detail.page.ts
+src/app/features/technician/job-detail/job-detail.page.html
+src/app/features/technician/job-detail/job-detail.page.scss
+
+PRESUPUESTO Y PAGO
+------------------
+functions/src/domain/accepted-quote.ts
+functions/test/unit/accepted-quote.test.ts
+functions/src/index.ts
+src/app/core/services/payment.service.ts
+src/app/features/payment/webpay-return/webpay-return.page.ts
+
+FOTOGRAFÍA Y PERFIL
+-------------------
+src/app/core/services/media-storage.service.ts
+src/app/core/services/profile.service.ts
+src/app/features/profile/edit-profile/edit-profile.page.ts
+src/app/features/profile/edit-profile/edit-profile.page.html
+src/app/features/profile/edit-profile/edit-profile.page.scss
+
+DOCUMENTACIÓN DE ENTREGA
+------------------------
+docs/REPARACIONES_PRODUCCION_2026.md
+docs/AUDITORIA_PRODUCCION_REAL.md
+docs/DESPLIEGUE_FIREBASE_REAL.md
+docs/PRUEBAS_FINALES_PRODUCCION.md
+docs/VALIDACION_ENTREGA_PRODUCCION.md
+docs/VALIDACION_AUTOMATIZADA_2026-11-08.txt
+
+EXCLUIDO INTENCIONALMENTE DEL ZIP FINAL
+=======================================
+node_modules/
+functions/node_modules/
+functions/lib/
+www/
+out-tsc/
+.angular/
+.ionic/
+coverage/
+emulator-data/
+.firebase-emulator-data/
+backups y carpetas de parches
+archivos .env reales
+cuentas de servicio y claves privadas
+logs de Firebase
+ZIP anteriores
+salidas generadas de analytics/

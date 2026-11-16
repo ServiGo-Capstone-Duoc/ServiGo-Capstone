@@ -521,6 +521,8 @@ export class NotificationService {
 
       case 'technician_quote_accepted':
 
+      case 'technician_payment_received':
+
       case 'technician_service_cancelled':
         return [
           '/app/technician/jobs',
@@ -644,6 +646,11 @@ export class NotificationService {
           data['quoteId']
         ),
 
+      paymentId:
+        this.optionalString(
+          data['paymentId']
+        ),
+
       category:
         this.optionalString(
           data['category']
@@ -711,6 +718,8 @@ export class NotificationService {
       case 'client_new_message':
 
       case 'technician_new_message':
+
+      case 'technician_payment_received':
         return value;
 
 

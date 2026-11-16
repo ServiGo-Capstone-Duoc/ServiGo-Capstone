@@ -181,22 +181,15 @@ private readonly cdr =
       '';
 
 
-    console.log(
-      '[ServiGo Webpay] Retorno recibido:',
-      {
-        hasTokenWs:
-          !!tokenWs,
-
-        hasTbkToken:
-          !!tbkToken,
-
-        hasTbkOrdenCompra:
-          !!tbkOrdenCompra,
-
-        hasTbkIdSesion:
-          !!tbkIdSesion
-      }
-    );
+    const returnError =
+      this.route.snapshot
+        .queryParamMap
+        .get(
+          'return_error'
+        )
+        ?.trim()
+      ??
+      '';
 
 
     /*
@@ -247,6 +240,36 @@ private readonly cdr =
         'El pago no fue completado. Puedes volver al servicio e intentarlo nuevamente.';
 
 
+      if (
+        tbkToken
+      ) {
+        try {
+          const abortResult =
+            await this.paymentService
+              .abortWebpayTransaction(
+                tbkToken
+              );
+
+          this.requestId =
+            abortResult.requestId;
+
+          if (
+            abortResult.status === 'approved'
+          ) {
+            this.state = 'approved';
+            this.errorMessage = '';
+          }
+
+        } catch (error) {
+          console.warn(
+            '[ServiGo Webpay] No fue posible registrar el aborto del pago:',
+            error
+          );
+        }
+      }
+
+
+      this.cdr.detectChanges();
       return;
     }
 
@@ -262,7 +285,9 @@ private readonly cdr =
 
 
     this.errorMessage =
-      'No recibimos información válida para confirmar el pago.';
+      returnError === 'missing_webpay_parameters'
+        ? 'Transbank no entregó los parámetros necesarios para validar la operación.'
+        : 'No recibimos información válida para confirmar el pago.';
   }
 
 
@@ -301,10 +326,7 @@ private readonly cdr =
         );
 
 
-    console.log(
-      '[ServiGo Webpay] COMMIT recibido:',
-      result
-    );
+    
 
 
     this.result =

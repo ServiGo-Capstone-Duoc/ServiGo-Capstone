@@ -58,6 +58,10 @@ import {
 } from '../../../core/services/quote.service';
 
 import {
+  ServiceCatalogService
+} from '../../../core/services/service-catalog.service';
+
+import {
   TechnicianOpportunityService,
   TechnicianOpportunityView
 } from '../../../core/services/technician-opportunity.service';
@@ -123,6 +127,10 @@ export class QuotePage
     inject(QuoteService);
 
 
+  private readonly serviceCatalogService =
+    inject(ServiceCatalogService);
+
+
   private readonly opportunityService =
     inject(
       TechnicianOpportunityService
@@ -168,8 +176,13 @@ export class QuotePage
     '';
 
 
-  readonly today =
-    this.getTodayString();
+  visitFeeMin = 0;
+
+  visitFeeMax = 100000000;
+
+  catalogLabel = 'Visita técnica';
+
+  catalogAvailable = false;
 
 
   /*
@@ -180,6 +193,14 @@ export class QuotePage
 
   form =
     this.fb.nonNullable.group({
+
+      visitFeeAmount: [
+        0,
+        [
+          Validators.required,
+          Validators.min(0)
+        ]
+      ],
 
       laborAmount: [
         0,
@@ -205,9 +226,9 @@ export class QuotePage
         ]
       ],
 
-      availableDate: [
-        '',
-        Validators.required
+      scheduleAccepted: [
+        false,
+        Validators.requiredTrue
       ],
 
       comment: [
@@ -353,10 +374,61 @@ export class QuotePage
         result;
 
 
-      console.log(
-        '[ServiGo] Oportunidad cargada para cotización:',
-        result
-      );
+      const catalogItem =
+        await this.serviceCatalogService
+          .getByName(
+            result.request.category
+          );
+
+
+      if (
+        catalogItem
+      ) {
+        this.catalogAvailable =
+          true;
+
+        this.visitFeeMin =
+          catalogItem.visitFeeMin;
+
+        this.visitFeeMax =
+          catalogItem.visitFeeMax;
+
+        this.catalogLabel =
+          catalogItem.name;
+
+        const visitControl =
+          this.form.controls.visitFeeAmount;
+
+        visitControl.setValidators([
+          Validators.required,
+          Validators.min(
+            this.visitFeeMin
+          ),
+          Validators.max(
+            this.visitFeeMax
+          )
+        ]);
+
+        visitControl.setValue(
+          this.visitFeeMin
+        );
+
+        visitControl.updateValueAndValidity();
+      } else {
+        this.catalogAvailable =
+          false;
+
+        this.errorMessage =
+          'La categoría no tiene un tarifario de visita configurado.';
+      }
+
+
+      if (
+        !this.getScheduledAt()
+      ) {
+        this.errorMessage =
+          'La solicitud no contiene una fecha y hora de reserva válida.';
+      }
 
 
     } catch (error) {
@@ -396,6 +468,12 @@ export class QuotePage
       this.form.getRawValue();
 
 
+    const visitFeeAmount =
+      Number(
+        values.visitFeeAmount
+      ) || 0;
+
+
     const laborAmount =
       Number(
         values.laborAmount
@@ -415,6 +493,8 @@ export class QuotePage
 
 
     return (
+      visitFeeAmount
+      +
       laborAmount
       +
       materialsAmount
@@ -438,6 +518,8 @@ export class QuotePage
       this.sending
       ||
       !this.opportunity
+      ||
+      !this.catalogAvailable
     ) {
 
       return;
@@ -606,6 +688,19 @@ export class QuotePage
         this.form.getRawValue();
 
 
+      const scheduledAt =
+        this.getScheduledAt();
+
+
+      if (
+        !scheduledAt
+      ) {
+        this.errorMessage =
+          'La solicitud no contiene una fecha y hora de reserva válida.';
+        return;
+      }
+
+
       this.quoteId =
         await this.quoteService
           .createQuote({
@@ -626,6 +721,11 @@ export class QuotePage
             technicianName:
               profile.displayName,
 
+            visitFeeAmount:
+              Number(
+                values.visitFeeAmount
+              ),
+
             laborAmount:
               Number(
                 values.laborAmount
@@ -642,17 +742,17 @@ export class QuotePage
               ),
 
             availableDate:
-              values.availableDate,
+              scheduledAt,
+
+            scheduleAccepted:
+              values.scheduleAccepted,
 
             comment:
               values.comment.trim()
           });
 
 
-      console.log(
-        '[ServiGo] Presupuesto creado:',
-        this.quoteId
-      );
+      
 
 
       this.success =
@@ -674,6 +774,15 @@ export class QuotePage
 
         this.errorMessage =
           'Ya enviaste un presupuesto para esta solicitud.';
+
+
+      } else if (
+        error?.message ===
+        'schedule-not-accepted'
+      ) {
+
+        this.errorMessage =
+          'Debes aceptar el horario solicitado por el cliente.';
 
 
       } else if (
@@ -769,44 +878,86 @@ export class QuotePage
 
   /*
    * =========================================
-   * FECHA LOCAL YYYY-MM-DD
+   * HORARIO RESERVADO POR EL CLIENTE
    * =========================================
    */
 
-  private getTodayString():
-    string {
+  get scheduleStartLabel(): string {
+    const value = this.getScheduledAt();
+    return value
+      ? new Intl.DateTimeFormat(
+          'es-CL',
+          {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          }
+        ).format(value)
+      : 'Horario no disponible';
+  }
 
 
-    const today =
-      new Date();
+  get scheduleEndLabel(): string {
+    const start = this.getScheduledAt();
+
+    if (!start) {
+      return 'Horario no disponible';
+    }
+
+    const end =
+      this.opportunity?.request.arrivalWindowEndAt
+      ?? new Date(
+        start.getTime() +
+        (2 * 60 * 60 * 1000)
+      );
+
+    return new Intl.DateTimeFormat(
+      'es-CL',
+      {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }
+    ).format(end);
+  }
 
 
-    const year =
-      today.getFullYear();
+  private getScheduledAt(): Date | null {
+    const request =
+      this.opportunity?.request;
 
+    if (!request) {
+      return null;
+    }
 
-    const month =
-      String(
-        today.getMonth() + 1
+    if (request.scheduledAt instanceof Date) {
+      return request.scheduledAt;
+    }
+
+    if (
+      !request.preferredDate
+      ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+        request.timeSlot
       )
-        .padStart(
-          2,
-          '0'
-        );
+    ) {
+      return null;
+    }
 
+    const date =
+      request.preferredDate;
 
-    const day =
-      String(
-        today.getDate()
-      )
-        .padStart(
-          2,
-          '0'
-        );
+    const [hours, minutes] =
+      request.timeSlot
+        .split(':')
+        .map(Number);
 
-
-    return (
-      `${year}-${month}-${day}`
+    return new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      hours,
+      minutes,
+      0,
+      0
     );
   }
 }

@@ -1,15 +1,11 @@
-# This file is used by the build system to adjust CSS and JS output to support the specified browsers below.
-# For additional information regarding the format and rule options, please see:
-# https://github.com/browserslist/browserslist#queries
+# Navegadores modernos soportados por ServiGo.
+# Se utilizan versiones recientes en lugar de rangos históricos fijos para
+# mantener el bundle alineado con la matriz de soporte vigente de Angular.
 
-# For the full list of supported browsers by the Angular framework, please see:
-# https://angular.dev/reference/versions#browser-support
-
-# You can see what browsers were selected by your queries by running:
-#   npx browserslist
-
-Chrome >=107
-Firefox >=106
-Edge >=107
-Safari >=16.1
-iOS >=16.1
+last 2 Chrome versions
+last 2 Edge versions
+last 2 Firefox versions
+last 2 Safari versions
+last 2 ios_saf versions
+not dead
+not IE 11

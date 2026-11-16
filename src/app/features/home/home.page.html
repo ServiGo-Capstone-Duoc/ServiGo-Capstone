@@ -69,7 +69,7 @@
           <div class="category-icon">
             <ion-icon [name]="category.icon"></ion-icon>
           </div>
-          <span>{{ category.name }}</span>
+          <span>{{ category.label }}</span>
         </button>
       </div>
     </section>
@@ -100,21 +100,46 @@
     <section class="section-block recent-section">
       <div class="section-heading sg-section-heading">
         <h2>Servicios recientes</h2>
-        <button type="button" class="text-button sg-text-action">Ver todos</button>
+        <button type="button" class="text-button sg-text-action" (click)="openServices()">Ver todos</button>
       </div>
 
-      <div class="empty-service sg-card">
+      <button
+        type="button"
+        class="empty-service sg-card active-service-card"
+        *ngIf="activeService as service; else noActiveService"
+        (click)="openActiveService()"
+      >
         <div class="empty-service-icon">
           <img src="assets/branding/servigo-logo-badge.png" alt="" />
         </div>
 
         <div class="empty-service-text">
-          <strong>Aún no tienes servicios activos</strong>
-          <span>Cuando solicites uno, podrás seguir su avance desde aquí.</span>
+          <strong>{{ service.category }}</strong>
+          <span>{{ getActiveStatusLabel(service) }}</span>
+          <small *ngIf="service.address">{{ service.address }}</small>
         </div>
 
         <ion-icon name="chevron-forward-outline"></ion-icon>
-      </div>
+      </button>
+
+      <ng-template #noActiveService>
+        <button
+          type="button"
+          class="empty-service sg-card active-service-card"
+          (click)="openServices()"
+        >
+          <div class="empty-service-icon">
+            <img src="assets/branding/servigo-logo-badge.png" alt="" />
+          </div>
+
+          <div class="empty-service-text">
+            <strong>Aún no tienes servicios activos</strong>
+            <span>Cuando solicites uno, podrás seguir su avance desde aquí.</span>
+          </div>
+
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </button>
+      </ng-template>
     </section>
   </main>
 </ion-content>

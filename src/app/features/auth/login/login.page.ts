@@ -16,6 +16,7 @@ import {
 } from '@angular/forms';
 
 import {
+  ActivatedRoute,
   Router,
   RouterLink
 } from '@angular/router';
@@ -81,6 +82,12 @@ export class LoginPage implements OnInit {
     );
 
 
+  private readonly route =
+    inject(
+      ActivatedRoute
+    );
+
+
   private readonly cdr =
     inject(
       ChangeDetectorRef
@@ -97,6 +104,10 @@ export class LoginPage implements OnInit {
 
   errorMessage =
     '';
+
+
+  private returnUrl =
+    '/app/home';
 
 
   /*
@@ -161,6 +172,34 @@ export class LoginPage implements OnInit {
 
   ngOnInit():
     void {
+
+
+    this.returnUrl =
+      this.safeReturnUrl(
+        this.route.snapshot
+          .queryParamMap
+          .get(
+            'returnUrl'
+          )
+      );
+
+
+    const accountStatus =
+      this.route.snapshot
+        .queryParamMap
+        .get(
+          'accountStatus'
+        );
+
+
+    if (
+      accountStatus
+    ) {
+      this.errorMessage =
+        this.accountStatusMessage(
+          accountStatus
+        );
+    }
 
 
     /*
@@ -504,12 +543,59 @@ export class LoginPage implements OnInit {
 
     await this.router
       .navigateByUrl(
-        '/app/home',
+        this.returnUrl,
         {
           replaceUrl:
             true
         }
       );
+  }
+
+
+  private safeReturnUrl(
+    value: string | null
+  ): string {
+
+
+    if (
+      value?.startsWith(
+        '/app/'
+      )
+      || value?.startsWith(
+        '/payment/webpay-return'
+      )
+    ) {
+      return value;
+    }
+
+
+    return '/app/home';
+  }
+
+
+  private accountStatusMessage(
+    status: string
+  ): string {
+
+
+    switch (
+      status
+    ) {
+      case 'pending':
+        return 'Tu cuenta todavía está pendiente de habilitación.';
+
+      case 'suspended':
+        return 'Tu cuenta se encuentra suspendida. Contacta al equipo de soporte de ServiGo.';
+
+      case 'blocked':
+        return 'Tu cuenta se encuentra bloqueada. Contacta al equipo de soporte de ServiGo.';
+
+      case 'profile-missing':
+        return 'No encontramos el perfil asociado a esta cuenta. Contacta al equipo de soporte de ServiGo.';
+
+      default:
+        return 'No fue posible habilitar el acceso a esta cuenta.';
+    }
   }
 
 

@@ -28,6 +28,8 @@ import {
   arrowBackOutline,
   personOutline,
   calendarOutline,
+  locationOutline,
+  ribbonOutline,
   checkmarkCircleOutline,
   closeCircleOutline
 } from 'ionicons/icons';
@@ -43,6 +45,15 @@ import {
 import {
   Quote
 } from '../../../core/models/quote.model';
+
+
+import {
+  TechnicianProfile
+} from '../../../core/models/technician-profile.model';
+
+import {
+  TechnicianProfileService
+} from '../../../core/services/technician-profile.service';
 
 
 @Component({
@@ -94,6 +105,12 @@ export class QuoteDetailPage {
     );
 
 
+  private readonly technicianProfileService =
+    inject(
+      TechnicianProfileService
+    );
+
+
   private readonly cdr =
     inject(
       ChangeDetectorRef
@@ -102,6 +119,11 @@ export class QuoteDetailPage {
 
   quote:
     Quote | null =
+      null;
+
+
+  technicianProfile:
+    TechnicianProfile | null =
       null;
 
 
@@ -133,6 +155,10 @@ export class QuoteDetailPage {
       personOutline,
 
       calendarOutline,
+
+      locationOutline,
+
+      ribbonOutline,
 
       checkmarkCircleOutline,
 
@@ -192,6 +218,10 @@ export class QuoteDetailPage {
       null;
 
 
+    this.technicianProfile =
+      null;
+
+
     this.cdr
       .detectChanges();
 
@@ -212,13 +242,7 @@ export class QuoteDetailPage {
         );
 
 
-    console.log(
-      '[ServiGo] Cargando presupuesto:',
-      {
-        requestId,
-        quoteId
-      }
-    );
+    
 
 
     const user =
@@ -260,10 +284,7 @@ export class QuoteDetailPage {
           );
 
 
-      console.log(
-        '[ServiGo] Presupuestos recuperados:',
-        quotes
-      );
+      
 
 
       this.quote =
@@ -273,6 +294,28 @@ export class QuoteDetailPage {
             quoteId
         )
         ?? null;
+
+
+      if (
+        this.quote
+      ) {
+
+        try {
+
+          this.technicianProfile =
+            await this.technicianProfileService
+              .getProfile(
+                this.quote.technicianId
+              );
+
+        } catch (profileError) {
+
+          console.warn(
+            '[ServiGo] Perfil profesional no disponible:',
+            profileError
+          );
+        }
+      }
 
 
       if (
@@ -391,10 +434,7 @@ export class QuoteDetailPage {
           );
 
 
-      console.log(
-        '[ServiGo] Presupuesto aceptado:',
-        result
-      );
+      
 
 
       this.quote = {

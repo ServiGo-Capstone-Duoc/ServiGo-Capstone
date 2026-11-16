@@ -574,6 +574,16 @@ async getOpportunityByRequestId(
         data['timeSlot']
         ?? '',
 
+      scheduledAt:
+        this.toDate(
+          data['scheduledAt']
+        ),
+
+      arrivalWindowEndAt:
+        this.toDate(
+          data['arrivalWindowEndAt']
+        ),
+
       urgency:
         (
           data['urgency']

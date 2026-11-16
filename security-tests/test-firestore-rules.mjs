@@ -17,6 +17,7 @@ import {
   getDocs,
   getFirestore,
   query,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
@@ -622,7 +623,7 @@ async function run() {
     doc(
       technicianContext.firestore,
       'technicianLocations',
-      TECHNICIAN_UID
+      requestId
     );
 
 
@@ -648,6 +649,56 @@ async function run() {
 
   /*
    * =====================================
+   * CLIENTE ESCUCHA ANTES DE LA PRIMERA POSICIÓN
+   * =====================================
+   *
+   * Regresión: el documento puede no existir todavía cuando el técnico
+   * cambia el servicio a en_route. La lectura debe estar autorizada y
+   * retornar snapshot inexistente, no permission-denied / Null value error.
+   */
+
+  console.log('');
+
+  console.log(
+    '7. Cliente puede escuchar tracking todavía inexistente...'
+  );
+
+  try {
+
+    const emptySnapshot =
+      await getDoc(
+        doc(
+          clientContext.firestore,
+          'technicianLocations',
+          requestId
+        )
+      );
+
+    if (
+      !emptySnapshot.exists()
+    ) {
+      pass(
+        'Cliente autorizado recibe snapshot vacío antes del primer GPS.',
+        counters
+      );
+    } else {
+      fail(
+        'La ubicación debía estar limpia antes de la prueba.',
+        counters
+      );
+    }
+
+  } catch (error) {
+    fail(
+      'Cliente no pudo escuchar tracking todavía inexistente.',
+      counters,
+      error
+    );
+  }
+
+
+  /*
+   * =====================================
    * TÉCNICO CREA SU UBICACIÓN
    * =====================================
    */
@@ -655,7 +706,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '7. Técnico publica SU ubicación...'
+    '8. Técnico publica SU ubicación...'
   );
 
 
@@ -689,7 +740,7 @@ async function run() {
           true,
 
         updatedAt:
-          new Date()
+          serverTimestamp()
       }
     );
 
@@ -719,7 +770,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '8. Cliente propietario lee ubicación...'
+    '9. Cliente propietario lee ubicación...'
   );
 
 
@@ -730,7 +781,7 @@ async function run() {
         doc(
           clientContext.firestore,
           'technicianLocations',
-          TECHNICIAN_UID
+          requestId
         )
       );
 
@@ -773,7 +824,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '9. Cliente intenta modificar ubicación...'
+    '10. Cliente intenta modificar ubicación...'
   );
 
 
@@ -783,7 +834,7 @@ async function run() {
       doc(
         clientContext.firestore,
         'technicianLocations',
-        TECHNICIAN_UID
+        requestId
       ),
       {
         latitude:
@@ -832,7 +883,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '10. Técnico intenta cambiar requestId...'
+    '11. Técnico intenta cambiar requestId...'
   );
 
 
@@ -887,7 +938,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '11. Técnico intenta guardar latitude=999...'
+    '12. Técnico intenta guardar latitude=999...'
   );
 
 
@@ -942,7 +993,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '12. Técnico intenta escribir ubicación de otro UID...'
+    '13. Técnico intenta suplantar technicianId...'
   );
 
 
@@ -952,7 +1003,7 @@ async function run() {
       doc(
         technicianContext.firestore,
         'technicianLocations',
-        FOREIGN_TECHNICIAN_UID
+        requestId
       ),
       {
 
@@ -980,7 +1031,7 @@ async function run() {
           true,
 
         updatedAt:
-          new Date()
+          serverTimestamp()
       }
     );
 
@@ -1000,7 +1051,7 @@ async function run() {
     ) {
 
       pass(
-        'Ubicación de otro UID protegida.',
+        'No se puede suplantar el technicianId asignado.',
         counters
       );
 
@@ -1025,7 +1076,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '13. Técnico actualiza su posición...'
+    '14. Técnico actualiza su posición...'
   );
 
 
@@ -1054,7 +1105,7 @@ async function run() {
           true,
 
         updatedAt:
-          new Date()
+          serverTimestamp()
       }
     );
 
@@ -1084,7 +1135,7 @@ async function run() {
   console.log('');
 
   console.log(
-    '14. Técnico elimina ubicación compartida...'
+    '15. Técnico elimina ubicación compartida...'
   );
 
 

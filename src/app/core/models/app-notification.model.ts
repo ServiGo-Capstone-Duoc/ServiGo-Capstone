@@ -10,6 +10,7 @@ export type AppNotificationType =
   | 'technician_service_cancelled'
   | 'client_new_message'
   | 'technician_new_message'
+  | 'technician_payment_received'
   | 'unknown';
 
 
@@ -32,6 +33,8 @@ export interface AppNotification {
   opportunityId: string | null;
 
   quoteId: string | null;
+
+  paymentId?: string | null;
 
   category: string | null;
 

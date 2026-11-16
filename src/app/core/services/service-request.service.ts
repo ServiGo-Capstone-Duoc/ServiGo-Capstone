@@ -25,6 +25,7 @@ import {
 } from '../firebase/firebase';
 
 import {
+  AcceptedQuoteSnapshot,
   ServiceRequest,
   ServiceRequestStatus,
   ServiceUrgency
@@ -74,6 +75,19 @@ interface UpdateJobStatusResponse {
     | 'en_route'
     | 'arrived'
     | 'in_progress';
+}
+
+
+export interface CancelServiceResult {
+  ok: boolean;
+  requestId: string;
+  status: 'cancelled';
+  previousStatus: ServiceRequestStatus;
+  cancelledBy: 'client' | 'technician';
+  cancellationPenaltyPercent: 0 | 50 | 100;
+  cancellationPenaltyAmount: number;
+  cancellationPenaltyBaseAmount: number;
+  cancellationPenaltyStatus: 'not_applicable' | 'pending' | 'paid' | 'waived';
 }
 
 
@@ -471,7 +485,7 @@ async completeJob(
 async cancelService(
   requestId: string,
   reason: string
-): Promise<void> {
+): Promise<CancelServiceResult> {
 
 
   /*
@@ -532,21 +546,7 @@ async cancelService(
         requestId: string;
         reason: string;
       },
-      {
-        ok: boolean;
-
-        requestId: string;
-
-        status:
-          'cancelled';
-
-        previousStatus:
-          ServiceRequestStatus;
-
-        cancelledBy:
-          | 'client'
-          | 'technician';
-      }
+      CancelServiceResult
     >(
       firebaseFunctions,
       'cancelService'
@@ -589,10 +589,7 @@ async cancelService(
   }
 
 
-  console.log(
-    '[ServiGo] Servicio cancelado por backend:',
-    response.data
-  );
+  return response.data;
 }
 /*
  * =========================================
@@ -662,10 +659,7 @@ private async updateJobStatus(
   }
 
 
-  console.log(
-    '[ServiGo] Estado de trabajo actualizado por backend:',
-    response.data
-  );
+  
 }
 
   /*
@@ -699,6 +693,22 @@ private async updateJobStatus(
       this.parseDate(
         data.preferredDate
       );
+
+
+    const scheduledAt =
+      this.buildScheduledAt(
+        data.preferredDate,
+        data.timeSlot
+      );
+
+
+    const arrivalWindowEndAt =
+      scheduledAt
+        ? new Date(
+            scheduledAt.getTime() +
+            (2 * 60 * 60 * 1000)
+          )
+        : null;
 
 
     await setDoc(
@@ -736,6 +746,20 @@ private async updateJobStatus(
         timeSlot:
           data.timeSlot,
 
+        scheduledAt:
+          scheduledAt
+            ? Timestamp.fromDate(
+                scheduledAt
+              )
+            : null,
+
+        arrivalWindowEndAt:
+          arrivalWindowEndAt
+            ? Timestamp.fromDate(
+                arrivalWindowEndAt
+              )
+            : null,
+
         urgency:
           data.urgency,
 
@@ -752,6 +776,9 @@ private async updateJobStatus(
   null,
 
 acceptedQuoteId:
+  null,
+
+acceptedQuoteSnapshot:
   null,
 
 /*
@@ -832,6 +859,16 @@ updatedAt:
       timeSlot:
         data['timeSlot'] ?? '',
 
+      scheduledAt:
+        this.toDate(
+          data['scheduledAt']
+        ),
+
+      arrivalWindowEndAt:
+        this.toDate(
+          data['arrivalWindowEndAt']
+        ),
+
       urgency:
         (
           data['urgency']
@@ -866,6 +903,11 @@ updatedAt:
   data['acceptedQuoteId']
   ?? null,
 
+acceptedQuoteSnapshot:
+  this.mapAcceptedQuoteSnapshot(
+    data['acceptedQuoteSnapshot']
+  ),
+
 
 /*
  * =====================================
@@ -888,6 +930,49 @@ paymentId:
       ? data['paymentId']
       : null,
 
+paidAt:
+  this.toDate(
+    data['paidAt']
+  ),
+
+paidAmount:
+  typeof data['paidAmount'] ===
+    'number'
+      ? data['paidAmount']
+      : null,
+
+paymentCurrency:
+  data['paymentCurrency'] ===
+    'CLP'
+      ? 'CLP'
+      : null,
+
+
+cancellationPenaltyAmount:
+  typeof data['cancellationPenaltyAmount'] === 'number'
+    ? data['cancellationPenaltyAmount']
+    : null,
+
+cancellationPenaltyPercent:
+  data['cancellationPenaltyPercent'] === 50
+  || data['cancellationPenaltyPercent'] === 100
+  || data['cancellationPenaltyPercent'] === 0
+    ? data['cancellationPenaltyPercent']
+    : null,
+
+cancellationPenaltyBaseAmount:
+  typeof data['cancellationPenaltyBaseAmount'] === 'number'
+    ? data['cancellationPenaltyBaseAmount']
+    : null,
+
+cancellationPenaltyStatus:
+  data['cancellationPenaltyStatus'] === 'not_applicable'
+  || data['cancellationPenaltyStatus'] === 'pending'
+  || data['cancellationPenaltyStatus'] === 'paid'
+  || data['cancellationPenaltyStatus'] === 'waived'
+    ? data['cancellationPenaltyStatus']
+    : null,
+
 
 createdAt:
   this.toDate(
@@ -899,6 +984,161 @@ createdAt:
           data['updatedAt']
         )
     };
+  }
+
+
+  private mapAcceptedQuoteSnapshot(
+    value: unknown
+  ): AcceptedQuoteSnapshot | null {
+
+
+    if (
+      !value
+      ||
+      typeof value !== 'object'
+    ) {
+
+      return null;
+    }
+
+
+    const data =
+      value as DocumentData;
+
+
+    const quoteId =
+      typeof data['quoteId'] === 'string'
+        ? data['quoteId']
+        : '';
+
+
+    const requestId =
+      typeof data['requestId'] === 'string'
+        ? data['requestId']
+        : '';
+
+
+    const clientId =
+      typeof data['clientId'] === 'string'
+        ? data['clientId']
+        : '';
+
+
+    const technicianId =
+      typeof data['technicianId'] === 'string'
+        ? data['technicianId']
+        : '';
+
+
+    const totalAmount =
+      Number(
+        data['totalAmount']
+        ?? 0
+      );
+
+
+    if (
+      !quoteId
+      ||
+      !requestId
+      ||
+      !clientId
+      ||
+      !technicianId
+      ||
+      !Number.isFinite(
+        totalAmount
+      )
+      ||
+      totalAmount <= 0
+    ) {
+
+      return null;
+    }
+
+
+    return {
+      quoteId,
+      requestId,
+      clientId,
+      technicianId,
+
+      technicianName:
+        typeof data['technicianName'] === 'string'
+          ? data['technicianName']
+          : '',
+
+      visitFeeAmount:
+        Number(
+          data['visitFeeAmount']
+          ?? 0
+        ),
+
+      laborAmount:
+        Number(
+          data['laborAmount']
+          ?? 0
+        ),
+
+      materialsAmount:
+        Number(
+          data['materialsAmount']
+          ?? 0
+        ),
+
+      otherAmount:
+        Number(
+          data['otherAmount']
+          ?? 0
+        ),
+
+      totalAmount,
+
+      availableDate:
+        this.toDate(
+          data['availableDate']
+        ),
+
+      comment:
+        typeof data['comment'] === 'string'
+          ? data['comment']
+          : '',
+
+      acceptedAt:
+        this.toDate(
+          data['acceptedAt']
+        )
+    };
+  }
+
+
+  private buildScheduledAt(
+    preferredDate: string,
+    time: string
+  ): Date | null {
+
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(
+        preferredDate
+      )
+      ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+        time
+      )
+    ) {
+      return null;
+    }
+
+    const value =
+      new Date(
+        `${preferredDate}T${time}:00`
+      );
+
+    return Number.isNaN(
+      value.getTime()
+    )
+      ? null
+      : value;
   }
 
 

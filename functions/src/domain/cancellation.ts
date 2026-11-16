@@ -154,3 +154,122 @@ export function validateCancellationReason(
       null
   };
 }
+export interface CancellationPenaltyInput {
+  actor: CancellationActor;
+  now: Date;
+  scheduledAt: Date | null;
+  visitFeeAmount: number;
+}
+
+export interface CancellationPenaltyResult {
+  percent: 0 | 50 | 100;
+  amount: number;
+  baseAmount: number;
+  reason:
+    | 'technician_cancelled'
+    | 'no_agreed_visit_fee'
+    | 'no_schedule'
+    | 'more_than_one_day_before'
+    | 'same_day'
+    | 'one_hour_or_less';
+}
+
+function chileDateKey(
+  value: Date
+): string {
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        timeZone: 'America/Santiago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }
+    ).formatToParts(value);
+
+  const map =
+    Object.fromEntries(
+      parts.map(part => [part.type, part.value])
+    );
+
+  return `${map['year']}-${map['month']}-${map['day']}`;
+}
+
+export function calculateCancellationPenalty(
+  input: CancellationPenaltyInput
+): CancellationPenaltyResult {
+  const baseAmount =
+    Number.isFinite(input.visitFeeAmount)
+      ? Math.max(0, Math.round(input.visitFeeAmount))
+      : 0;
+
+  if (
+    input.actor === 'technician'
+  ) {
+    return {
+      percent: 0,
+      amount: 0,
+      baseAmount,
+      reason: 'technician_cancelled'
+    };
+  }
+
+  if (
+    baseAmount <= 0
+  ) {
+    return {
+      percent: 0,
+      amount: 0,
+      baseAmount,
+      reason: 'no_agreed_visit_fee'
+    };
+  }
+
+  if (
+    !input.scheduledAt
+    || Number.isNaN(input.scheduledAt.getTime())
+  ) {
+    return {
+      percent: 0,
+      amount: 0,
+      baseAmount,
+      reason: 'no_schedule'
+    };
+  }
+
+  const millisecondsUntilService =
+    input.scheduledAt.getTime()
+    - input.now.getTime();
+
+  if (
+    millisecondsUntilService <=
+      60 * 60 * 1000
+  ) {
+    return {
+      percent: 100,
+      amount: baseAmount,
+      baseAmount,
+      reason: 'one_hour_or_less'
+    };
+  }
+
+  if (
+    chileDateKey(input.now) ===
+    chileDateKey(input.scheduledAt)
+  ) {
+    return {
+      percent: 50,
+      amount: Math.round(baseAmount * 0.5),
+      baseAmount,
+      reason: 'same_day'
+    };
+  }
+
+  return {
+    percent: 0,
+    amount: 0,
+    baseAmount,
+    reason: 'more_than_one_day_before'
+  };
+}

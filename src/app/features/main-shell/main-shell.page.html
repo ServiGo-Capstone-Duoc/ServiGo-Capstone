@@ -1,3 +1,24 @@
+<button
+  class="global-notification-button"
+  type="button"
+  *ngIf="showGlobalNotificationBell$ | async"
+  (click)="openNotifications()"
+  [attr.aria-label]="
+    (unreadCount$ | async)
+      ? 'Notificaciones pendientes'
+      : 'Notificaciones'
+  "
+>
+  <ion-icon name="notifications-outline"></ion-icon>
+
+  <span
+    class="global-notification-badge"
+    *ngIf="unreadCount$ | async as unreadCount"
+  >
+    {{ unreadCount > 9 ? '9+' : unreadCount }}
+  </span>
+</button>
+
 <ion-tabs>
 
   <ion-tab-bar

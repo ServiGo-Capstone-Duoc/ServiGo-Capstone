@@ -39,10 +39,9 @@
 .loading-card {
   padding: 22px;
   border-radius: 22px;
-  background: var(--ion-card-background, #fff);
+  background: var(--servigo-surface);
   box-shadow:
-    0 10px 30px
-    rgba(0, 0, 0, 0.06);
+    var(--servigo-shadow-card);
   margin-bottom: 18px;
 }
 
@@ -100,13 +99,13 @@
   font-weight: 800;
 
   &.enabled {
-    background: #e9f8ef;
-    color: #16733a;
+    background: var(--servigo-success-soft);
+    color: var(--servigo-success-strong);
   }
 
   &.disabled {
-    background: #f2f3f5;
-    color: #62666d;
+    background: var(--servigo-surface-muted);
+    color: var(--servigo-text-secondary);
   }
 }
 
@@ -141,7 +140,7 @@
 
   img {
     width: min(280px, 100%);
-    background: #fff;
+    background: var(--servigo-surface);
     border-radius: 18px;
     padding: 12px;
   }
@@ -167,7 +166,7 @@
     height: 42px;
     border: 0;
     border-radius: 12px;
-    background: #fff;
+    background: var(--servigo-surface);
     font-size: 1.1rem;
   }
 }
@@ -184,13 +183,13 @@
   font-size: 0.9rem;
 
   &.success {
-    background: #e9f8ef;
-    color: #16733a;
+    background: var(--servigo-success-soft);
+    color: var(--servigo-success-strong);
   }
 
   &.error {
-    background: #fdecec;
-    color: #a12626;
+    background: var(--servigo-error-soft);
+    color: var(--servigo-error-strong);
   }
 }
 

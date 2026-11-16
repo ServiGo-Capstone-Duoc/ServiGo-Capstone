@@ -1,656 +1,323 @@
 <ion-content>
-
   <main
     class="profile-container"
-    *ngIf="
-      profile$ | async as profile
-    "
+    *ngIf="profile$ | async as profile"
   >
-
-    <!-- MARCA -->
-
-    <header
-      class="profile-header"
-    >
-
+    <header class="profile-header">
       <img
         src="assets/branding/servigo-logo-horizontal.png"
         alt="ServiGo"
         class="profile-logo"
       />
-
-      <span>
-        Mi perfil
-      </span>
-
+      <span>Mi perfil</span>
     </header>
 
-
-    <!-- IDENTIDAD -->
-
-    <section
-      class="identity-card"
-    >
-
-      <div
-        class="avatar"
-      >
-
+    <section class="identity-card">
+      <div class="avatar">
         <img
           *ngIf="profile.photoUrl"
           [src]="profile.photoUrl"
           [alt]="profile.displayName"
         />
-
         <ion-icon
           *ngIf="!profile.photoUrl"
           name="person-outline"
         ></ion-icon>
-
       </div>
 
-
-      <div
-        class="identity-copy"
-      >
-
-        <h1>
-          {{ profile.displayName }}
-        </h1>
-
-
-        <span
-          class="role-badge"
-        >
-          {{
-            getRoleLabel(
-              profile.roles
-            )
-          }}
+      <div class="identity-copy">
+        <h1>{{ profile.displayName }}</h1>
+        <span class="role-badge">
+          {{ getRoleLabel(profile.roles) }}
         </span>
 
-
-        <div
-          class="rating"
-        >
-
-          <ion-icon
-            name="star"
-          ></ion-icon>
-
-          <strong>
-            {{
-              getRating(
-                profile.averageRating
-              )
-            }}
-          </strong>
-
-          <span
-            *ngIf="
-              profile.ratingCount > 0
-            "
-          >
-            (
-            {{ profile.ratingCount }}
-            evaluaciones
-            )
+        <div class="rating">
+          <ion-icon name="star"></ion-icon>
+          <strong>{{ getRating(profile.averageRating) }}</strong>
+          <span *ngIf="profile.ratingCount > 0">
+            ({{ profile.ratingCount }} evaluaciones)
           </span>
-
         </div>
-
       </div>
-
     </section>
 
-
-    <!-- CUENTA -->
-
-    <section
-      class="profile-section"
-    >
-
-      <h2>
-        Mi cuenta
-      </h2>
-
+    <section class="profile-section">
+      <h2>Mi cuenta</h2>
 
       <button
         class="menu-item"
         type="button"
         (click)="editProfile()"
       >
-
         <div class="menu-icon">
-
-          <ion-icon
-            name="person-outline"
-          ></ion-icon>
-
+          <ion-icon name="person-outline"></ion-icon>
         </div>
-
-
         <div class="menu-copy">
-
-          <strong>
-            Mis datos
-          </strong>
-
-          <span>
-            {{ profile.email }}
-          </span>
-
+          <strong>Datos personales</strong>
+          <span>{{ profile.email }}</span>
         </div>
-
-
         <ion-icon
           class="arrow"
           name="chevron-forward-outline"
         ></ion-icon>
-
       </button>
-
 
       <button
         class="menu-item"
         type="button"
         (click)="openAddresses()"
       >
-
         <div class="menu-icon">
-
-          <ion-icon
-            name="location-outline"
-          ></ion-icon>
-
+          <ion-icon name="location-outline"></ion-icon>
         </div>
-
-
         <div class="menu-copy">
-
-          <strong>
-            Direcciones
-          </strong>
-
+          <strong>Dirección y comuna</strong>
           <span>
-            Administra tus ubicaciones
+            {{ profile.address || 'Completa tu ubicación habitual' }}
           </span>
-
         </div>
-
-
         <ion-icon
           class="arrow"
           name="chevron-forward-outline"
         ></ion-icon>
-
       </button>
-
 
       <button
         class="menu-item"
         type="button"
         (click)="openHistory()"
       >
-
         <div class="menu-icon">
-
-          <ion-icon
-            name="time-outline"
-          ></ion-icon>
-
+          <ion-icon name="time-outline"></ion-icon>
         </div>
-
-
         <div class="menu-copy">
-
-          <strong>
-            Historial de servicios
-          </strong>
-
-          <span>
-            Revisa tus servicios anteriores
-          </span>
-
+          <strong>Historial de servicios</strong>
+          <span>Solicitudes activas, completadas y canceladas</span>
         </div>
-
-
         <ion-icon
           class="arrow"
           name="chevron-forward-outline"
         ></ion-icon>
-
       </button>
-
 
       <button
         class="menu-item"
         type="button"
         (click)="openPayments()"
       >
-
         <div class="menu-icon">
-
-          <ion-icon
-            name="card-outline"
-          ></ion-icon>
-
+          <ion-icon name="card-outline"></ion-icon>
         </div>
-
-
         <div class="menu-copy">
-
-          <strong>
-            Métodos de pago
-          </strong>
-
-          <span>
-            Administra tus medios de pago
-          </span>
-
+          <strong>Pagos de servicios</strong>
+          <span>Consulta el estado de pago en cada solicitud</span>
         </div>
-
-
         <ion-icon
           class="arrow"
           name="chevron-forward-outline"
         ></ion-icon>
-
       </button>
-
     </section>
 
-
-    <!-- ===================================== -->
-    <!-- ESTADO TÉCNICO                       -->
-    <!-- ===================================== -->
-
-
-    <!-- SIN POSTULACIÓN -->
-
     <section
-      class="technician-card"
-      *ngIf="
-        !applicationLoading &&
-        !technicianApplication &&
-        !profile.roles.includes('tecnico')
-      "
+      class="professional-profile-card"
+      *ngIf="technicianProfile as professional"
     >
-
-      <div
-        class="technician-icon"
-      >
-
-        <ion-icon
-          name="construct-outline"
-        ></ion-icon>
-
-      </div>
-
-
-      <div
-        class="technician-copy"
-      >
-
+      <div class="professional-heading">
+        <div class="technician-icon">
+          <ion-icon name="briefcase-outline"></ion-icon>
+        </div>
+        <div>
+          <span class="technician-eyebrow">PERFIL PROFESIONAL</span>
+          <h2>{{ professional.displayName }}</h2>
+        </div>
         <span
-          class="technician-eyebrow"
+          class="professional-status"
+          [class.inactive]="professional.status === 'inactive'"
+          [class.suspended]="professional.status === 'suspended'"
         >
-          ¿Tienes un oficio?
+          {{ professionalStatusLabel() }}
         </span>
-
-        <h2>
-          Ofrece tus servicios
-          con ServiGo
-        </h2>
-
-        <p>
-          Completa tu perfil profesional
-          y solicita convertirte
-          en técnico.
-        </p>
-
-
-        <button
-          type="button"
-          class="technician-button"
-          routerLink="/app/technician/application"
-        >
-
-          Quiero ofrecer servicios
-
-          <ion-icon
-            name="chevron-forward-outline"
-          ></ion-icon>
-
-        </button>
-
       </div>
 
+      <p>
+        {{ professional.publicDescription || professional.experienceDescription }}
+      </p>
+
+      <div class="professional-facts">
+        <span>{{ professional.experienceYears }} años de experiencia</span>
+        <span>{{ professional.baseCommune }}</span>
+        <span>{{ professional.serviceRadiusKm }} km de cobertura</span>
+      </div>
+
+      <div class="professional-specialties">
+        <span *ngFor="let specialty of professional.specialties">
+          {{ specialty }}
+        </span>
+      </div>
+
+      <small>
+        La información profesional es verificada y solo puede ser modificada por un administrador de ServiGo.
+      </small>
     </section>
 
-
-    <!-- POSTULACIÓN PENDIENTE -->
-
-    <section
-      class="application-status-card pending"
-      *ngIf="
-        technicianApplication?.status ===
-        'pending'
-      "
-    >
-
-      <div
-        class="application-status-icon"
+    <ng-container *ngIf="!detailsLoading && !technicianProfile">
+      <section
+        class="technician-card"
+        *ngIf="!technicianApplication && !profile.roles.includes('tecnico')"
       >
-
-<ion-icon
-  name="time-outline"
-></ion-icon>
-
-      </div>
-
-
-      <div
-        class="application-status-copy"
-      >
-
-        <span>
-          POSTULACIÓN DE TÉCNICO
-        </span>
-
-        <h2>
-          Solicitud en revisión
-        </h2>
-
-        <p>
-          Estamos revisando tus antecedentes.
-          Te informaremos cuando exista
-          una resolución.
-        </p>
-
-
-        <div
-          class="status-pill pending"
-        >
-          Pendiente
+        <div class="technician-icon">
+          <ion-icon name="construct-outline"></ion-icon>
         </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- POSTULACIÓN RECHAZADA -->
-
-    <section
-      class="application-status-card rejected"
-      *ngIf="
-        technicianApplication?.status ===
-        'rejected'
-      "
-    >
-
-      <div
-        class="application-status-icon"
-      >
-
-        <ion-icon
-          name="close-circle-outline"
-        ></ion-icon>
-
-      </div>
-
-
-      <div
-        class="application-status-copy"
-      >
-
-        <span>
-          POSTULACIÓN DE TÉCNICO
-        </span>
-
-        <h2>
-          Solicitud no aprobada
-        </h2>
-
-        <p
-          *ngIf="
-            technicianApplication?.rejectionReason
-          "
-        >
-          {{
-            technicianApplication
-              ?.rejectionReason
-          }}
-        </p>
-
-        <p
-          *ngIf="
-            !technicianApplication?.rejectionReason
-          "
-        >
-          Revisa tus antecedentes antes
-          de volver a postular.
-        </p>
-
-
-        <button
-          type="button"
-          class="retry-button"
-          routerLink="/app/technician/application"
-        >
-          Corregir y volver a postular
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <!-- APROBADO -->
-
-    <section
-      class="application-status-card approved"
-      *ngIf="
-        technicianApplication?.status ===
-        'approved'
-      "
-    >
-
-      <div
-        class="application-status-icon"
-      >
-
-        <ion-icon
-          name="checkmark-circle-outline"
-        ></ion-icon>
-
-      </div>
-
-
-      <div
-        class="application-status-copy"
-      >
-
-        <span>
-          PERFIL PROFESIONAL
-        </span>
-
-        <h2>
-          Técnico aprobado
-        </h2>
-
-        <p>
-          Tu perfil profesional fue
-          aprobado por ServiGo.
-        </p>
-
-
-        <div
-          class="status-pill approved"
-        >
-          Aprobado
+        <div class="technician-copy">
+          <span class="technician-eyebrow">¿Tienes un oficio?</span>
+          <h2>Ofrece tus servicios con ServiGo</h2>
+          <p>
+            Completa tus antecedentes profesionales y solicita convertirte en técnico.
+          </p>
+          <button
+            type="button"
+            class="technician-button"
+            routerLink="/app/technician/application"
+          >
+            Quiero ofrecer servicios
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </button>
         </div>
+      </section>
 
-      </div>
+      <section
+        class="application-status-card pending"
+        *ngIf="technicianApplication?.status === 'pending'"
+      >
+        <div class="application-status-icon">
+          <ion-icon name="time-outline"></ion-icon>
+        </div>
+        <div class="application-status-copy">
+          <span>POSTULACIÓN DE TÉCNICO</span>
+          <h2>Solicitud en revisión</h2>
+          <p>
+            Estamos revisando tus antecedentes. Te notificaremos cuando exista una resolución.
+          </p>
+          <div class="status-pill pending">Pendiente</div>
+        </div>
+      </section>
 
-    </section>
+      <section
+        class="application-status-card rejected"
+        *ngIf="technicianApplication?.status === 'rejected' && technicianApplication as application"
+      >
+        <div class="application-status-icon">
+          <ion-icon name="close-circle-outline"></ion-icon>
+        </div>
+        <div class="application-status-copy">
+          <span>POSTULACIÓN DE TÉCNICO</span>
+          <h2>Solicitud no aprobada</h2>
+          <p *ngIf="application.rejectionReason">
+            {{ application.rejectionReason }}
+          </p>
+          <p *ngIf="!application.rejectionReason">
+            Revisa tus antecedentes antes de volver a postular.
+          </p>
+          <button
+            type="button"
+            class="retry-button"
+            routerLink="/app/technician/application"
+          >
+            Corregir y volver a postular
+          </button>
+        </div>
+      </section>
 
-<section
-  class="profile-section"
-  *ngIf="
-    profile.roles.includes('administrador') ||
-    profile.roles.includes('superadmin')
-  "
->
-
-  <h2>
-    Administración
-  </h2>
-
-
-  <button
-    type="button"
-    class="menu-item admin-entry"
-    routerLink="/app/admin"
-  >
-
-    <div
-      class="menu-icon"
-    >
-
-      <ion-icon
-        name="shield-checkmark-outline"
-      ></ion-icon>
-
-    </div>
-
-
-    <div
-      class="menu-copy"
-    >
-
-      <strong>
-        Panel administrador
-      </strong>
-
-      <span>
-        Validar técnicos y gestionar ServiGo
-      </span>
-
-    </div>
-
-
-    <ion-icon
-      class="arrow"
-      name="chevron-forward-outline"
-    ></ion-icon>
-
-  </button>
-
-</section>
-    <!-- SOPORTE -->
+      <section
+        class="application-status-card approved"
+        *ngIf="technicianApplication?.status === 'approved'"
+      >
+        <div class="application-status-icon">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+        </div>
+        <div class="application-status-copy">
+          <span>PERFIL PROFESIONAL</span>
+          <h2>Técnico aprobado</h2>
+          <p>
+            Tu aprobación está vigente. Un administrador debe sincronizar el perfil profesional para publicarlo.
+          </p>
+          <div class="status-pill approved">Aprobado</div>
+        </div>
+      </section>
+    </ng-container>
 
     <section
       class="profile-section"
+      *ngIf="profile.roles.includes('administrador') || profile.roles.includes('superadmin')"
     >
+      <h2>Administración</h2>
+      <button
+        type="button"
+        class="menu-item admin-entry"
+        routerLink="/app/admin"
+      >
+        <div class="menu-icon">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+        </div>
+        <div class="menu-copy">
+          <strong>Panel administrador</strong>
+          <span>Postulaciones y perfiles profesionales</span>
+        </div>
+        <ion-icon
+          class="arrow"
+          name="chevron-forward-outline"
+        ></ion-icon>
+      </button>
+    </section>
 
-      <h2>
-        Soporte y seguridad
-      </h2>
+    <section class="profile-section">
+      <h2>Configuración y seguridad</h2>
 
+      <button
+        class="menu-item"
+        type="button"
+        (click)="openSettings()"
+      >
+        <div class="menu-icon">
+          <ion-icon name="settings-outline"></ion-icon>
+        </div>
+        <div class="menu-copy">
+          <strong>Apariencia</strong>
+          <span>Modo del sistema, claro u oscuro</span>
+        </div>
+        <ion-icon
+          class="arrow"
+          name="chevron-forward-outline"
+        ></ion-icon>
+      </button>
 
       <button
         class="menu-item"
         type="button"
         (click)="openSecurity()"
       >
-
         <div class="menu-icon">
-
-          <ion-icon
-            name="shield-checkmark-outline"
-          ></ion-icon>
-
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
         </div>
-
-
         <div class="menu-copy">
-
-          <strong>
-            Seguridad
-          </strong>
-
-          <span>
-            Contraseña y acceso
-          </span>
-
+          <strong>Seguridad</strong>
+          <span>Contraseña, MFA y acceso</span>
         </div>
-
-
         <ion-icon
           class="arrow"
           name="chevron-forward-outline"
         ></ion-icon>
-
       </button>
-
-
-      <button
-        class="menu-item"
-        type="button"
-        (click)="openHelp()"
-      >
-
-        <div class="menu-icon">
-
-          <ion-icon
-            name="help-circle-outline"
-          ></ion-icon>
-
-        </div>
-
-
-        <div class="menu-copy">
-
-          <strong>
-            Ayuda y soporte
-          </strong>
-
-          <span>
-            Preguntas frecuentes
-            y asistencia
-          </span>
-
-        </div>
-
-
-        <ion-icon
-          class="arrow"
-          name="chevron-forward-outline"
-        ></ion-icon>
-
-      </button>
-
     </section>
-
-
-    <!-- SALIR -->
 
     <button
       type="button"
       class="logout-button"
       (click)="logout()"
     >
-
-      <ion-icon
-        name="log-out-outline"
-      ></ion-icon>
-
+      <ion-icon name="log-out-outline"></ion-icon>
       Cerrar sesión
-
     </button>
-
   </main>
-
 </ion-content>

@@ -1,17 +1,14 @@
 <ion-content>
-
   <main class="application-container">
-
     <header class="application-header">
-
       <button
         type="button"
         class="back-button"
+        aria-label="Volver al perfil"
+        [disabled]="loading"
         (click)="back()"
       >
-        <ion-icon
-          name="arrow-back-outline"
-        ></ion-icon>
+        <ion-icon name="arrow-back-outline"></ion-icon>
       </button>
 
       <img
@@ -19,38 +16,34 @@
         alt="ServiGo"
         class="application-logo"
       />
-
     </header>
-
-
-    <!-- ÉXITO -->
 
     <section
       class="success-card"
       *ngIf="success"
     >
-
       <div class="success-icon">
-
-        <ion-icon
-          name="checkmark-circle"
-        ></ion-icon>
-
+        <ion-icon name="checkmark-circle"></ion-icon>
       </div>
 
-      <h1>
-        Solicitud enviada
-      </h1>
+      <h1>Solicitud enviada</h1>
 
       <p>
-        Revisaremos tus antecedentes
-        antes de habilitar tu perfil
-        como técnico.
+        Recibimos tus antecedentes y documentos. Un administrador
+        verificará la información antes de habilitar tu perfil técnico.
       </p>
 
       <span class="pending-badge">
         Pendiente de revisión
       </span>
+
+      <div class="privacy-note compact">
+        <ion-icon name="shield-checkmark-outline"></ion-icon>
+        <span>
+          La documentación solo puede ser consultada por ti y por
+          administradores autorizados de ServiGo.
+        </span>
+      </div>
 
       <ion-button
         expand="block"
@@ -59,72 +52,33 @@
       >
         Volver a mi perfil
       </ion-button>
-
     </section>
 
-
-    <!-- FORMULARIO -->
-
-    <ng-container
-      *ngIf="!success"
-    >
-
+    <ng-container *ngIf="!success">
       <section class="intro">
-
-        <span>
-          Perfil profesional
-        </span>
+        <span>Perfil profesional</span>
 
         <h1>
-          Ofrece tus servicios
-          en ServiGo
+          Ofrece tus servicios en ServiGo
         </h1>
 
         <p>
-          Completa tus antecedentes.
-          Tu perfil será revisado antes
+          Completa tus antecedentes y adjunta documentación que permita
+          validar tu identidad y experiencia. Tu perfil será revisado antes
           de quedar disponible para clientes.
         </p>
-
       </section>
 
-
-      <form
-        [formGroup]="form"
-      >
-
-        <!-- DATOS PROFESIONALES -->
-
+      <form [formGroup]="form">
         <section class="form-card">
-
-          <div class="section-title">
-
-            <ion-icon
-              name="construct-outline"
-            ></ion-icon>
-
-            <div>
-
-              <h2>
-                Datos profesionales
-              </h2>
-
-              <p>
-                Información para validar
-                tu postulación.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <!-- NOMBRE -->
+          <h2>Datos personales</h2>
 
           <ion-input
             label="Nombre completo"
             labelPlacement="stacked"
             formControlName="fullName"
+            autocomplete="name"
+            maxlength="100"
           ></ion-input>
 
           <div
@@ -137,14 +91,13 @@
             Ingresa tu nombre completo.
           </div>
 
-
-          <!-- RUT -->
-
           <ion-input
             label="RUT"
             labelPlacement="stacked"
             formControlName="rut"
             placeholder="12.345.678-9"
+            autocomplete="off"
+            maxlength="20"
           ></ion-input>
 
           <div
@@ -157,15 +110,14 @@
             Ingresa tu RUT.
           </div>
 
-
-          <!-- TELÉFONO -->
-
           <ion-input
             label="Teléfono"
             labelPlacement="stacked"
             type="tel"
             formControlName="phone"
             placeholder="+56 9 1234 5678"
+            autocomplete="tel"
+            maxlength="24"
           ></ion-input>
 
           <div
@@ -177,61 +129,33 @@
           >
             Ingresa un teléfono válido.
           </div>
-
         </section>
 
-
-        <!-- ESPECIALIDADES -->
-
         <section class="form-card">
-
           <div class="section-title">
-
-            <ion-icon
-              name="construct-outline"
-            ></ion-icon>
+            <ion-icon name="construct-outline"></ion-icon>
 
             <div>
-
-              <h2>
-                Especialidades
-              </h2>
-
+              <h2>Especialidades</h2>
               <p>
-                Selecciona uno o más
-                servicios que realizas.
+                Selecciona uno o más servicios que realizas.
               </p>
-
             </div>
-
           </div>
 
-
           <div class="specialties-grid">
-
             <button
               type="button"
-              *ngFor="
-                let specialty
-                of specialties
-              "
+              *ngFor="let specialty of specialties"
               class="specialty-chip"
-              [class.selected]="
-                isSelected(
-                  specialty
-                )
-              "
-              (click)="
-                toggleSpecialty(
-                  specialty
-                )
-              "
+              [class.selected]="isSelected(specialty)"
+              [attr.aria-pressed]="isSelected(specialty)"
+              [disabled]="loading"
+              (click)="toggleSpecialty(specialty)"
             >
               {{ specialty }}
             </button>
-
           </div>
-
 
           <div
             class="field-error"
@@ -242,26 +166,18 @@
           >
             Selecciona al menos una especialidad.
           </div>
-
         </section>
 
-
-        <!-- EXPERIENCIA -->
-
         <section class="form-card">
-
-          <h2>
-            Experiencia
-          </h2>
-
-
-          <!-- AÑOS -->
+          <h2>Experiencia</h2>
 
           <ion-input
             label="Años de experiencia"
             labelPlacement="stacked"
             type="number"
             formControlName="experienceYears"
+            min="0"
+            max="60"
           ></ion-input>
 
           <div
@@ -274,14 +190,12 @@
             Ingresa un valor entre 0 y 60 años.
           </div>
 
-
-          <!-- DESCRIPCIÓN -->
-
           <ion-textarea
             label="Cuéntanos sobre tu experiencia"
             labelPlacement="stacked"
             formControlName="experienceDescription"
             [autoGrow]="true"
+            maxlength="1200"
             placeholder="Describe los trabajos que realizas, experiencia, conocimientos, etc."
           ></ion-textarea>
 
@@ -292,46 +206,28 @@
               form.controls.experienceDescription.invalid
             "
           >
-            Describe tu experiencia con al menos
-            20 caracteres.
+            Describe tu experiencia con al menos 20 caracteres.
           </div>
-
         </section>
 
-
-        <!-- COBERTURA -->
-
         <section class="form-card">
-
           <div class="section-title">
-
-            <ion-icon
-              name="location-outline"
-            ></ion-icon>
+            <ion-icon name="location-outline"></ion-icon>
 
             <div>
-
-              <h2>
-                Zona de atención
-              </h2>
-
+              <h2>Zona de atención</h2>
               <p>
-                Define desde dónde trabajas
-                y cuánto puedes desplazarte.
+                Define desde dónde trabajas y cuánto puedes desplazarte.
               </p>
-
             </div>
-
           </div>
-
-
-          <!-- COMUNA -->
 
           <ion-input
             label="Comuna base"
             labelPlacement="stacked"
             formControlName="baseCommune"
             placeholder="Ej: La Florida"
+            maxlength="80"
           ></ion-input>
 
           <div
@@ -344,14 +240,13 @@
             Ingresa tu comuna base.
           </div>
 
-
-          <!-- RADIO -->
-
           <ion-input
             label="Radio de atención (km)"
             labelPlacement="stacked"
             type="number"
             formControlName="serviceRadiusKm"
+            min="1"
+            max="100"
           ></ion-input>
 
           <div
@@ -361,69 +256,257 @@
               form.controls.serviceRadiusKm.invalid
             "
           >
-            El radio de atención debe estar
-            entre 1 y 100 km.
+            El radio de atención debe estar entre 1 y 100 km.
           </div>
-
         </section>
 
-
-        <!-- DOCUMENTOS -->
-
-        <section class="form-card">
-
+        <section class="form-card documents-card">
           <div class="section-title">
-
-            <ion-icon
-              name="document-text-outline"
-            ></ion-icon>
+            <ion-icon name="document-text-outline"></ion-icon>
 
             <div>
-
-              <h2>
-                Documentación
-              </h2>
-
+              <h2>Documentación de respaldo</h2>
               <p>
-                Prepararemos la carga
-                documental para la validación.
+                Adjunta archivos legibles. Los documentos obligatorios
+                deben estar presentes antes de enviar la solicitud.
               </p>
-
             </div>
-
           </div>
 
-
-          <label class="check-row">
-
-            <ion-checkbox
-              formControlName="hasIdentification"
-            ></ion-checkbox>
-
+          <div class="privacy-note">
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
             <span>
-              Tengo identificación vigente
+              Archivos privados: solo tú y administradores autorizados
+              pueden acceder a ellos. Formatos PDF, JPG, PNG o WEBP;
+              máximo 8 MB por archivo.
+            </span>
+          </div>
+
+          <article
+            class="upload-block"
+            [class.complete]="documentFiles.identity.length > 0"
+          >
+            <div class="upload-heading">
+              <div class="upload-icon">
+                <ion-icon name="document-attach-outline"></ion-icon>
+              </div>
+
+              <div>
+                <div class="upload-title-row">
+                  <strong>Identificación vigente</strong>
+                  <span class="required-badge">Obligatorio</span>
+                </div>
+
+                <p>
+                  Cédula de identidad por ambos lados o un PDF legible.
+                  Puedes adjuntar hasta 2 archivos.
+                </p>
+              </div>
+            </div>
+
+            <input
+              #identityInput
+              class="native-file-input"
+              type="file"
+              [accept]="acceptedFileTypes"
+              multiple
+              [disabled]="loading"
+              (change)="onFilesSelected($event, 'identity')"
+            />
+
+            <button
+              type="button"
+              class="upload-button"
+              [disabled]="loading"
+              (click)="identityInput.click()"
+            >
+              <ion-icon name="cloud-upload-outline"></ion-icon>
+              Seleccionar identificación
+            </button>
+
+            <div
+              class="selected-files"
+              *ngIf="documentFiles.identity.length > 0"
+            >
+              <div
+                class="selected-file"
+                *ngFor="
+                  let file of documentFiles.identity;
+                  let index = index
+                "
+              >
+                <div>
+                  <strong>{{ file.name }}</strong>
+                  <span>{{ formatFileSize(file.size) }}</span>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Quitar documento"
+                  [disabled]="loading"
+                  (click)="removeFile('identity', index)"
+                >
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="upload-block"
+            [class.complete]="documentFiles.professional.length > 0"
+          >
+            <div class="upload-heading">
+              <div class="upload-icon">
+                <ion-icon name="document-attach-outline"></ion-icon>
+              </div>
+
+              <div>
+                <div class="upload-title-row">
+                  <strong>Título o respaldo profesional</strong>
+                  <span class="required-badge">Obligatorio</span>
+                </div>
+
+                <p>
+                  Título técnico o profesional, licencia, certificado de
+                  competencia, curso o respaldo verificable de experiencia.
+                  Puedes adjuntar hasta 3 archivos.
+                </p>
+              </div>
+            </div>
+
+            <input
+              #professionalInput
+              class="native-file-input"
+              type="file"
+              [accept]="acceptedFileTypes"
+              multiple
+              [disabled]="loading"
+              (change)="onFilesSelected($event, 'professional')"
+            />
+
+            <button
+              type="button"
+              class="upload-button"
+              [disabled]="loading"
+              (click)="professionalInput.click()"
+            >
+              <ion-icon name="cloud-upload-outline"></ion-icon>
+              Seleccionar respaldo profesional
+            </button>
+
+            <div
+              class="selected-files"
+              *ngIf="documentFiles.professional.length > 0"
+            >
+              <div
+                class="selected-file"
+                *ngFor="
+                  let file of documentFiles.professional;
+                  let index = index
+                "
+              >
+                <div>
+                  <strong>{{ file.name }}</strong>
+                  <span>{{ formatFileSize(file.size) }}</span>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Quitar documento"
+                  [disabled]="loading"
+                  (click)="removeFile('professional', index)"
+                >
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="upload-block"
+            [class.complete]="documentFiles.additional.length > 0"
+          >
+            <div class="upload-heading">
+              <div class="upload-icon optional">
+                <ion-icon name="document-attach-outline"></ion-icon>
+              </div>
+
+              <div>
+                <div class="upload-title-row">
+                  <strong>Certificaciones adicionales</strong>
+                  <span class="optional-badge">Opcional</span>
+                </div>
+
+                <p>
+                  Cursos, acreditaciones SEC, licencias, recomendaciones u
+                  otros antecedentes. Puedes adjuntar hasta 3 archivos.
+                </p>
+              </div>
+            </div>
+
+            <input
+              #additionalInput
+              class="native-file-input"
+              type="file"
+              [accept]="acceptedFileTypes"
+              multiple
+              [disabled]="loading"
+              (change)="onFilesSelected($event, 'additional')"
+            />
+
+            <button
+              type="button"
+              class="upload-button secondary"
+              [disabled]="loading"
+              (click)="additionalInput.click()"
+            >
+              <ion-icon name="cloud-upload-outline"></ion-icon>
+              Agregar certificación
+            </button>
+
+            <div
+              class="selected-files"
+              *ngIf="documentFiles.additional.length > 0"
+            >
+              <div
+                class="selected-file"
+                *ngFor="
+                  let file of documentFiles.additional;
+                  let index = index
+                "
+              >
+                <div>
+                  <strong>{{ file.name }}</strong>
+                  <span>{{ formatFileSize(file.size) }}</span>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Quitar documento"
+                  [disabled]="loading"
+                  (click)="removeFile('additional', index)"
+                >
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <div class="documents-summary">
+            <span>
+              {{ totalDocumentCount }} de 8 archivos seleccionados
             </span>
 
-          </label>
-
-
-          <label class="check-row">
-
-            <ion-checkbox
-              formControlName="hasCertifications"
-            ></ion-checkbox>
-
-            <span>
-              Poseo certificaciones
-              relacionadas con mis servicios
-            </span>
-
-          </label>
-
+            <strong [class.ready]="documentsReady">
+              {{
+                documentsReady
+                  ? 'Documentación mínima completa'
+                  : 'Faltan documentos obligatorios'
+              }}
+            </strong>
+          </div>
         </section>
-
-
-        <!-- TÉRMINOS -->
 
         <section
           class="terms-card"
@@ -432,19 +515,15 @@
             form.controls.termsAccepted.invalid
           "
         >
-
           <ion-checkbox
             formControlName="termsAccepted"
           ></ion-checkbox>
 
           <span>
-            Declaro que la información
-            proporcionada es correcta y
-            acepto los términos de ServiGo.
+            Declaro que la información y documentación proporcionadas son
+            auténticas, están vigentes y acepto los términos de ServiGo.
           </span>
-
         </section>
-
 
         <div
           class="field-error"
@@ -453,22 +532,36 @@
             form.controls.termsAccepted.invalid
           "
         >
-          Debes aceptar los términos para
-          enviar la solicitud.
+          Debes aceptar los términos para enviar la solicitud.
         </div>
 
+        <div
+          class="upload-progress"
+          *ngIf="loading"
+          aria-live="polite"
+        >
+          <div>
+            <strong>
+              Cargando documentación: {{ uploadProgress }}%
+            </strong>
 
-        <!-- ERROR GENERAL -->
+            <span *ngIf="uploadingFileName">
+              {{ uploadingFileName }}
+            </span>
+          </div>
+
+          <ion-progress-bar
+            [value]="uploadProgress / 100"
+          ></ion-progress-bar>
+        </div>
 
         <div
           class="form-error"
           *ngIf="errorMessage"
+          role="alert"
         >
           {{ errorMessage }}
         </div>
-
-
-        <!-- BOTÓN -->
 
         <ion-button
           expand="block"
@@ -477,24 +570,16 @@
           [disabled]="loading"
           (click)="submit()"
         >
-
           <ion-spinner
             *ngIf="loading"
             name="crescent"
           ></ion-spinner>
 
-          <span
-            *ngIf="!loading"
-          >
+          <span *ngIf="!loading">
             Enviar solicitud
           </span>
-
         </ion-button>
-
       </form>
-
     </ng-container>
-
   </main>
-
 </ion-content>

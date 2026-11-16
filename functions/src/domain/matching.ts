@@ -96,8 +96,19 @@ export function hasMatchingSpecialty(
     .map(
       normalizeMatchingText
     )
-    .includes(
-      normalizedCategory
+    .filter(
+      specialty =>
+        !!specialty
+    )
+    .some(
+      specialty =>
+        specialty === normalizedCategory
+        || normalizedCategory.includes(
+          specialty
+        )
+        || specialty.includes(
+          normalizedCategory
+        )
     );
 }
 

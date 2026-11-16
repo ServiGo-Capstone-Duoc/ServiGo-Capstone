@@ -161,6 +161,10 @@
           <span>SOLICITUD CANCELADA</span>
           <strong>Esta solicitud fue cancelada</strong>
           <p>Ya no requiere ninguna gestión.</p>
+          <p *ngIf="service.cancellationPenaltyAmount && service.cancellationPenaltyAmount > 0">
+            Penalización registrada: ${{ service.cancellationPenaltyAmount | number:'1.0-0' }}
+            ({{ service.cancellationPenaltyPercent }}% del valor de visita técnica).
+          </p>
         </div>
       </section>
 
@@ -181,6 +185,21 @@
             <span>CANCELAR SOLICITUD</span>
             <h2>¿Por qué deseas cancelar?</h2>
             <p>El motivo nos ayuda a mantener trazabilidad del servicio.</p>
+
+            <div class="cancellation-penalty-preview" *ngIf="cancellationPenaltyPreviewAmount > 0; else noCancellationPenalty">
+              <strong>Penalización por cancelación: ${{ cancellationPenaltyPreviewAmount | number:'1.0-0' }}</strong>
+              <span>
+                Corresponde al {{ cancellationPenaltyPreviewPercent }}% del valor de la visita técnica acordada.
+              </span>
+            </div>
+
+            <ng-template #noCancellationPenalty>
+              <div class="cancellation-penalty-preview no-penalty">
+                <strong>Sin penalización en este momento</strong>
+                <span>La política se vuelve a validar en el servidor al confirmar.</span>
+              </div>
+            </ng-template>
+
             <textarea class="cancellation-reason" [(ngModel)]="cancellationReason" maxlength="500" [disabled]="cancellingService" placeholder="Escribe el motivo de la cancelación..."></textarea>
             <small class="cancellation-counter">{{ cancellationReason.length }} / 500</small>
             <div class="cancellation-error" *ngIf="cancellationError">{{ cancellationError }}</div>
@@ -240,6 +259,8 @@
           class="tracking-waiting"
           *ngIf="
             !trackingActive
+            &&
+            trackingWaiting
           "
         >
 
@@ -253,7 +274,61 @@
             </strong>
 
             <span>
-              El mapa aparecerá cuando recibamos su posición.
+              Estamos esperando la primera posición compartida.
+            </span>
+          </div>
+
+        </div>
+
+
+        <div
+          class="tracking-status tracking-status--unavailable"
+          *ngIf="
+            !trackingActive
+            &&
+            trackingUnavailable
+          "
+          role="status"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+          <div>
+            <strong>
+              Ubicación aún no disponible
+            </strong>
+
+            <span>
+              El técnico debe activar la ubicación de su equipo y autorizar a ServiGo para compartirla.
+            </span>
+          </div>
+
+        </div>
+
+
+        <div
+          class="tracking-status tracking-status--error"
+          *ngIf="
+            !trackingActive
+            &&
+            trackingError
+          "
+          role="alert"
+        >
+
+          <ion-icon
+            name="close-circle-outline"
+          ></ion-icon>
+
+          <div>
+            <strong>
+              Seguimiento no disponible
+            </strong>
+
+            <span>
+              {{ trackingError }}
             </span>
           </div>
 
@@ -265,6 +340,23 @@
             trackingActive
           "
         >
+
+          <div
+            class="tracking-status tracking-status--fallback"
+            *ngIf="technicianLocationSource === 'fallback'"
+            role="status"
+          >
+            <ion-icon name="location-outline"></ion-icon>
+
+            <div>
+              <strong>Ubicación de respaldo activa</strong>
+              <span>
+                El equipo del técnico no pudo entregar GPS. ServiGo muestra
+                temporalmente un punto de respaldo en Santiago y lo reemplazará
+                por la ubicación real cuando esté disponible.
+              </span>
+            </div>
+          </div>
 
           <div
             class="tracking-map"
@@ -491,80 +583,83 @@
 
 
         <div
-          class="payment-total"
-          *ngIf="
-            acceptedQuote as quote
-          "
+          class="payment-summary-loading"
+          *ngIf="loadingPaymentSummary && paymentAmount === null"
+          role="status"
+          aria-live="polite"
         >
+          <ion-spinner name="crescent"></ion-spinner>
+          <span>Validando el presupuesto aceptado...</span>
+        </div>
 
-          <span>
-            TOTAL
-          </span>
 
+        <div
+          class="payment-total"
+          *ngIf="paymentAmount !== null"
+        >
+          <span>TOTAL</span>
 
           <strong>
-
-            {{
-  formatCurrency(
-    quote.totalAmount
-  )
-}}
-
+            {{ formatCurrency(paymentAmount) }}
           </strong>
-
         </div>
 
 
         <p
           class="payment-copy"
         >
-          El trabajo fue marcado como finalizado
-          por el técnico. Confirma el pago para
-          completar el servicio.
+          El trabajo fue marcado como finalizado por el técnico. El monto se
+          valida directamente con el presupuesto aceptado antes de abrir Webpay.
         </p>
 
 
         <div
-          class="payment-error"
-          *ngIf="
-            paymentError
-          "
+          id="payment-unavailable-message"
+          class="payment-unavailable"
+          *ngIf="!loadingPaymentSummary && !paymentReady"
+          role="status"
+          aria-live="polite"
         >
+          <strong>Pago temporalmente no disponible</strong>
 
+          <span>{{ paymentUnavailableMessage }}</span>
+
+          <button
+            type="button"
+            class="payment-retry-button"
+            [disabled]="loadingPaymentSummary || processingPayment"
+            (click)="retryPaymentSummary()"
+          >
+            Volver a validar monto
+          </button>
+        </div>
+
+
+        <div
+          class="payment-error"
+          *ngIf="paymentError"
+        >
           {{ paymentError }}
-
         </div>
 
 
         <button
           type="button"
           class="payment-button"
-          [disabled]="
-            processingPayment
-            ||
-            !acceptedQuote
-          "
-          (click)="
-            payService()
-          "
+          [class.payment-button--unavailable]="!paymentReady"
+          [class.payment-button--processing]="processingPayment || loadingPaymentSummary"
+          [disabled]="processingPayment || loadingPaymentSummary || !paymentReady"
+          [attr.aria-describedby]="!paymentReady ? 'payment-unavailable-message' : null"
+          (click)="payService()"
         >
-
           <ion-spinner
-            *ngIf="
-              processingPayment
-            "
+            *ngIf="processingPayment || loadingPaymentSummary"
             name="crescent"
           ></ion-spinner>
 
-
-          <span
-            *ngIf="
-              !processingPayment
-            "
-          >
-            Pagar con Webpay
+          <span *ngIf="!processingPayment && !loadingPaymentSummary">
+            {{ paymentReady ? 'Pagar con Webpay' : 'Pago no disponible' }}
           </span>
-
         </button>
 
       </section>
@@ -598,17 +693,9 @@
 
 
           <strong
-            *ngIf="
-              acceptedQuote as quote
-            "
+            *ngIf="paymentAmount !== null"
           >
-
-            {{
-  formatCurrency(
-    quote.totalAmount
-  )
-}}
-
+            {{ formatCurrency(paymentAmount) }}
           </strong>
 
 
@@ -652,7 +739,7 @@
 
 
           <strong>
-            {{ quotes.length }}
+            {{ displayQuotes.length }}
           </strong>
 
         </div>
@@ -661,7 +748,7 @@
         <div
           class="empty-quotes"
           *ngIf="
-            quotes.length === 0
+            displayQuotes.length === 0
           "
         >
 
@@ -686,9 +773,10 @@
         <button
           type="button"
           class="quote-card"
+          [disabled]="!isQuoteDetailAvailable(quote.id)"
           *ngFor="
             let quote
-            of quotes
+            of displayQuotes
           "
           (click)="
             openQuote(

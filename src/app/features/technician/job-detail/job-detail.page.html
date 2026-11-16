@@ -322,6 +322,82 @@
 
 
 <!-- ================================= -->
+<!-- RESUMEN ECONÓMICO -->
+<!-- ================================= -->
+
+<section
+  class="economic-card"
+  *ngIf="item.status === 'completed'"
+>
+
+  <div class="economic-header">
+    <div>
+      <span>RESUMEN ECONÓMICO</span>
+      <h2>Pago del servicio</h2>
+    </div>
+
+    <strong
+      class="payment-state"
+      [class.paid]="item.paymentStatus === 'paid'"
+      [class.pending]="item.paymentStatus !== 'paid'"
+    >
+      {{ paymentLabel }}
+    </strong>
+  </div>
+
+  <ng-container
+    *ngIf="item.acceptedQuoteSnapshot as quote"
+  >
+    <div class="economic-row" *ngIf="quote.visitFeeAmount > 0">
+      <span>Visita técnica</span>
+      <strong>{{ formatCurrency(quote.visitFeeAmount) }}</strong>
+    </div>
+
+    <div class="economic-row">
+      <span>Mano de obra adicional</span>
+      <strong>{{ formatCurrency(quote.laborAmount) }}</strong>
+    </div>
+
+    <div class="economic-row">
+      <span>Materiales</span>
+      <strong>{{ formatCurrency(quote.materialsAmount) }}</strong>
+    </div>
+
+    <div
+      class="economic-row"
+      *ngIf="quote.otherAmount > 0"
+    >
+      <span>Otros</span>
+      <strong>{{ formatCurrency(quote.otherAmount) }}</strong>
+    </div>
+  </ng-container>
+
+  <div class="economic-total">
+    <span>Total del servicio</span>
+    <strong>{{ formatCurrency(paymentAmount) }}</strong>
+  </div>
+
+  <p
+    class="payment-confirmation"
+    *ngIf="item.paymentStatus === 'paid'"
+  >
+    Pago confirmado
+    <ng-container *ngIf="item.paidAt">
+      · {{ formatDateTime(item.paidAt) }}
+    </ng-container>
+  </p>
+
+  <p
+    class="payment-confirmation pending"
+    *ngIf="item.paymentStatus !== 'paid'"
+  >
+    El trabajo finalizó y está pendiente el pago del cliente.
+  </p>
+
+</section>
+
+
+<!-- ================================= -->
 <!-- CANCELAR TRABAJO -->
 <!-- ================================= -->
 
@@ -535,6 +611,17 @@
   "
 >
   {{ actionError }}
+</div>
+
+
+<div
+  class="location-notice"
+  *ngIf="locationNotice"
+  role="status"
+  aria-live="polite"
+>
+  <ion-icon name="location-outline"></ion-icon>
+  <span>{{ locationNotice }}</span>
 </div>
 
 

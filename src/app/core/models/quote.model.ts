@@ -16,6 +16,7 @@ export interface Quote {
   technicianId: string;
   technicianName: string;
 
+  visitFeeAmount: number;
   laborAmount: number;
   materialsAmount: number;
   otherAmount: number;
@@ -23,6 +24,8 @@ export interface Quote {
   totalAmount: number;
 
   availableDate: Date | null;
+
+  scheduleAccepted: boolean;
 
   comment: string;
 

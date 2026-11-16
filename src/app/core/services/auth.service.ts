@@ -207,6 +207,18 @@ export class AuthService {
           photoUrl:
             null,
 
+          commune:
+            null,
+
+          address:
+            null,
+
+          preferredContact:
+            'chat',
+
+          profileVersion:
+            2,
+
           roles: [
             'cliente'
           ],
@@ -305,9 +317,7 @@ export class AuthService {
       null;
 
 
-    console.log(
-      '[ServiGo] Iniciando autenticación...'
-    );
+    
 
 
     try {
@@ -324,10 +334,7 @@ export class AuthService {
         credential.user;
 
 
-      console.log(
-        '[ServiGo] Authentication OK:',
-        user.uid
-      );
+      
 
 
       this.updateLastLogin(
@@ -455,10 +462,7 @@ export class AuthService {
       }
 
 
-      console.log(
-        '[ServiGo] Google Authentication OK:',
-        user.uid
-      );
+      
 
 
       return {
@@ -551,6 +555,18 @@ export class AuthService {
             user.photoURL ??
             null,
 
+          commune:
+            null,
+
+          address:
+            null,
+
+          preferredContact:
+            'chat',
+
+          profileVersion:
+            2,
+
           roles: [
             'cliente'
           ],
@@ -584,6 +600,18 @@ export class AuthService {
       profileSnapshot.data();
 
 
+    /*
+     * Las cuentas suspendidas o bloqueadas conservan su sesión el tiempo
+     * suficiente para que el guard muestre el estado correcto y cierre el
+     * acceso. No intentamos escribir sobre perfiles inactivos.
+     */
+    if (
+      currentProfile['status'] !== 'active'
+    ) {
+      return;
+    }
+
+
     const changes:
       Record<string, unknown> = {
         email:
@@ -595,7 +623,10 @@ export class AuthService {
           serverTimestamp(),
 
         lastLoginAt:
-          serverTimestamp()
+          serverTimestamp(),
+
+        profileVersion:
+          2
       };
 
 
@@ -675,15 +706,10 @@ export class AuthService {
       resolver;
 
 
-    console.log(
-      '[ServiGo MFA] Segundo factor requerido.'
-    );
+    
 
 
-    console.log(
-      '[ServiGo MFA] Factores disponibles:',
-      resolver.hints.length
-    );
+    
 
 
     return {
@@ -777,10 +803,7 @@ export class AuthService {
       null;
 
 
-    console.log(
-      '[ServiGo MFA] Segundo factor validado:',
-      user.uid
-    );
+    
 
 
     this.updateLastLogin(

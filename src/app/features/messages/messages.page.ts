@@ -273,10 +273,7 @@ export class MessagesPage {
     );
 
 
-      console.log(
-        '[ServiGo Chat] Conversaciones:',
-        this.conversations
-      );
+      
 
 
     } catch (error) {

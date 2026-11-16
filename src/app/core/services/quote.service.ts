@@ -6,6 +6,7 @@ import {
   collection,
   DocumentData,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -40,13 +41,17 @@ export interface CreateQuoteData {
 
   technicianName: string;
 
+  visitFeeAmount: number;
+
   laborAmount: number;
 
   materialsAmount: number;
 
   otherAmount: number;
 
-  availableDate: string;
+  availableDate: Date;
+
+  scheduleAccepted: boolean;
 
   comment: string;
 }
@@ -241,6 +246,58 @@ export class QuoteService {
 
   /*
    * =========================================
+   * PRESUPUESTO POR ID
+   * =========================================
+   *
+   * Se utiliza para recuperar directamente el
+   * presupuesto aceptado. Evita depender de una
+   * consulta global del cliente cuando el trabajo
+   * ya avanzó hasta completed.
+   */
+
+  async getQuoteById(
+    quoteId: string
+  ): Promise<Quote | null> {
+
+
+    const cleanQuoteId =
+      quoteId.trim();
+
+
+    if (
+      !cleanQuoteId
+    ) {
+
+      return null;
+    }
+
+
+    const quoteSnapshot =
+      await getDoc(
+        doc(
+          firestore,
+          'quotes',
+          cleanQuoteId
+        )
+      );
+
+
+    if (
+      !quoteSnapshot.exists()
+    ) {
+
+      return null;
+    }
+
+
+    return this.mapQuote(
+      quoteSnapshot.data()
+    );
+  }
+
+
+  /*
+   * =========================================
    * VALIDAR DUPLICADO
    * =========================================
    */
@@ -339,6 +396,12 @@ export class QuoteService {
     }
 
 
+    const visitFeeAmount =
+      this.cleanAmount(
+        data.visitFeeAmount
+      );
+
+
     const laborAmount =
       this.cleanAmount(
         data.laborAmount
@@ -358,6 +421,8 @@ export class QuoteService {
 
 
     const totalAmount =
+      visitFeeAmount
+      +
       laborAmount
       +
       materialsAmount
@@ -371,6 +436,21 @@ export class QuoteService {
 
       throw new Error(
         'invalid-total'
+      );
+    }
+
+
+    if (
+      !data.scheduleAccepted
+      ||
+      !(data.availableDate instanceof Date)
+      ||
+      Number.isNaN(
+        data.availableDate.getTime()
+      )
+    ) {
+      throw new Error(
+        'schedule-not-accepted'
       );
     }
 
@@ -409,6 +489,8 @@ export class QuoteService {
           data.technicianName
             .trim(),
 
+        visitFeeAmount,
+
         laborAmount,
 
         materialsAmount,
@@ -418,9 +500,12 @@ export class QuoteService {
         totalAmount,
 
         availableDate:
-          this.parseDate(
+          Timestamp.fromDate(
             data.availableDate
           ),
+
+        scheduleAccepted:
+          true,
 
         comment:
           data.comment
@@ -547,10 +632,7 @@ if (
 }
 
 
-    console.log(
-      '[ServiGo] Presupuesto aceptado por backend:',
-      response.data
-    );
+    
   }
 
 
@@ -668,6 +750,14 @@ if (
         ]
         ?? '',
 
+      visitFeeAmount:
+        Number(
+          data[
+            'visitFeeAmount'
+          ]
+          ?? 0
+        ),
+
       laborAmount:
         Number(
           data[
@@ -706,6 +796,9 @@ if (
             'availableDate'
           ]
         ),
+
+      scheduleAccepted:
+        data['scheduleAccepted'] === true,
 
       comment:
         data[
@@ -778,58 +871,6 @@ if (
    * FECHA
    * =========================================
    */
-
-  private parseDate(
-    value: string
-  ): Timestamp | null {
-
-
-    if (
-      !value
-    ) {
-
-      return null;
-    }
-
-
-    const [
-      year,
-      month,
-      day
-    ] =
-      value
-        .split(
-          '-'
-        )
-        .map(
-          Number
-        );
-
-
-    if (
-      !year
-      ||
-      !month
-      ||
-      !day
-    ) {
-
-      return null;
-    }
-
-
-    return Timestamp.fromDate(
-      new Date(
-        year,
-        month - 1,
-        day,
-        12,
-        0,
-        0
-      )
-    );
-  }
-
 
   /*
    * =========================================

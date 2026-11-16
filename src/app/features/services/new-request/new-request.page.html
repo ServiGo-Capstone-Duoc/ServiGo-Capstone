@@ -426,34 +426,46 @@
           </div>
 
 
-          <button
-            type="button"
-            class="location-button"
-            [disabled]="
-              geocoding ||
-              form.controls.address.invalid ||
-              form.controls.commune.invalid
-            "
-            (click)="searchAddress()"
-          >
-
-            <ion-icon
-              name="location-outline"
-            ></ion-icon>
-
-            <span
-              *ngIf="!geocoding"
+          <div class="location-actions">
+            <button
+              type="button"
+              class="location-button"
+              [disabled]="
+                geocoding ||
+                locating ||
+                form.controls.address.invalid ||
+                form.controls.commune.invalid
+              "
+              (click)="searchAddress()"
             >
-              Buscar dirección
-            </span>
+              <ion-icon name="search-outline"></ion-icon>
 
-            <span
-              *ngIf="geocoding"
+              <span *ngIf="!geocoding">
+                Buscar dirección
+              </span>
+
+              <span *ngIf="geocoding">
+                Buscando dirección...
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="location-button location-button--secondary"
+              [disabled]="geocoding || locating"
+              (click)="useCurrentLocation()"
             >
-              Buscando dirección...
-            </span>
+              <ion-icon name="navigate-outline"></ion-icon>
 
-          </button>
+              <span *ngIf="!locating">
+                Usar mi ubicación
+              </span>
+
+              <span *ngIf="locating">
+                Obteniendo ubicación...
+              </span>
+            </button>
+          </div>
 
 
           <div
@@ -461,6 +473,18 @@
             *ngIf="locationError"
           >
             {{ locationError }}
+          </div>
+
+
+          <div
+            class="location-notice"
+            *ngIf="locationNotice"
+            [class.location-notice--fallback]="locationSource === 'fallback'"
+            role="status"
+            aria-live="polite"
+          >
+            <ion-icon name="location-outline"></ion-icon>
+            <span>{{ locationNotice }}</span>
           </div>
 
 
@@ -571,7 +595,7 @@
 
               <p>
                 Selecciona una fecha
-                y franja horaria.
+                y hora de reserva.
               </p>
 
             </div>
@@ -599,30 +623,12 @@
           </div>
 
 
-          <div
-            class="time-slots"
-          >
-
-            <button
-              type="button"
-              *ngFor="
-                let slot
-                of timeSlots
-              "
-              [class.selected]="
-                form.controls.timeSlot.value
-                  === slot
-              "
-              (click)="
-                selectTimeSlot(
-                  slot
-                )
-              "
-            >
-              {{ slot }}
-            </button>
-
-          </div>
+          <ion-input
+            label="Hora de reserva"
+            labelPlacement="stacked"
+            type="time"
+            formControlName="timeSlot"
+          ></ion-input>
 
 
           <div
@@ -632,7 +638,21 @@
               form.controls.timeSlot.invalid
             "
           >
-            Selecciona una franja horaria.
+            Selecciona una hora para el servicio.
+          </div>
+
+
+          <div class="schedule-policy-notice">
+            <strong>Ventana de llegada ServiGo</strong>
+            <p>
+              La hora seleccionada es la hora reservada. El técnico que acepte tu servicio
+              podrá llegar desde esa hora y hasta un máximo de 2 horas después.
+            </p>
+            <p>
+              Si cancelas el mismo día después de contratar un técnico, puede aplicarse una
+              penalización del 50% del valor de la visita técnica; si cancelas con 1 hora o
+              menos de anticipación, la penalización será del 100%.
+            </p>
           </div>
 
         </section>

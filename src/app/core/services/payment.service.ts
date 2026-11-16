@@ -11,6 +11,45 @@ import {
 } from '../firebase/firebase';
 
 
+
+
+/*
+ * =========================================
+ * RESUMEN ECONÓMICO DEL SERVICIO
+ * =========================================
+ *
+ * El backend reconstruye el contexto desde el documento de cotización o el
+ * snapshot autoritativo guardado en la solicitud. El frontend no calcula ni
+ * propone montos.
+ */
+
+export type ServicePaymentSummaryReason =
+  | 'accepted_quote_unavailable'
+  | 'service_not_completed'
+  | 'already_paid'
+  | null;
+
+export interface ServicePaymentSummaryResponse {
+  ok: boolean;
+  available: boolean;
+  eligible: boolean;
+  reason: ServicePaymentSummaryReason;
+  requestId: string;
+  serviceStatus: string;
+  paymentStatus: 'pending' | 'paid';
+  paymentId?: string | null;
+  quoteId?: string;
+  technicianId?: string;
+  technicianName?: string;
+  visitFeeAmount?: number;
+  laborAmount?: number;
+  materialsAmount?: number;
+  otherAmount?: number;
+  totalAmount?: number;
+  currency: 'CLP';
+}
+
+
 /*
  * =========================================
  * CREATE WEBPAY
@@ -49,6 +88,15 @@ export interface CreateWebpayTransactionResponse {
  * =========================================
  */
 
+export interface AbortWebpayTransactionResponse {
+  ok: boolean;
+  requestId: string;
+  paymentId: string;
+  status: 'aborted' | 'approved';
+  updated: boolean;
+}
+
+
 export interface CommitWebpayTransactionResponse {
 
   ok: boolean;
@@ -85,6 +133,46 @@ export interface CommitWebpayTransactionResponse {
     'root'
 })
 export class PaymentService {
+
+
+  async getServicePaymentSummary(
+    requestId: string
+  ): Promise<ServicePaymentSummaryResponse> {
+    const normalizedRequestId =
+      requestId.trim();
+
+    if (
+      !normalizedRequestId
+    ) {
+      throw new Error(
+        'payment-request-id-required'
+      );
+    }
+
+    const summaryFunction =
+      httpsCallable<
+        { requestId: string },
+        ServicePaymentSummaryResponse
+      >(
+        firebaseFunctions,
+        'getServicePaymentSummary'
+      );
+
+    const response =
+      await summaryFunction({
+        requestId: normalizedRequestId
+      });
+
+    if (
+      !response.data?.ok
+    ) {
+      throw new Error(
+        'payment-summary-failed'
+      );
+    }
+
+    return response.data;
+  }
 
 
   /*
@@ -145,26 +233,40 @@ export class PaymentService {
     }
 
 
-    console.log(
-      '[ServiGo Payment] Webpay creado:',
-      {
-        paymentId:
-          response.data.paymentId,
+    
 
-        requestId:
-          response.data.requestId,
 
-        amount:
-          response.data.amount,
+    return response.data;
+  }
 
-        status:
-          response.data.status,
 
-        buyOrder:
-          response.data.buyOrder
-      }
-    );
+  async abortWebpayTransaction(
+    token: string
+  ): Promise<AbortWebpayTransactionResponse> {
+    const normalizedToken =
+      token.trim();
 
+    if (
+      !normalizedToken
+    ) {
+      throw new Error(
+        'webpay-token-required'
+      );
+    }
+
+    const abortFunction =
+      httpsCallable<
+        { token: string },
+        AbortWebpayTransactionResponse
+      >(
+        firebaseFunctions,
+        'abortWebpayTransaction'
+      );
+
+    const response =
+      await abortFunction({
+        token: normalizedToken
+      });
 
     return response.data;
   }
@@ -231,10 +333,7 @@ export class PaymentService {
       });
 
 
-    console.log(
-      '[ServiGo Payment] Resultado Webpay:',
-      response.data
-    );
+    
 
 
     return response.data;

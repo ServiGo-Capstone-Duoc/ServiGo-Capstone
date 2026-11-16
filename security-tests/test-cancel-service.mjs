@@ -328,7 +328,7 @@ async function putTechnicianLocation(
       'technicianLocations'
     )
     .doc(
-      TECHNICIAN_UID
+      requestId
     )
     .set({
 
@@ -362,14 +362,16 @@ async function putTechnicianLocation(
 }
 
 
-async function getTechnicianLocation() {
+async function getTechnicianLocation(
+  requestId
+) {
 
   return await adminDb
     .collection(
       'technicianLocations'
     )
     .doc(
-      TECHNICIAN_UID
+      requestId
     )
     .get();
 }
@@ -565,6 +567,16 @@ async function cleanup() {
         .delete();
 
 
+      await adminDb
+        .collection(
+          'technicianLocations'
+        )
+        .doc(
+          requestId
+        )
+        .delete();
+
+
     } catch (error) {
 
       console.warn(
@@ -578,30 +590,6 @@ async function cleanup() {
     }
   }
 
-
-  try {
-
-    await adminDb
-      .collection(
-        'technicianLocations'
-      )
-      .doc(
-        TECHNICIAN_UID
-      )
-      .delete();
-
-
-  } catch (error) {
-
-    console.warn(
-      '[cleanup] technicianLocations:',
-      error instanceof Error
-        ? error.message
-        : String(
-            error
-          )
-    );
-  }
 }
 
 
@@ -1097,7 +1085,9 @@ async function run() {
 
 
     const locationSnapshot =
-      await getTechnicianLocation();
+      await getTechnicianLocation(
+        IDS.enRouteClient
+      );
 
 
     if (

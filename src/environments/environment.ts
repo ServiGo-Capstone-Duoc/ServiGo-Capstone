@@ -4,11 +4,13 @@ export const environment = {
     false,
 
   /*
-   * Entorno local de desarrollo.
+   * ServiGo - entorno local de pruebas.
    *
-   * ionic serve utilizará Firebase Emulator Suite.
+   * Esta versión está preparada explícitamente para Firebase Emulator Suite:
+   * Authentication + Firestore + Functions + Storage.
+   *
+   * De esta forma ninguna prueba local escribe accidentalmente en Firebase real.
    */
-
   useFirebaseEmulators:
-    true
+    true,
 };

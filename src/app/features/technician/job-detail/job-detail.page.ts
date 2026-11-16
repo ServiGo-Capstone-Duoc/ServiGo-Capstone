@@ -51,6 +51,7 @@ import {
 } from '../../../core/services/service-request.service';
 
 import {
+  ResolvedTechnicianLocation,
   TechnicianLocationService
 } from '../../../core/services/technician-location.service';
 
@@ -139,6 +140,10 @@ export class JobDetailPage {
 
 
   actionError =
+    '';
+
+
+  locationNotice =
     '';
 
 
@@ -338,115 +343,53 @@ export class JobDetailPage {
   private async resumeLocationTracking():
     Promise<void> {
 
-
     if (
       !this.job
-      ||
-      this.job.status !==
+      || this.job.status !==
         'en_route'
     ) {
-
       return;
     }
 
-
-    console.log(
-      '[ServiGo Location] Trabajo en_route detectado. Reanudando tracking...',
-      {
-        requestId:
-          this.job.id
-      }
-    );
-
-
     try {
-
-
-      /*
-       * =====================================
-       * COMPROBAR GPS
-       * =====================================
-       */
-
-      await this.locationService
-        .ensureLocationAvailable();
-
-
-      /*
-       * =====================================
-       * USUARIO
-       * =====================================
-       */
-
       const user =
         await this.authService
           .waitForAuthReady();
 
-
       if (
         !user
       ) {
-
         throw new Error(
           'location-user-not-authenticated'
         );
       }
 
-
-      /*
-       * =====================================
-       * REANUDAR WATCH
-       * =====================================
-       */
-
-      await this.locationService
-        .startTracking(
-          user.uid,
-          this.job.id
-        );
-
-
-      console.log(
-        '[ServiGo Location] Tracking reanudado correctamente.',
-        {
-          technicianId:
+      const resolvedLocation =
+        await this.locationService
+          .startTracking(
             user.uid,
-
-          requestId:
             this.job.id
-        }
+          );
+
+      this.setLocationNotice(
+        resolvedLocation
       );
 
-
     } catch (error: any) {
-
       console.error(
         '[ServiGo Location] No fue posible reanudar tracking:',
         error
       );
 
+      this.actionError =
+        this.getLocationErrorMessage(
+          error,
+          'El trabajo continúa en camino, pero no pudimos publicar la ubicación.'
+        );
 
-      if (
-        error?.message ===
-        'location-permission-denied'
-      ) {
-
-        this.actionError =
-          'Activa el permiso de ubicación para continuar compartiendo tu llegada.';
-
-
-      } else {
-
-        this.actionError =
-          'No pudimos reanudar el seguimiento de ubicación.';
-      }
-
-
-      this.cdr
-        .detectChanges();
+      this.cdr.detectChanges();
     }
   }
-
 
   /*
    * =========================================
@@ -459,172 +402,111 @@ export class JobDetailPage {
   async startTrip():
     Promise<void> {
 
-
     if (
       !this.job
-      ||
-      this.job.status !==
+      || this.job.status !==
         'accepted'
-      ||
-      this.loadingAction
+      || this.loadingAction
     ) {
-
       return;
     }
-
 
     const confirmed =
       window.confirm(
         '¿Confirmas que vas en camino al domicilio del cliente?'
       );
 
-
     if (
       !confirmed
     ) {
-
       return;
     }
-
 
     this.loadingAction =
       true;
 
-
     this.actionError =
       '';
 
+    this.locationNotice =
+      '';
 
-    this.cdr
-      .detectChanges();
-
+    this.cdr.detectChanges();
 
     try {
-
-
       /*
-       * =====================================
-       * 1. COMPROBAR GPS
-       * =====================================
-       *
-       * Todavía NO publicamos.
+       * Resolvemos una posición antes del cambio de estado. La resolución
+       * siempre devuelve GPS real o una ubicación de continuidad, por lo
+       * que una limitación del dispositivo no bloquea la operación.
        */
-
-      await this.locationService
-        .ensureLocationAvailable();
-
-
-      /*
-       * =====================================
-       * 2. BACKEND
-       * =====================================
-       *
-       * accepted -> en_route
-       */
+      const initialLocation =
+        await this.locationService
+          .ensureLocationAvailable();
 
       await this.requestService
         .startTrip(
           this.job.id
         );
 
-
       this.job = {
-
         ...this.job,
-
-        status:
-          'en_route'
+        status: 'en_route'
       };
-
-
-      /*
-       * =====================================
-       * 3. USUARIO
-       * =====================================
-       */
 
       const user =
         await this.authService
           .waitForAuthReady();
 
-
       if (
         !user
       ) {
-
         throw new Error(
           'location-user-not-authenticated'
         );
       }
 
+      try {
+        const publishedLocation =
+          await this.locationService
+            .startTracking(
+              user.uid,
+              this.job.id,
+              initialLocation
+            );
 
-      /*
-       * =====================================
-       * 4. INICIAR TRACKING
-       * =====================================
-       *
-       * El trabajo ya está en_route,
-       * por lo que Firestore Rules permite
-       * publicar technicianLocations.
-       */
-
-      await this.locationService
-        .startTracking(
-          user.uid,
-          this.job.id
+        this.setLocationNotice(
+          publishedLocation
         );
 
+      } catch (locationError) {
+        console.error(
+          '[ServiGo Location] El viaje comenzó, pero no se pudo publicar la ubicación:',
+          locationError
+        );
 
-      console.log(
-        '[ServiGo Location] Técnico en camino y compartiendo ubicación.',
-        {
-          technicianId:
-            user.uid,
-
-          requestId:
-            this.job.id
-        }
-      );
-
+        this.locationNotice =
+          'El viaje fue iniciado. El seguimiento se reintentará automáticamente cuando exista conexión.';
+      }
 
     } catch (error: any) {
-
       console.error(
         '[ServiGo] Error iniciando desplazamiento:',
         error
       );
 
-
-      if (
-        error?.message ===
-        'location-permission-denied'
-      ) {
-
-        this.actionError =
-          'Debes permitir el acceso a tu ubicación para iniciar el viaje.';
-
-
-      } else {
-
-        this.actionError =
-          this.getActionErrorMessage(
-            error,
-            'No pudimos iniciar el desplazamiento.'
-          );
-      }
-
+      this.actionError =
+        this.getActionErrorMessage(
+          error,
+          'No pudimos iniciar el desplazamiento.'
+        );
 
     } finally {
-
       this.loadingAction =
         false;
 
-
-      this.cdr
-        .detectChanges();
+      this.cdr.detectChanges();
     }
   }
-
 
   /*
    * =========================================
@@ -714,13 +596,18 @@ export class JobDetailPage {
        * - eliminar technicianLocations
        */
 
-      await this.locationService
-        .stopTracking();
+      try {
+        await this.locationService
+          .stopTracking();
+      } catch (locationError) {
+        console.warn(
+          '[ServiGo Location] La llegada fue registrada, pero no fue posible limpiar inmediatamente la ubicación compartida:',
+          locationError
+        );
 
-
-      console.log(
-        '[ServiGo Location] Llegada registrada. Tracking detenido.'
-      );
+        this.locationNotice =
+          'La llegada fue registrada. ServiGo volverá a limpiar la ubicación compartida por privacidad.';
+      }
 
 
     } catch (error: any) {
@@ -1139,9 +1026,7 @@ export class JobDetailPage {
         '';
 
 
-      console.log(
-        '[ServiGo] Trabajo cancelado por el técnico.'
-      );
+      
 
 
     } catch (error: any) {
@@ -1210,6 +1095,81 @@ export class JobDetailPage {
       .navigateByUrl(
         '/app/technician/jobs'
       );
+  }
+
+
+
+
+  /*
+   * =========================================
+   * RESUMEN ECONÓMICO
+   * =========================================
+   */
+
+  get paymentAmount(): number | null {
+
+    if (
+      typeof this.job?.paidAmount === 'number'
+      && this.job.paidAmount > 0
+    ) {
+      return this.job.paidAmount;
+    }
+
+    const snapshotAmount =
+      this.job?.acceptedQuoteSnapshot?.totalAmount;
+
+    return typeof snapshotAmount === 'number'
+      && snapshotAmount > 0
+        ? snapshotAmount
+        : null;
+  }
+
+
+  get paymentLabel(): string {
+
+    return this.job?.paymentStatus === 'paid'
+      ? 'Pagado'
+      : 'Pendiente de pago';
+  }
+
+
+  formatCurrency(
+    amount: number | null | undefined
+  ): string {
+
+    if (
+      typeof amount !== 'number'
+      || amount <= 0
+    ) {
+      return '—';
+    }
+
+    return new Intl.NumberFormat(
+      'es-CL',
+      {
+        style: 'currency',
+        currency: 'CLP',
+        maximumFractionDigits: 0
+      }
+    ).format(amount);
+  }
+
+
+  formatDateTime(
+    date: Date | null | undefined
+  ): string {
+
+    if (!date) {
+      return '';
+    }
+
+    return date.toLocaleString(
+      'es-CL',
+      {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }
+    );
   }
 
 
@@ -1290,11 +1250,64 @@ export class JobDetailPage {
   }
 
 
+  private setLocationNotice(
+    location: ResolvedTechnicianLocation
+  ): void {
+
+    this.locationNotice =
+      location.source === 'fallback'
+        ? 'GPS no disponible. ServiGo comparte temporalmente una ubicación de respaldo en Santiago y reemplazará el punto por tu ubicación real cuando esté disponible.'
+        : 'Ubicación real activa. El cliente puede seguir tu desplazamiento.';
+  }
+
+
   /*
    * =========================================
    * ERRORES DE ACCIÓN
    * =========================================
    */
+
+  private getLocationErrorMessage(
+    error: any,
+    fallback: string
+  ): string {
+
+
+    const message =
+      error?.message
+      ?? '';
+
+
+    switch (
+      message
+    ) {
+
+      case 'location-permission-denied':
+
+        return 'Debes permitir el acceso a tu ubicación para compartir el viaje con el cliente.';
+
+
+      case 'location-unavailable':
+
+        return 'Activa la ubicación de tu equipo o dispositivo e inténtalo nuevamente.';
+
+
+      case 'location-timeout':
+
+        return 'No pudimos obtener tu ubicación a tiempo. Revisa la señal y vuelve a intentarlo.';
+
+
+      case 'location-not-supported':
+
+        return 'Este navegador o dispositivo no permite compartir la ubicación.';
+
+
+      default:
+
+        return fallback;
+    }
+  }
+
 
   private getActionErrorMessage(
     error: any,

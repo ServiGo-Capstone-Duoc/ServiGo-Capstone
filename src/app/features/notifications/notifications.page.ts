@@ -12,6 +12,10 @@ import {
 } from '@angular/router';
 
 import {
+  map
+} from 'rxjs';
+
+import {
   IonBackButton,
   IonButton,
   IonButtons,
@@ -29,6 +33,7 @@ import {
 
 import {
   briefcaseOutline,
+  cashOutline,
   chatbubbleEllipsesOutline,
   checkmarkCircleOutline,
   closeCircleOutline,
@@ -40,6 +45,10 @@ import {
 import {
   AppNotification
 } from '../../core/models/app-notification.model';
+
+import {
+  AppModeService
+} from '../../core/services/app-mode.service';
 
 import {
   NotificationService
@@ -82,9 +91,26 @@ export class NotificationsPage {
     );
 
 
+  private readonly modeService =
+    inject(
+      AppModeService
+    );
+
+
   private readonly notificationService =
     inject(
       NotificationService
+    );
+
+
+  readonly defaultBackHref$ =
+    this.modeService.mode$.pipe(
+      map(
+        mode =>
+          mode === 'tecnico'
+            ? '/app/technician/home'
+            : '/app/home'
+      )
     );
 
 
@@ -112,6 +138,7 @@ export class NotificationsPage {
 
     addIcons({
       briefcaseOutline,
+      cashOutline,
       chatbubbleEllipsesOutline,
       checkmarkCircleOutline,
       closeCircleOutline,
@@ -232,6 +259,10 @@ export class NotificationsPage {
 
       case 'client_job_started':
         return 'construct-outline';
+
+
+      case 'technician_payment_received':
+        return 'cash-outline';
 
 
       default:

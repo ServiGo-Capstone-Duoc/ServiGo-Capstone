@@ -1,5 +1,12 @@
 import { Injectable } from '@angular/core';
-import { deleteObject, getBlob, ref, uploadBytes } from 'firebase/storage';
+import {
+  deleteObject,
+  getBlob,
+  getDownloadURL,
+  ref,
+  uploadBytes,
+  uploadBytesResumable
+} from 'firebase/storage';
 import { firebaseStorage } from '../firebase/firebase';
 
 @Injectable({ providedIn: 'root' })
@@ -50,6 +57,134 @@ export class MediaStorageService {
     const path = `chat-images/${requestId}/${senderId}/${messageId}/image.${extension}`;
     await uploadBytes(ref(firebaseStorage, path), file, { contentType: file.type });
     return path;
+  }
+
+
+  async uploadProfileAvatar(
+    userId: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<string> {
+    const validationError =
+      this.validateImage(file);
+
+    if (
+      validationError
+    ) {
+      throw new Error(
+        validationError
+      );
+    }
+
+    const normalizedUserId =
+      userId.trim();
+
+    if (
+      !normalizedUserId
+    ) {
+      throw new Error(
+        'profile-avatar-user-required'
+      );
+    }
+
+    const path =
+      `profile-avatars/${normalizedUserId}/avatar`;
+
+    const avatarRef =
+      ref(
+        firebaseStorage,
+        path
+      );
+
+    const uploadTask =
+      uploadBytesResumable(
+        avatarRef,
+        file,
+        {
+          contentType: file.type,
+          cacheControl: 'private,max-age=0,no-cache,no-store,must-revalidate',
+          customMetadata: {
+            ownerId: normalizedUserId,
+            uploadedAt: new Date().toISOString()
+          }
+        }
+      );
+
+    await new Promise<void>(
+      (
+        resolve,
+        reject
+      ) => {
+        uploadTask.on(
+          'state_changed',
+          snapshot => {
+            const progress =
+              snapshot.totalBytes > 0
+                ? Math.round(
+                  snapshot.bytesTransferred
+                  / snapshot.totalBytes
+                  * 100
+                )
+                : 0;
+
+            onProgress?.(
+              progress
+            );
+          },
+          reject,
+          resolve
+        );
+      }
+    );
+
+    const downloadUrl =
+      await getDownloadURL(
+        uploadTask.snapshot.ref
+      );
+
+    /*
+     * El archivo conserva una ruta estable para no dejar huérfanos, pero la
+     * versión en la URL evita que el navegador reutilice la fotografía previa.
+     */
+    const versionedUrl =
+      new URL(
+        downloadUrl
+      );
+
+    versionedUrl.searchParams.set(
+      'v',
+      Date.now().toString()
+    );
+
+    onProgress?.(
+      100
+    );
+
+    return versionedUrl.toString();
+  }
+
+  async deleteProfileAvatar(
+    userId: string
+  ): Promise<void> {
+    const avatarRef = ref(
+      firebaseStorage,
+      `profile-avatars/${userId}/avatar`
+    );
+
+    try {
+      await deleteObject(avatarRef);
+    } catch (error: unknown) {
+      const code =
+        typeof error === 'object'
+        && error !== null
+        && 'code' in error
+          ? String(error.code)
+          : '';
+
+      if (code !== 'storage/object-not-found') {
+        throw error;
+      }
+    }
   }
 
 

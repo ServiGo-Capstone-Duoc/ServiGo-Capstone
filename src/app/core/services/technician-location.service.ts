@@ -8,7 +8,9 @@ import {
 
 import {
   Geolocation,
-  Position
+  PermissionStatus,
+  Position,
+  PositionOptions
 } from '@capacitor/geolocation';
 
 import {
@@ -22,445 +24,358 @@ import {
   firestore
 } from '../firebase/firebase';
 
+import {
+  ServiGoLocationSource,
+  TECHNICIAN_FALLBACK_LOCATION
+} from '../config/location-fallback.config';
+
+export interface ResolvedTechnicianLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  heading: number | null;
+  speed: number | null;
+  source: Extract<ServiGoLocationSource, 'gps' | 'fallback'>;
+  fallbackReason: string | null;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class TechnicianLocationService {
 
-
   private watchId:
-    string | null =
-      null;
+    string | null = null;
 
+  private recoveryTimer:
+    ReturnType<typeof setInterval> | null = null;
 
   private technicianId:
-    string | null =
-      null;
-
+    string | null = null;
 
   private requestId:
-    string | null =
-      null;
+    string | null = null;
 
+  private validatedLocation:
+    ResolvedTechnicianLocation | null = null;
+
+  private readonly recoveryIntervalMs =
+    30000;
+
+  private readonly positionOptions:
+    PositionOptions = {
+      enableHighAccuracy:
+        Capacitor.isNativePlatform(),
+      timeout: 8000,
+      maximumAge: 5000
+    };
 
   /*
-   * =========================================
-   * COMPROBAR DISPONIBILIDAD GPS
-   * =========================================
-   *
-   * Se ejecuta ANTES de cambiar el trabajo
-   * desde accepted hacia en_route.
-   *
-   * Objetivo:
-   *
-   * - comprobar plataforma nativa
-   * - comprobar permisos
-   * - solicitar permisos si corresponde
-   * - verificar que exista una posición GPS
-   *
-   * IMPORTANTE:
-   *
-   * Este método NO publica la ubicación
-   * en Firestore.
+   * Intenta obtener la ubicación real. Si el sistema, el navegador o el
+   * usuario no la permiten, devuelve una ubicación de continuidad. No se
+   * bloquea el cambio a "en camino" por una limitación del dispositivo.
    */
-
   async ensureLocationAvailable():
-    Promise<void> {
+    Promise<ResolvedTechnicianLocation> {
 
+    const resolved =
+      await this.resolveBestLocation();
 
-    if (
-      !Capacitor.isNativePlatform()
-    ) {
+    this.validatedLocation =
+      resolved;
 
-      console.warn(
-        '[ServiGo Location] GPS nativo no disponible en web.'
-      );
-
-      return;
-    }
-
-
-    /*
-     * =====================================
-     * PERMISOS
-     * =====================================
-     */
-
-    let permission =
-      await Geolocation
-        .checkPermissions();
-
-
-    if (
-      permission.location ===
-        'prompt'
-      ||
-      permission.coarseLocation ===
-        'prompt'
-    ) {
-
-      permission =
-        await Geolocation
-          .requestPermissions();
-    }
-
-
-    if (
-      permission.location !==
-        'granted'
-      &&
-      permission.coarseLocation !==
-        'granted'
-    ) {
-
-      throw new Error(
-        'location-permission-denied'
-      );
-    }
-
-
-    /*
-     * =====================================
-     * COMPROBAR POSICIÓN
-     * =====================================
-     *
-     * Antes de cambiar el trabajo a en_route
-     * comprobamos que el dispositivo realmente
-     * pueda entregar una ubicación.
-     */
-
-    const position =
-      await Geolocation
-        .getCurrentPosition({
-          enableHighAccuracy:
-            true,
-
-          timeout:
-            15000,
-
-          maximumAge:
-            5000
-        });
-
-
-    console.log(
-      '[ServiGo Location] GPS disponible.',
-      {
-        latitude:
-          position.coords.latitude,
-
-        longitude:
-          position.coords.longitude,
-
-        accuracy:
-          position.coords.accuracy
-      }
-    );
+    return resolved;
   }
-
-
-  /*
-   * =========================================
-   * INICIAR TRACKING
-   * =========================================
-   *
-   * Este método debe ejecutarse DESPUÉS
-   * de que Functions cambie:
-   *
-   * accepted -> en_route
-   *
-   * De esa forma Firestore Rules permite
-   * publicar technicianLocations.
-   */
 
   async startTracking(
     technicianId: string,
-    requestId: string
-  ): Promise<void> {
-
-
-    if (
-      !Capacitor.isNativePlatform()
-    ) {
-
-      console.warn(
-        '[ServiGo Location] Tracking GPS nativo omitido en web.'
-      );
-
-      return;
-    }
-
-
-    /*
-     * Evita crear dos watchers simultáneos.
-     */
+    requestId: string,
+    initialLocation?: ResolvedTechnicianLocation
+  ): Promise<ResolvedTechnicianLocation> {
 
     if (
       this.watchId
+      || this.recoveryTimer
+      || this.requestId
     ) {
-
-      await this.stopTracking();
+      await this.stopTracking(
+        false
+      );
     }
-
 
     this.technicianId =
       technicianId;
 
-
     this.requestId =
       requestId;
 
+    const firstLocation =
+      initialLocation
+      ?? this.validatedLocation
+      ?? await this.resolveBestLocation();
 
-    /*
-     * =====================================
-     * PERMISOS
-     * =====================================
-     *
-     * Aunque ensureLocationAvailable()
-     * normalmente ya los comprobó,
-     * startTracking también se protege
-     * para poder funcionar de forma segura
-     * si se invoca independientemente.
-     */
+    this.validatedLocation =
+      null;
 
-    let permission =
-      await Geolocation
-        .checkPermissions();
-
-
-    if (
-      permission.location ===
-        'prompt'
-      ||
-      permission.coarseLocation ===
-        'prompt'
-    ) {
-
-      permission =
-        await Geolocation
-          .requestPermissions();
-    }
-
-
-    if (
-      permission.location !==
-        'granted'
-      &&
-      permission.coarseLocation !==
-        'granted'
-    ) {
-
-      this.technicianId =
-        null;
-
-      this.requestId =
-        null;
-
-
-      throw new Error(
-        'location-permission-denied'
+    try {
+      await this.publishLocation(
+        firstLocation
       );
+
+      await this.startWatchSafely();
+
+      if (
+        firstLocation.source ===
+        'fallback'
+      ) {
+        this.startRecoveryLoop();
+      }
+
+      return firstLocation;
+
+    } catch (error) {
+      await this.clearRuntimeState(
+        false
+      );
+
+      throw error;
     }
-
-
-    /*
-     * =====================================
-     * POSICIÓN INICIAL
-     * =====================================
-     *
-     * Esta posición SÍ se publica porque
-     * para este momento el servicio ya debe
-     * encontrarse en estado en_route.
-     */
-
-    const initialPosition =
-      await Geolocation
-        .getCurrentPosition({
-          enableHighAccuracy:
-            true,
-
-          timeout:
-            15000,
-
-          maximumAge:
-            5000
-        });
-
-
-    await this.publishPosition(
-      initialPosition
-    );
-
-
-    console.log(
-      '[ServiGo Location] Posición inicial publicada.',
-      {
-        latitude:
-          initialPosition.coords.latitude,
-
-        longitude:
-          initialPosition.coords.longitude,
-
-        accuracy:
-          initialPosition.coords.accuracy
-      }
-    );
-
-
-    /*
-     * =====================================
-     * WATCH GPS
-     * =====================================
-     */
-
-    this.watchId =
-      await Geolocation
-        .watchPosition(
-          {
-            enableHighAccuracy:
-              true,
-
-            timeout:
-              15000,
-
-            maximumAge:
-              5000
-          },
-
-          async (
-            position,
-            error
-          ) => {
-
-
-            /*
-             * =================================
-             * ERROR GPS
-             * =================================
-             */
-
-            if (
-              error
-            ) {
-
-              console.error(
-                '[ServiGo Location] Error GPS:',
-                error
-              );
-
-              return;
-            }
-
-
-            /*
-             * =================================
-             * SIN POSICIÓN
-             * =================================
-             */
-
-            if (
-              !position
-            ) {
-
-              return;
-            }
-
-
-            /*
-             * =================================
-             * PUBLICAR POSICIÓN
-             * =================================
-             */
-
-            try {
-
-              await this.publishPosition(
-                position
-              );
-
-
-              console.log(
-                '[ServiGo Location] Ubicación actualizada.',
-                {
-                  latitude:
-                    position.coords.latitude,
-
-                  longitude:
-                    position.coords.longitude,
-
-                  accuracy:
-                    position.coords.accuracy
-                }
-              );
-
-
-            } catch (publishError) {
-
-              console.error(
-                '[ServiGo Location] Error publicando ubicación:',
-                publishError
-              );
-            }
-          }
-        );
-
-
-    console.log(
-      '[ServiGo Location] Tracking iniciado.',
-      {
-        technicianId,
-        requestId,
-        watchId:
-          this.watchId
-      }
-    );
   }
 
+  async stopTracking(
+    deleteSharedLocation = true
+  ): Promise<void> {
 
-  /*
-   * =========================================
-   * DETENER TRACKING
-   * =========================================
-   *
-   * Se utiliza cuando el técnico registra
-   * su llegada al domicilio.
-   *
-   * Además de detener watchPosition(),
-   * eliminamos technicianLocations/{uid}
-   * para que el cliente deje inmediatamente
-   * de tener acceso a la posición.
-   */
+    const requestId =
+      this.requestId;
 
-  async stopTracking():
+    await this.clearRuntimeState(
+      false
+    );
+
+    if (
+      deleteSharedLocation
+      && requestId
+    ) {
+      const locationRef =
+        doc(
+          firestore,
+          'technicianLocations',
+          requestId
+        );
+
+      try {
+        await deleteDoc(
+          locationRef
+        );
+      } catch (error) {
+        console.error(
+          '[ServiGo Location] Error eliminando ubicación compartida:',
+          error
+        );
+
+        throw error;
+      }
+    }
+  }
+
+  private async resolveBestLocation():
+    Promise<ResolvedTechnicianLocation> {
+
+    try {
+      const position =
+        await this.getRealPosition();
+
+      return this.fromPosition(
+        position
+      );
+
+    } catch (error) {
+      const normalized =
+        this.normaliseLocationError(
+          error
+        );
+
+      console.warn(
+        '[ServiGo Location] GPS no disponible; se utilizará la ubicación de respaldo:',
+        normalized.message
+      );
+
+      return this.fallbackLocation(
+        normalized.message
+      );
+    }
+  }
+
+  private async getRealPosition():
+    Promise<Position> {
+
+    this.ensureBrowserSupport();
+
+    await this.ensurePermission();
+
+    return Geolocation
+      .getCurrentPosition(
+        this.positionOptions
+      );
+  }
+
+  private async startWatchSafely():
     Promise<void> {
 
+    if (
+      this.watchId
+      || !this.technicianId
+      || !this.requestId
+    ) {
+      return;
+    }
 
-    const technicianId =
-      this.technicianId;
+    try {
+      await this.ensurePermission();
 
+      this.watchId =
+        await Geolocation
+          .watchPosition(
+            this.positionOptions,
+            (
+              position,
+              error
+            ) => {
+              if (
+                error
+              ) {
+                const normalized =
+                  this.normaliseLocationError(
+                    error
+                  );
 
-    /*
-     * =====================================
-     * DETENER WATCH
-     * =====================================
-     */
+                console.warn(
+                  '[ServiGo Location] No fue posible actualizar el GPS:',
+                  normalized.message
+                );
+
+                this.startRecoveryLoop();
+                return;
+              }
+
+              if (
+                !position
+              ) {
+                return;
+              }
+
+              this.stopRecoveryLoop();
+
+              void this.publishLocation(
+                this.fromPosition(
+                  position
+                )
+              ).catch(
+                publishError => {
+                  console.error(
+                    '[ServiGo Location] Error publicando ubicación real:',
+                    publishError
+                  );
+                }
+              );
+            }
+          );
+
+    } catch (error) {
+      console.warn(
+        '[ServiGo Location] watchPosition no disponible; se mantendrá el respaldo y se reintentará:',
+        this.normaliseLocationError(
+          error
+        ).message
+      );
+
+      this.startRecoveryLoop();
+    }
+  }
+
+  private startRecoveryLoop():
+    void {
+
+    if (
+      this.recoveryTimer
+      || !this.technicianId
+      || !this.requestId
+    ) {
+      return;
+    }
+
+    this.recoveryTimer =
+      setInterval(
+        () => {
+          void this.tryRecoverRealLocation();
+        },
+        this.recoveryIntervalMs
+      );
+  }
+
+  private stopRecoveryLoop():
+    void {
+
+    if (
+      this.recoveryTimer
+    ) {
+      clearInterval(
+        this.recoveryTimer
+      );
+
+      this.recoveryTimer =
+        null;
+    }
+  }
+
+  private async tryRecoverRealLocation():
+    Promise<void> {
+
+    if (
+      !this.technicianId
+      || !this.requestId
+    ) {
+      this.stopRecoveryLoop();
+      return;
+    }
+
+    try {
+      const position =
+        await this.getRealPosition();
+
+      await this.publishLocation(
+        this.fromPosition(
+          position
+        )
+      );
+
+      this.stopRecoveryLoop();
+
+      if (
+        !this.watchId
+      ) {
+        await this.startWatchSafely();
+      }
+
+    } catch {
+      // Se mantiene la ubicación de respaldo y se intenta nuevamente.
+    }
+  }
+
+  private async clearRuntimeState(
+    keepIdentity: boolean
+  ): Promise<void> {
 
     if (
       this.watchId
     ) {
-
       try {
-
         await Geolocation
           .clearWatch({
-            id:
-              this.watchId
+            id: this.watchId
           });
-
-
       } catch (error) {
-
         console.warn(
           '[ServiGo Location] No fue posible detener watchPosition:',
           error
@@ -468,189 +383,289 @@ export class TechnicianLocationService {
       }
     }
 
-
-    /*
-     * Limpiamos estado local.
-     */
-
     this.watchId =
       null;
 
-    this.technicianId =
+    this.stopRecoveryLoop();
+
+    this.validatedLocation =
       null;
-
-    this.requestId =
-      null;
-
-
-    /*
-     * =====================================
-     * ELIMINAR UBICACIÓN COMPARTIDA
-     * =====================================
-     */
 
     if (
-      technicianId
+      !keepIdentity
     ) {
+      this.technicianId =
+        null;
 
-      const locationRef =
-        doc(
-          firestore,
-          'technicianLocations',
-          technicianId
-        );
-
-
-      try {
-
-        await deleteDoc(
-          locationRef
-        );
-
-
-        console.log(
-          '[ServiGo Location] Ubicación compartida eliminada.'
-        );
-
-
-      } catch (error) {
-
-        console.error(
-          '[ServiGo Location] Error eliminando ubicación compartida:',
-          error
-        );
-
-
-        throw error;
-      }
+      this.requestId =
+        null;
     }
   }
 
-
-  /*
-   * =========================================
-   * PUBLICAR POSICIÓN
-   * =========================================
-   *
-   * Solo mantiene la última posición.
-   *
-   * NO generamos historial GPS.
-   */
-
-  private async publishPosition(
-    position: Position
+  private async publishLocation(
+    location: ResolvedTechnicianLocation
   ): Promise<void> {
-
 
     if (
       !this.technicianId
-      ||
-      !this.requestId
+      || !this.requestId
     ) {
-
-      return;
-    }
-
-
-    /*
-     * =====================================
-     * VALIDACIÓN LOCAL
-     * =====================================
-     */
-
-    const latitude =
-      position.coords.latitude;
-
-
-    const longitude =
-      position.coords.longitude;
-
-
-    if (
-      !Number.isFinite(
-        latitude
-      )
-      ||
-      !Number.isFinite(
-        longitude
-      )
-      ||
-      latitude < -90
-      ||
-      latitude > 90
-      ||
-      longitude < -180
-      ||
-      longitude > 180
-    ) {
-
-      console.warn(
-        '[ServiGo Location] Coordenadas inválidas ignoradas.',
-        {
-          latitude,
-          longitude
-        }
+      throw new Error(
+        'location-tracking-not-initialized'
       );
-
-      return;
     }
-
-
-    /*
-     * =====================================
-     * DOCUMENTO FIRESTORE
-     * =====================================
-     */
 
     const locationRef =
       doc(
         firestore,
         'technicianLocations',
-        this.technicianId
+        this.requestId
       );
-
-
-    /*
-     * =====================================
-     * PUBLICAR
-     * =====================================
-     */
 
     await setDoc(
       locationRef,
       {
-
         technicianId:
           this.technicianId,
-
         requestId:
           this.requestId,
-
-        latitude,
-
-        longitude,
-
+        latitude:
+          location.latitude,
+        longitude:
+          location.longitude,
         accuracy:
-          position.coords.accuracy,
-
+          location.accuracy,
         heading:
-          position.coords.heading
-          ?? null,
-
+          location.heading,
         speed:
-          position.coords.speed
-          ?? null,
-
-        active:
-          true,
-
+          location.speed,
+        source:
+          location.source,
+        fallbackReason:
+          location.fallbackReason,
+        active: true,
         updatedAt:
           serverTimestamp()
       },
       {
-        merge:
-          true
+        merge: true
       }
+    );
+  }
+
+  private fromPosition(
+    position: Position
+  ): ResolvedTechnicianLocation {
+
+    return {
+      latitude:
+        position.coords.latitude,
+      longitude:
+        position.coords.longitude,
+      accuracy:
+        Number.isFinite(
+          position.coords.accuracy
+        )
+          ? position.coords.accuracy
+          : 0,
+      heading:
+        typeof position.coords.heading === 'number'
+        && Number.isFinite(position.coords.heading)
+          ? position.coords.heading
+          : null,
+      speed:
+        typeof position.coords.speed === 'number'
+        && Number.isFinite(position.coords.speed)
+          ? position.coords.speed
+          : null,
+      source: 'gps',
+      fallbackReason: null
+    };
+  }
+
+  private fallbackLocation(
+    reason: string
+  ): ResolvedTechnicianLocation {
+
+    return {
+      latitude:
+        TECHNICIAN_FALLBACK_LOCATION.latitude,
+      longitude:
+        TECHNICIAN_FALLBACK_LOCATION.longitude,
+      accuracy:
+        TECHNICIAN_FALLBACK_LOCATION.accuracy,
+      heading: null,
+      speed: null,
+      source: 'fallback',
+      fallbackReason:
+        reason
+    };
+  }
+
+  private async ensurePermission():
+    Promise<void> {
+
+    let permission:
+      PermissionStatus | null = null;
+
+    try {
+      permission =
+        await Geolocation
+          .checkPermissions();
+    } catch (error) {
+      if (
+        Capacitor.isNativePlatform()
+      ) {
+        throw error;
+      }
+    }
+
+    if (
+      !permission
+    ) {
+      return;
+    }
+
+    if (
+      permission.location === 'denied'
+      && permission.coarseLocation === 'denied'
+    ) {
+      throw new Error(
+        'location-permission-denied'
+      );
+    }
+
+    if (
+      Capacitor.isNativePlatform()
+      && (
+        permission.location === 'prompt'
+        || permission.location === 'prompt-with-rationale'
+        || permission.coarseLocation === 'prompt'
+        || permission.coarseLocation === 'prompt-with-rationale'
+      )
+    ) {
+      const requestedPermission =
+        await Geolocation
+          .requestPermissions();
+
+      if (
+        requestedPermission.location !== 'granted'
+        && requestedPermission.coarseLocation !== 'granted'
+      ) {
+        throw new Error(
+          'location-permission-denied'
+        );
+      }
+    }
+  }
+
+  private ensureBrowserSupport():
+    void {
+
+    if (
+      Capacitor.isNativePlatform()
+    ) {
+      return;
+    }
+
+    if (
+      typeof navigator === 'undefined'
+      || !navigator.geolocation
+    ) {
+      throw new Error(
+        'location-not-supported'
+      );
+    }
+  }
+
+  private normaliseLocationError(
+    error: unknown
+  ): Error {
+
+    if (
+      error instanceof Error
+      && [
+        'location-permission-denied',
+        'location-unavailable',
+        'location-timeout',
+        'location-not-supported'
+      ].includes(
+        error.message
+      )
+    ) {
+      return error;
+    }
+
+    const candidate =
+      error as {
+        code?: string | number;
+        message?: string;
+      };
+
+    const code =
+      candidate?.code;
+
+    const message =
+      candidate?.message
+        ?.toLowerCase()
+      ?? '';
+
+    if (
+      code === 1
+      || code === '1'
+      || code === 'OS-PLUG-GLOC-0003'
+      || message.includes(
+        'permission'
+      )
+      || message.includes(
+        'denied'
+      )
+    ) {
+      return new Error(
+        'location-permission-denied'
+      );
+    }
+
+    if (
+      code === 3
+      || code === '3'
+      || code === 'OS-PLUG-GLOC-0010'
+      || message.includes(
+        'timeout'
+      )
+      || message.includes(
+        'timed out'
+      )
+    ) {
+      return new Error(
+        'location-timeout'
+      );
+    }
+
+    if (
+      code === 2
+      || code === '2'
+      || code === 'OS-PLUG-GLOC-0002'
+      || code === 'OS-PLUG-GLOC-0007'
+      || code === 'OS-PLUG-GLOC-0008'
+      || code === 'OS-PLUG-GLOC-0009'
+      || message.includes(
+        'unavailable'
+      )
+      || message.includes(
+        'location services'
+      )
+      || message.includes(
+        'disabled'
+      )
+    ) {
+      return new Error(
+        'location-unavailable'
+      );
+    }
+
+    return new Error(
+      'location-unavailable'
     );
   }
 }

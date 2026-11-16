@@ -3,13 +3,17 @@ import {
 } from '@angular/common';
 
 import {
-  AfterViewInit,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   OnDestroy,
   OnInit,
   inject
 } from '@angular/core';
+
+import {
+  takeUntilDestroyed
+} from '@angular/core/rxjs-interop';
 
 import {
   FormBuilder,
@@ -55,6 +59,10 @@ import {
   httpsCallable
 } from 'firebase/functions';
 
+import {
+  Geolocation
+} from '@capacitor/geolocation';
+
 import * as L from 'leaflet';
 
 import {
@@ -74,12 +82,22 @@ import {
 } from '../../../core/services/service-request.service';
 
 import {
+  DEFAULT_SERVICE_CATALOG,
+  ServiceCatalogService
+} from '../../../core/services/service-catalog.service';
+
+import {
   MediaStorageService
 } from '../../../core/services/media-storage.service';
 
 import {
   ServiceUrgency
 } from '../../../core/models/service-request.model';
+
+import {
+  CLIENT_FALLBACK_LOCATION,
+  ServiGoLocationSource
+} from '../../../core/config/location-fallback.config';
 
 
 interface GeocodeAddressResponse {
@@ -95,6 +113,11 @@ interface GeocodeAddressResponse {
   address: string;
 
   commune: string;
+
+  source?:
+    'provider'
+    | 'fallback'
+    | 'development-fallback';
 }
 
 
@@ -126,13 +149,18 @@ interface GeocodeAddressResponse {
 export class NewRequestPage
   implements
     OnInit,
-    AfterViewInit,
-    OnDestroy {
+      OnDestroy {
 
 
   private readonly fb =
     inject(
       FormBuilder
+    );
+
+
+  private readonly destroyRef =
+    inject(
+      DestroyRef
     );
 
 
@@ -163,6 +191,12 @@ export class NewRequestPage
   private readonly requestService =
     inject(
       ServiceRequestService
+    );
+
+
+  private readonly serviceCatalogService =
+    inject(
+      ServiceCatalogService
     );
 
 
@@ -204,6 +238,15 @@ export class NewRequestPage
 
   locationError =
     '';
+
+
+  locationNotice =
+    '';
+
+
+  locationSource:
+    ServiGoLocationSource | null =
+      null;
 
 
   geocodedDisplayName =
@@ -257,80 +300,18 @@ export class NewRequestPage
     this.getTodayString();
 
 
-  readonly categories = [
-
-    {
-      name:
-        'Electricidad',
-
-      icon:
-        'flash-outline'
-    },
-
-    {
-      name:
-        'Gasfitería',
-
-      icon:
-        'water-outline'
-    },
-
-    {
-      name:
-        'Carpintería',
-
-      icon:
-        'hammer-outline'
-    },
-
-    {
-      name:
-        'Mecánica',
-
-      icon:
-        'build-outline'
-    },
-
-    {
-      name:
-        'Pintura',
-
-      icon:
-        'hammer-outline'
-    },
-
-    {
-      name:
-        'Limpieza',
-
-      icon:
-        'construct-outline'
-    },
-
-    {
-      name:
-        'Jardinería',
-
-      icon:
-        'construct-outline'
-    },
-
-    {
-      name:
-        'Línea blanca',
-
-      icon:
-        'build-outline'
-    }
-  ];
-
-
-  readonly timeSlots = [
-    'Mañana',
-    'Tarde',
-    'Noche',
-    'Flexible'
-  ];
+  categories: {
+    name: string;
+    icon: string;
+  }[] =
+    DEFAULT_SERVICE_CATALOG
+      .filter(item => item.active)
+      .map(item => ({
+        name: item.name,
+        icon: this.iconForCategory(
+          item.name
+        )
+      }));
 
 
   readonly urgencyOptions:
@@ -457,22 +438,9 @@ export class NewRequestPage
         );
 
 
-    if (
+    void this.loadCatalog(
       category
-      &&
-      this.categories.some(
-        item =>
-          item.name ===
-          category
-      )
-    ) {
-
-      this.form.controls
-        .category
-        .setValue(
-          category
-        );
-    }
+    );
 
 
     /*
@@ -484,6 +452,11 @@ export class NewRequestPage
     this.form.controls
       .address
       .valueChanges
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef
+        )
+      )
       .subscribe(
         () => {
 
@@ -495,6 +468,11 @@ export class NewRequestPage
     this.form.controls
       .commune
       .valueChanges
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef
+        )
+      )
       .subscribe(
         () => {
 
@@ -504,13 +482,62 @@ export class NewRequestPage
   }
 
 
-  ngAfterViewInit():
-    void {
+  private async loadCatalog(
+    requestedCategory: string | null
+  ): Promise<void> {
 
-    /*
-     * El mapa se crea únicamente después
-     * de una búsqueda exitosa.
-     */
+    const items =
+      await this.serviceCatalogService
+        .getActiveCategories();
+
+    this.categories =
+      items.map(item => ({
+        name: item.name,
+        icon: this.iconForCategory(
+          item.name
+        )
+      }));
+
+    if (
+      requestedCategory
+      &&
+      this.categories.some(
+        item =>
+          item.name === requestedCategory
+      )
+    ) {
+      this.form.controls.category
+        .setValue(
+          requestedCategory
+        );
+    }
+
+    this.cdr.detectChanges();
+  }
+
+
+  private iconForCategory(
+    category: string
+  ): string {
+    const value =
+      category
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    if (value.includes('electric')) {
+      return 'flash-outline';
+    }
+
+    if (value.includes('gasfit') || value.includes('agua')) {
+      return 'water-outline';
+    }
+
+    if (value.includes('carpint')) {
+      return 'hammer-outline';
+    }
+
+    return 'construct-outline';
   }
 
 
@@ -556,23 +583,6 @@ export class NewRequestPage
       '';
   }
 
-
-  selectTimeSlot(
-    timeSlot: string
-  ): void {
-
-
-    this.form.controls
-      .timeSlot
-      .setValue(
-        timeSlot
-      );
-
-
-    this.form.controls
-      .timeSlot
-      .markAsTouched();
-  }
 
 
   selectUrgency(
@@ -723,6 +733,10 @@ export class NewRequestPage
       '';
 
 
+    this.locationNotice =
+      '';
+
+
     const address =
       this.form.controls
         .address
@@ -853,8 +867,21 @@ export class NewRequestPage
         result.displayName;
 
 
+      this.locationSource =
+        result.source === 'fallback'
+        || result.source === 'development-fallback'
+          ? 'fallback'
+          : 'geocoded';
+
+
       this.locationConfirmed =
-        false;
+        this.locationSource === 'fallback';
+
+
+      this.locationNotice =
+        this.locationSource === 'fallback'
+          ? 'El proveedor de mapas no respondió. Usamos temporalmente la ubicación de respaldo del cliente en Santiago; puedes mover el marcador antes de publicar.'
+          : 'Dirección encontrada. Confirma el punto o ajústalo en el mapa.';
 
 
       this.cdr
@@ -864,16 +891,7 @@ export class NewRequestPage
       this.scheduleMapInitialization();
 
 
-      console.log(
-        '[ServiGo] Dirección localizada.',
-        {
-          commune,
-          latitude:
-            result.latitude,
-          longitude:
-            result.longitude
-        }
-      );
+      
 
 
     } catch (error: any) {
@@ -935,23 +953,9 @@ export class NewRequestPage
       }
 
 
-      this.latitude =
-        null;
-
-
-      this.longitude =
-        null;
-
-
-      this.locationConfirmed =
-        false;
-
-
-      this.geocodedDisplayName =
-        '';
-
-
-      this.destroyMap();
+      this.applyClientFallback(
+        this.locationError
+      );
 
 
     } finally {
@@ -1008,9 +1012,7 @@ export class NewRequestPage
       .detectChanges();
 
 
-    console.log(
-      '[ServiGo] Domicilio confirmado para la solicitud.'
-    );
+    
   }
 
 
@@ -1027,7 +1029,100 @@ export class NewRequestPage
   async useCurrentLocation():
     Promise<void> {
 
-    await this.searchAddress();
+    if (
+      this.locating
+      || this.loading
+    ) {
+      return;
+    }
+
+    this.locating =
+      true;
+
+    this.locationError =
+      '';
+
+    this.locationNotice =
+      '';
+
+    try {
+      const position =
+        await Geolocation
+          .getCurrentPosition({
+            enableHighAccuracy: false,
+            timeout: 12000,
+            maximumAge: 10000
+          });
+
+      this.latitude =
+        position.coords.latitude;
+
+      this.longitude =
+        position.coords.longitude;
+
+      this.locationSource =
+        'gps';
+
+      this.locationConfirmed =
+        true;
+
+      this.geocodedDisplayName =
+        'Ubicación actual detectada por el dispositivo';
+
+      this.locationNotice =
+        'Usaremos tu ubicación real. Puedes mover el marcador si el servicio debe realizarse en otro punto.';
+
+      this.destroyMap();
+      this.cdr.detectChanges();
+      this.scheduleMapInitialization();
+
+    } catch (error) {
+      console.warn(
+        '[ServiGo] Ubicación real del cliente no disponible; se aplicará respaldo:',
+        error
+      );
+
+      this.applyClientFallback(
+        'No fue posible acceder a la ubicación del equipo.'
+      );
+
+    } finally {
+      this.locating =
+        false;
+
+      this.cdr.detectChanges();
+    }
+  }
+
+
+  private applyClientFallback(
+    reason: string
+  ): void {
+
+    this.latitude =
+      CLIENT_FALLBACK_LOCATION.latitude;
+
+    this.longitude =
+      CLIENT_FALLBACK_LOCATION.longitude;
+
+    this.locationSource =
+      'fallback';
+
+    this.locationConfirmed =
+      true;
+
+    this.geocodedDisplayName =
+      CLIENT_FALLBACK_LOCATION.label;
+
+    this.locationError =
+      '';
+
+    this.locationNotice =
+      `${reason} ServiGo usará una ubicación de respaldo en Santiago. Revisa el mapa y mueve el marcador si necesitas otro punto.`;
+
+    this.destroyMap();
+    this.cdr.detectChanges();
+    this.scheduleMapInitialization();
   }
 
 
@@ -1271,6 +1366,14 @@ const container =
             false;
 
 
+          this.locationSource =
+            'manual';
+
+
+          this.locationNotice =
+            'Punto ajustado manualmente.';
+
+
           this.locationError =
             'Moviste el punto. Confirma nuevamente la ubicación del servicio.';
 
@@ -1316,6 +1419,14 @@ const container =
 
           this.locationConfirmed =
             false;
+
+
+          this.locationSource =
+            'manual';
+
+
+          this.locationNotice =
+            'Punto ajustado manualmente.';
 
 
           this.locationError =
@@ -1420,6 +1531,14 @@ const container =
 
     this.locationConfirmed =
       false;
+
+
+    this.locationSource =
+      null;
+
+
+    this.locationNotice =
+      '';
 
 
     this.locationError =
@@ -1629,10 +1748,7 @@ const container =
       }
 
 
-      console.log(
-        '[ServiGo] Solicitud publicada:',
-        this.requestId
-      );
+      
 
 
       this.success =
@@ -1739,7 +1855,7 @@ const container =
       controls.timeSlot.invalid
     ) {
 
-      return 'Selecciona una franja horaria.';
+      return 'Selecciona una hora para el servicio.';
     }
 
 

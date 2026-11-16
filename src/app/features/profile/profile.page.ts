@@ -24,19 +24,28 @@ import {
 } from 'ionicons';
 
 import {
-  star,
-  personOutline,
-  locationOutline,
-  timeOutline,
+  briefcaseOutline,
   cardOutline,
-  shieldCheckmarkOutline,
-  helpCircleOutline,
-  constructOutline,
-  chevronForwardOutline,
-  logOutOutline,
   checkmarkCircleOutline,
-  closeCircleOutline
+  chevronForwardOutline,
+  closeCircleOutline,
+  constructOutline,
+  locationOutline,
+  logOutOutline,
+  personOutline,
+  settingsOutline,
+  shieldCheckmarkOutline,
+  star,
+  timeOutline
 } from 'ionicons/icons';
+
+import {
+  TechnicianApplication
+} from '../../core/models/technician-application.model';
+
+import {
+  TechnicianProfile
+} from '../../core/models/technician-profile.model';
 
 import {
   AuthService
@@ -51,22 +60,17 @@ import {
 } from '../../core/services/technician-application.service';
 
 import {
-  TechnicianApplication
-} from '../../core/models/technician-application.model';
-
+  TechnicianProfileService
+} from '../../core/services/technician-profile.service';
 
 @Component({
   selector: 'app-profile',
-
   templateUrl:
     './profile.page.html',
-
   styleUrls: [
     './profile.page.scss'
   ],
-
   standalone: true,
-
   imports: [
     CommonModule,
     RouterLink,
@@ -76,7 +80,6 @@ import {
 })
 export class ProfilePage
   implements OnInit {
-
 
   private readonly authService =
     inject(AuthService);
@@ -92,87 +95,49 @@ export class ProfilePage
       TechnicianApplicationService
     );
 
+  private readonly technicianProfileService =
+    inject(
+      TechnicianProfileService
+    );
+
   private readonly cdr =
     inject(ChangeDetectorRef);
-
 
   readonly profile$ =
     this.profileService.profile$;
 
-
   technicianApplication:
     TechnicianApplication | null = null;
 
+  technicianProfile:
+    TechnicianProfile | null = null;
 
-  applicationLoading = true;
-
+  detailsLoading = true;
 
   constructor() {
 
     addIcons({
-  star,
-  personOutline,
-  locationOutline,
-  timeOutline,
-  cardOutline,
-  shieldCheckmarkOutline,
-  helpCircleOutline,
-  constructOutline,
-  chevronForwardOutline,
-  logOutOutline,
-  checkmarkCircleOutline,
-  closeCircleOutline
-});
+      briefcaseOutline,
+      cardOutline,
+      checkmarkCircleOutline,
+      chevronForwardOutline,
+      closeCircleOutline,
+      constructOutline,
+      locationOutline,
+      logOutOutline,
+      personOutline,
+      settingsOutline,
+      shieldCheckmarkOutline,
+      star,
+      timeOutline
+    });
   }
 
-
-  async ngOnInit(): Promise<void> {
-
-    await this.loadTechnicianApplication();
-  }
-
-
-  private async loadTechnicianApplication():
+  async ngOnInit():
     Promise<void> {
 
-    const user =
-      await this.authService
-        .waitForAuthReady();
-
-
-    if (!user) {
-
-      this.applicationLoading = false;
-
-      this.cdr.detectChanges();
-
-      return;
-    }
-
-
-    try {
-
-      this.technicianApplication =
-        await this.applicationService
-          .getLatestApplication(
-            user.uid
-          );
-
-    } catch (error) {
-
-      console.error(
-        '[ServiGo] Error consultando postulación:',
-        error
-      );
-
-    } finally {
-
-      this.applicationLoading = false;
-
-      this.cdr.detectChanges();
-    }
+    await this.loadRelatedProfiles();
   }
-
 
   getRoleLabel(
     roles: string[]
@@ -186,7 +151,6 @@ export class ProfilePage
       return 'Superadministrador';
     }
 
-
     if (
       roles.includes(
         'administrador'
@@ -194,7 +158,6 @@ export class ProfilePage
     ) {
       return 'Administrador';
     }
-
 
     if (
       roles.includes(
@@ -204,10 +167,8 @@ export class ProfilePage
       return 'Cliente · Técnico';
     }
 
-
     return 'Cliente';
   }
-
 
   getRating(
     rating: number | null
@@ -219,64 +180,81 @@ export class ProfilePage
       return 'Sin evaluaciones';
     }
 
-
     return rating.toFixed(1);
   }
 
+  professionalStatusLabel():
+    string {
 
-  editProfile(): void {
+    if (
+      this.technicianProfile?.status ===
+      'inactive'
+    ) {
+      return 'Inactivo';
+    }
 
-    console.log(
-      '[ServiGo] Editar perfil'
+    if (
+      this.technicianProfile?.status ===
+      'suspended'
+    ) {
+      return 'Suspendido';
+    }
+
+    return 'Activo';
+  }
+
+  async editProfile():
+    Promise<void> {
+
+    await this.router.navigateByUrl(
+      '/app/profile/edit'
     );
   }
 
+  async openAddresses():
+    Promise<void> {
 
-  openAddresses(): void {
-
-    console.log(
-      '[ServiGo] Direcciones'
+    await this.router.navigateByUrl(
+      '/app/profile/edit'
     );
   }
 
+  async openHistory():
+    Promise<void> {
 
-  openHistory(): void {
-
-    console.log(
-      '[ServiGo] Historial'
+    await this.router.navigateByUrl(
+      '/app/services'
     );
   }
 
+  async openPayments():
+    Promise<void> {
 
-  openPayments(): void {
-
-    console.log(
-      '[ServiGo] Métodos de pago'
+    await this.router.navigateByUrl(
+      '/app/services'
     );
   }
 
+  async openSecurity():
+    Promise<void> {
 
-openSecurity(): void {
-
-  void this.router
-    .navigateByUrl(
+    await this.router.navigateByUrl(
       '/app/security'
     );
-}
+  }
 
+  async openSettings():
+    Promise<void> {
 
-  openHelp(): void {
-
-    console.log(
-      '[ServiGo] Ayuda'
+    await this.router.navigateByUrl(
+      '/app/settings'
     );
   }
 
-
-  async logout(): Promise<void> {
+  async logout():
+    Promise<void> {
 
     await this.authService.logout();
-
 
     await this.router.navigateByUrl(
       '/login',
@@ -284,5 +262,56 @@ openSecurity(): void {
         replaceUrl: true
       }
     );
+  }
+
+  private async loadRelatedProfiles():
+    Promise<void> {
+
+    const user =
+      await this.authService
+        .waitForAuthReady();
+
+    if (
+      !user
+    ) {
+      this.detailsLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+
+      const [
+        application,
+        professionalProfile
+      ] = await Promise.all([
+        this.applicationService
+          .getLatestApplication(
+            user.uid
+          ),
+        this.technicianProfileService
+          .getProfile(
+            user.uid
+          )
+      ]);
+
+      this.technicianApplication =
+        application;
+
+      this.technicianProfile =
+        professionalProfile;
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo] Error consultando información de perfil:',
+        error
+      );
+
+    } finally {
+
+      this.detailsLoading = false;
+      this.cdr.detectChanges();
+    }
   }
 }

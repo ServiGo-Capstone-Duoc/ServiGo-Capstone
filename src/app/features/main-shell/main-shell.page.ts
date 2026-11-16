@@ -8,12 +8,16 @@ import {
 } from '@angular/core';
 
 import {
+  NavigationEnd,
   Router
 } from '@angular/router';
 
 import {
   combineLatest,
-  map
+  distinctUntilChanged,
+  filter,
+  map,
+  startWith
 } from 'rxjs';
 
 import {
@@ -29,9 +33,10 @@ import {
 } from 'ionicons';
 
 import {
-  homeOutline,
-  constructOutline,
   chatbubbleEllipsesOutline,
+  constructOutline,
+  homeOutline,
+  notificationsOutline,
   personOutline
 } from 'ionicons/icons';
 
@@ -39,6 +44,10 @@ import {
   AppModeService,
   ServiGoMode
 } from '../../core/services/app-mode.service';
+
+import {
+  NotificationService
+} from '../../core/services/notification.service';
 
 import {
   ProfileService
@@ -90,6 +99,16 @@ export class MainShellPage {
     );
 
 
+  private readonly notificationService =
+    inject(
+      NotificationService
+    );
+
+
+  readonly unreadCount$ =
+    this.notificationService.unreadCount$;
+
+
   readonly navigationMode$ =
     combineLatest([
       this.profileService.profile$,
@@ -130,6 +149,45 @@ export class MainShellPage {
       );
 
 
+  /*
+   * =========================================
+   * CAMPANA GLOBAL
+   * =========================================
+   *
+   * El Home cliente ya posee su propia
+   * campana integrada al header, por lo que
+   * allí no duplicamos el control.
+   *
+   * En el centro de notificaciones tampoco
+   * se muestra porque el usuario ya está
+   * dentro de ese módulo.
+   *
+   * En todas las demás rutas autenticadas
+   * del MainShell se mantiene visible.
+   */
+  readonly showGlobalNotificationBell$ =
+    this.router.events.pipe(
+      filter(
+        (
+          event
+        ): event is NavigationEnd =>
+          event instanceof NavigationEnd
+      ),
+      map(
+        event =>
+          this.shouldShowGlobalNotificationBell(
+            event.urlAfterRedirects
+          )
+      ),
+      startWith(
+        this.shouldShowGlobalNotificationBell(
+          this.router.url
+        )
+      ),
+      distinctUntilChanged()
+    );
+
+
   constructor() {
 
     addIcons({
@@ -140,8 +198,27 @@ export class MainShellPage {
 
       chatbubbleEllipsesOutline,
 
-      personOutline
+      personOutline,
+
+      notificationsOutline
     });
+  }
+
+
+  /*
+   * =========================================
+   * NOTIFICACIONES
+   * =========================================
+   */
+
+  async openNotifications():
+    Promise<void> {
+
+
+    await this.router
+      .navigateByUrl(
+        '/app/notifications'
+      );
   }
 
 
@@ -155,12 +232,6 @@ export class MainShellPage {
     mode:
       ServiGoMode
   ): Promise<void> {
-
-
-    console.log(
-      '[ServiGo Navigation] Inicio:',
-      mode
-    );
 
 
     if (
@@ -195,12 +266,6 @@ export class MainShellPage {
     mode:
       ServiGoMode
   ): Promise<void> {
-
-
-    console.log(
-      '[ServiGo Navigation] Servicios/Trabajos:',
-      mode
-    );
 
 
     if (
@@ -256,5 +321,24 @@ export class MainShellPage {
       .navigateByUrl(
         '/app/profile'
       );
+  }
+
+
+  private shouldShowGlobalNotificationBell(
+    url: string
+  ): boolean {
+
+
+    const cleanUrl =
+      url
+        .split('?')[0]
+        .split('#')[0];
+
+
+    return cleanUrl !==
+        '/app/home'
+      &&
+      cleanUrl !==
+        '/app/notifications';
   }
 }
