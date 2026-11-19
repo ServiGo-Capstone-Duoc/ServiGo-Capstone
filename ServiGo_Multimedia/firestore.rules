@@ -1,0 +1,854 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /*
+     * =========================================
+     * HELPERS
+     * =========================================
+     */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn()
+        && request.auth.uid == uid;
+    }
+
+    function currentUser() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      );
+    }
+
+    function hasRole(role) {
+      return signedIn()
+        && currentUser().data.roles is list
+        && role in currentUser().data.roles;
+    }
+
+    function isAdmin() {
+      return hasRole('administrador')
+        || hasRole('superadmin');
+    }
+
+    function isServiceClient() {
+      return signedIn()
+        && resource.data.clientId == request.auth.uid;
+    }
+
+    function isAssignedTechnician() {
+      return signedIn()
+        && resource.data.assignedTechnicianId == request.auth.uid;
+    }
+
+
+    /*
+     * =========================================
+     * USERS
+     * =========================================
+     */
+
+    match /users/{userId} {
+
+      /*
+       * Cada usuario puede leer su propio perfil.
+       *
+       * Administradores pueden leer perfiles
+       * necesarios para administración.
+       */
+
+      allow read:
+        if isOwner(userId)
+        || isAdmin();
+
+
+      /*
+       * Registro inicial.
+       *
+       * El documento debe pertenecer al usuario
+       * autenticado y no puede autoconcederse
+       * privilegios administrativos.
+       */
+
+      allow create:
+        if isOwner(userId)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.roles is list
+        && request.resource.data.roles.size() == 1
+        && request.resource.data.roles[0] == 'cliente';
+
+
+      /*
+       * El usuario puede actualizar su documento,
+       * pero NO puede cambiar campos controlados
+       * por backend/administración.
+       */
+
+      allow update:
+        if (
+          isOwner(userId)
+          &&
+          request.resource.data.uid == resource.data.uid
+          &&
+          request.resource.data.roles == resource.data.roles
+          &&
+          request.resource.data.averageRating == resource.data.averageRating
+          &&
+          request.resource.data.ratingCount == resource.data.ratingCount
+        )
+        || isAdmin();
+
+
+      allow delete:
+        if false;
+    }
+
+
+    /*
+     * =========================================
+     * SERVICE REQUESTS
+     * =========================================
+     */
+
+    match /serviceRequests/{requestId} {
+
+      /*
+       * Cliente propietario.
+       * Técnico ya asignado.
+       * Administrador.
+       *
+       * También permitimos al técnico que tenga
+       * una oportunidad válida consultar la
+       * solicitud necesaria para cotizar.
+       */
+
+      allow get:
+        if signedIn()
+        && (
+          resource.data.clientId == request.auth.uid
+          ||
+          resource.data.assignedTechnicianId == request.auth.uid
+          ||
+          isAdmin()
+          ||
+          exists(
+            /databases/$(database)/documents/technicianOpportunities/$(request.auth.uid + "_" + requestId)
+          )
+        );
+
+
+      /*
+       * Las consultas del cliente usan:
+       *
+       * where(clientId == auth.uid)
+       *
+       * Las del técnico asignado usan:
+       *
+       * where(assignedTechnicianId == auth.uid)
+       *
+       * Firestore evalúa las Rules junto con
+       * las restricciones de la query.
+       */
+
+      allow list:
+        if signedIn();
+
+
+      /*
+       * Nueva solicitud.
+       *
+       * Solo el cliente puede crearla y debe
+       * comenzar en published sin técnico ni
+       * presupuesto aceptado.
+       */
+
+      allow create:
+        if signedIn()
+        && request.resource.data.clientId == request.auth.uid
+        && request.resource.data.status == 'published'
+        && request.resource.data.assignedTechnicianId == null
+        && request.resource.data.acceptedQuoteId == null;
+
+
+      /*
+       * Estados, técnico asignado y presupuesto
+       * elegido son controlados por Functions.
+       */
+
+      allow update:
+        if false;
+
+
+      allow delete:
+        if false;
+
+
+      /*
+       * =====================================
+       * CHAT
+       * =====================================
+       *
+       * La solicitud funciona como cabecera
+       * de la conversación.
+       *
+       * Estados con escritura:
+       *
+       * accepted
+       * en_route
+       * arrived
+       * in_progress
+       * completed
+       *
+       * cancelled:
+       *
+       * - participantes pueden leer
+       * - nadie puede seguir escribiendo
+       *
+       * Esto conserva trazabilidad sin permitir
+       * continuar una conversación asociada a
+       * un servicio cancelado.
+       */
+
+      match /messages/{messageId} {
+
+        /*
+         * =====================================
+         * SERVICIO PADRE
+         * =====================================
+         */
+
+        function parentService() {
+          return get(
+            /databases/$(database)/documents/serviceRequests/$(requestId)
+          );
+        }
+
+
+        /*
+         * =====================================
+         * PARTICIPANTES
+         * =====================================
+         *
+         * Solamente:
+         *
+         * - cliente propietario
+         * - técnico asignado
+         */
+
+        function isParticipant() {
+          return signedIn()
+            && (
+              parentService().data.clientId == request.auth.uid
+              ||
+              parentService().data.assignedTechnicianId == request.auth.uid
+            );
+        }
+
+
+        /*
+         * =====================================
+         * CHAT ESCRIBIBLE
+         * =====================================
+         *
+         * cancelled NO está incluido.
+         *
+         * Por lo tanto un chat cancelado
+         * permanece visible pero queda
+         * congelado.
+         */
+
+        function canWriteMessage() {
+          return isParticipant()
+            && (
+              parentService().data.status == 'accepted'
+              ||
+              parentService().data.status == 'en_route'
+              ||
+              parentService().data.status == 'arrived'
+              ||
+              parentService().data.status == 'in_progress'
+              ||
+              parentService().data.status == 'completed'
+            );
+        }
+
+
+        /*
+         * =====================================
+         * READ
+         * =====================================
+         *
+         * La lectura depende solamente de ser
+         * participante.
+         *
+         * Esto permite consultar mensajes
+         * históricos incluso si el servicio
+         * terminó o fue cancelado.
+         */
+
+        allow read:
+          if isParticipant();
+
+
+        /*
+         * =====================================
+         * CREATE
+         * =====================================
+         *
+         * Seguridad:
+         *
+         * - participante válido
+         * - estado válido
+         * - senderId coincide con Firebase Auth
+         * - requestId coincide con servicio padre
+         * - texto obligatorio
+         * - máximo 1000 caracteres
+         */
+
+        allow create:
+          if canWriteMessage()
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.requestId == requestId
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
+
+
+        /*
+         * =====================================
+         * UPDATE / DELETE
+         * =====================================
+         *
+         * Los mensajes son inmutables.
+         */
+
+        allow update, delete:
+          if false;
+      }
+    }
+
+
+    /*
+     * =========================================
+     * QUOTES
+     * =========================================
+     */
+
+    match /quotes/{quoteId} {
+
+      /*
+       * Solamente técnico propietario,
+       * cliente destinatario o administrador.
+       */
+
+      allow read:
+        if signedIn()
+        && (
+          resource.data.technicianId == request.auth.uid
+          ||
+          resource.data.clientId == request.auth.uid
+          ||
+          isAdmin()
+        );
+
+
+      /*
+       * El técnico crea la cotización.
+       *
+       * Siempre debe comenzar en sent.
+       */
+
+      allow create:
+        if signedIn()
+        && hasRole('tecnico')
+        && request.resource.data.technicianId == request.auth.uid
+        && request.resource.data.status == 'sent';
+
+
+      /*
+       * El cliente actualmente puede rechazar
+       * directamente una cotización.
+       *
+       * Permitimos exclusivamente:
+       *
+       * sent -> rejected.
+       *
+       * ACEPTAR NO se permite directamente:
+       * debe pasar por acceptQuote Function.
+       */
+
+      allow update:
+        if signedIn()
+        && resource.data.clientId == request.auth.uid
+        && resource.data.status == 'sent'
+        && request.resource.data.status == 'rejected'
+        && request.resource.data.diff(
+          resource.data
+        ).affectedKeys().hasOnly([
+          'status',
+          'updatedAt'
+        ]);
+
+
+      allow delete:
+        if false;
+    }
+
+
+    /*
+     * =========================================
+     * TECHNICIAN APPLICATIONS
+     * =========================================
+     */
+
+    match /technicianApplications/{applicationId} {
+
+      allow read:
+        if signedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          ||
+          isAdmin()
+        );
+
+
+      allow create:
+        if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+
+      /*
+       * Aprobar/rechazar queda exclusivamente
+       * para administrador.
+       */
+
+      allow update:
+        if isAdmin();
+
+
+      allow delete:
+        if false;
+    }
+
+
+    /*
+     * =========================================
+     * TECHNICIAN OPPORTUNITIES
+     * =========================================
+     */
+
+    match /technicianOpportunities/{opportunityId} {
+
+      allow read:
+        if signedIn()
+        && (
+          resource.data.technicianId == request.auth.uid
+          ||
+          isAdmin()
+        );
+
+
+      /*
+       * Las oportunidades son creadas por
+       * Cloud Functions / Admin SDK.
+       */
+
+      allow create:
+        if false;
+
+
+      /*
+       * Desde Angular el técnico únicamente
+       * puede pasar:
+       *
+       * available -> viewed
+       *
+       * y modificar viewedAt / updatedAt.
+       */
+
+      allow update:
+        if signedIn()
+        && resource.data.technicianId == request.auth.uid
+        && resource.data.status == 'available'
+        && request.resource.data.status == 'viewed'
+        && request.resource.data.diff(
+          resource.data
+        ).affectedKeys().hasOnly([
+          'status',
+          'viewedAt',
+          'updatedAt'
+        ]);
+
+
+      allow delete:
+        if false;
+    }
+
+
+    /*
+     * =========================================
+     * DEVICE TOKENS
+     * =========================================
+     */
+
+    match /deviceTokens/{tokenId} {
+
+      /*
+       * El usuario solamente administra
+       * tokens que declaren su propio UID.
+       */
+
+      allow create, update:
+        if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+
+
+      /*
+       * El frontend no necesita leer tokens.
+       * Functions usa Admin SDK.
+       */
+
+      allow read, delete:
+        if false;
+    }
+
+
+    /*
+     * =========================================
+     * TECHNICIAN LOCATIONS
+     * =========================================
+     *
+     * Ubicación temporal del técnico mientras
+     * se dirige al domicilio.
+     *
+     * technicianLocations/{technicianId}
+     *
+     * Seguridad:
+     *
+     * - técnico solo escribe su propia ubicación
+     * - debe existir un servicio en_route
+     * - debe ser el técnico asignado
+     * - requestId no puede cambiar
+     * - cliente propietario puede leer
+     * - técnico propietario puede leer
+     * - administrador puede leer
+     * - cliente jamás puede modificar ubicación
+     */
+
+    match /technicianLocations/{technicianId} {
+
+
+      /*
+       * =====================================
+       * HELPERS
+       * =====================================
+       */
+
+      function locationService() {
+
+        return get(
+          /databases/$(database)/documents/serviceRequests/$(resource.data.requestId)
+        );
+      }
+
+
+      function newLocationService() {
+
+        return get(
+          /databases/$(database)/documents/serviceRequests/$(request.resource.data.requestId)
+        );
+      }
+
+
+      /*
+       * =====================================
+       * READ
+       * =====================================
+       *
+       * El cliente solamente puede consultar
+       * la posición si:
+       *
+       * - es dueño del servicio
+       * - el técnico es el asignado
+       * - el servicio está en_route
+       *
+       * El técnico puede leer su propia posición.
+       */
+
+      allow read:
+        if signedIn()
+        && (
+          (
+            resource.data.technicianId ==
+              request.auth.uid
+            &&
+            technicianId ==
+              request.auth.uid
+          )
+          ||
+          (
+            locationService().data.clientId ==
+              request.auth.uid
+            &&
+            locationService().data.assignedTechnicianId ==
+              technicianId
+            &&
+            locationService().data.status ==
+              'en_route'
+          )
+          ||
+          isAdmin()
+        );
+
+
+      /*
+       * =====================================
+       * CREATE
+       * =====================================
+       */
+
+      allow create:
+        if signedIn()
+
+        /*
+         * Solo el técnico propietario
+         * del documento.
+         */
+        && technicianId ==
+          request.auth.uid
+
+        && request.resource.data.technicianId ==
+          request.auth.uid
+
+        /*
+         * Debe existir requestId.
+         */
+        && request.resource.data.requestId
+          is string
+
+        /*
+         * Debe ser técnico asignado.
+         */
+        && newLocationService().data.assignedTechnicianId ==
+          request.auth.uid
+
+        /*
+         * Solamente mientras va en camino.
+         */
+        && newLocationService().data.status ==
+          'en_route'
+
+        /*
+         * Coordenadas obligatorias.
+         */
+        && request.resource.data.latitude
+          is number
+
+        && request.resource.data.longitude
+          is number
+
+        /*
+         * Rangos geográficos válidos.
+         */
+        && request.resource.data.latitude >=
+          -90
+
+        && request.resource.data.latitude <=
+          90
+
+        && request.resource.data.longitude >=
+          -180
+
+        && request.resource.data.longitude <=
+          180
+
+        /*
+         * Tracking activo.
+         */
+        && request.resource.data.active ==
+          true;
+
+
+      /*
+       * =====================================
+       * UPDATE
+       * =====================================
+       */
+
+      allow update:
+        if signedIn()
+
+        && technicianId ==
+          request.auth.uid
+
+        && resource.data.technicianId ==
+          request.auth.uid
+
+        && request.resource.data.technicianId ==
+          request.auth.uid
+
+        /*
+         * No puede cambiar de servicio.
+         */
+        && request.resource.data.requestId ==
+          resource.data.requestId
+
+        /*
+         * Continúa siendo técnico asignado.
+         */
+        && newLocationService().data.assignedTechnicianId ==
+          request.auth.uid
+
+        /*
+         * Continúa en camino.
+         */
+        && newLocationService().data.status ==
+          'en_route'
+
+        /*
+         * Coordenadas válidas.
+         */
+        && request.resource.data.latitude
+          is number
+
+        && request.resource.data.longitude
+          is number
+
+        && request.resource.data.latitude >=
+          -90
+
+        && request.resource.data.latitude <=
+          90
+
+        && request.resource.data.longitude >=
+          -180
+
+        && request.resource.data.longitude <=
+          180
+
+        && request.resource.data.active ==
+          true
+
+        /*
+         * No permitimos que el cliente/técnico
+         * introduzca campos arbitrarios.
+         */
+        && request.resource.data.diff(
+          resource.data
+        ).affectedKeys().hasOnly([
+          'latitude',
+          'longitude',
+          'accuracy',
+          'heading',
+          'speed',
+          'active',
+          'updatedAt'
+        ]);
+
+
+      /*
+       * =====================================
+       * DELETE
+       * =====================================
+       *
+       * El técnico puede retirar su ubicación
+       * cuando termina el desplazamiento.
+       */
+
+      allow delete:
+        if signedIn()
+        && technicianId ==
+          request.auth.uid
+        && resource.data.technicianId ==
+          request.auth.uid;
+    }
+
+
+    /*
+     * =========================================
+     * REVIEWS
+     * =========================================
+     */
+
+    match /reviews/{reviewId} {
+
+      /*
+       * Lectura solo para participantes
+       * y administración.
+       */
+
+      allow read:
+        if signedIn()
+        && (
+          resource.data.clientId == request.auth.uid
+          ||
+          resource.data.technicianId == request.auth.uid
+          ||
+          isAdmin()
+        );
+
+
+      /*
+       * submitReview utiliza Admin SDK.
+       *
+       * Nadie puede crear/modificar reviews
+       * directamente desde Angular.
+       */
+
+      allow create, update, delete:
+        if false;
+    }
+/*
+ * =========================================
+ * ANALYTICS DEMAND
+ * =========================================
+ *
+ * Recomendaciones territoriales generadas
+ * por el motor analítico de ServiGo.
+ *
+ * Lectura:
+ * - solamente técnicos autenticados
+ * - administradores
+ *
+ * Escritura:
+ * - bloqueada completamente para clientes
+ *   Firebase / Angular
+ *
+ * El pipeline Python publica mediante
+ * Admin SDK, por lo que no depende de
+ * estas Rules para escribir.
+ */
+
+match /analyticsDemand/{predictionId} {
+
+  allow read:
+    if signedIn()
+    && (
+      hasRole('tecnico')
+      ||
+      isAdmin()
+    );
+
+
+  allow create, update, delete:
+    if false;
+}
+
+    /*
+     * =========================================
+     * DEFAULT DENY
+     * =========================================
+     */
+
+    match /{document=**} {
+
+      allow read, write:
+        if false;
+    }
+  }
+}

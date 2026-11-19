@@ -1,0 +1,83 @@
+<ion-content [fullscreen]="true">
+  <main class="settings-page">
+    <header class="settings-header">
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Volver al perfil"
+        (click)="goBack()"
+      >
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+
+      <div>
+        <span>Configuración</span>
+        <h1>Apariencia</h1>
+      </div>
+    </header>
+
+    <section class="settings-intro">
+      <div class="intro-icon">
+        <ion-icon name="color-palette-outline"></ion-icon>
+      </div>
+
+      <div>
+        <h2>Elige cómo se ve ServiGo</h2>
+        <p>
+          La preferencia se guarda en este dispositivo y se aplica a toda la aplicación.
+        </p>
+      </div>
+    </section>
+
+    <section
+      class="theme-options"
+      aria-label="Preferencia de apariencia"
+    >
+      <button
+        *ngFor="let option of themeOptions"
+        type="button"
+        class="theme-option"
+        [class.active]="themeService.currentPreference === option.value"
+        [attr.aria-pressed]="themeService.currentPreference === option.value"
+        (click)="selectTheme(option.value)"
+      >
+        <span class="theme-icon">
+          <ion-icon [name]="option.icon"></ion-icon>
+        </span>
+
+        <span class="theme-copy">
+          <strong>{{ option.label }}</strong>
+          <span>{{ option.description }}</span>
+        </span>
+
+        <ion-icon
+          *ngIf="themeService.currentPreference === option.value"
+          class="selected-icon"
+          name="checkmark-circle"
+        ></ion-icon>
+      </button>
+    </section>
+
+    <section class="theme-preview">
+      <span class="preview-label">Vista previa</span>
+
+      <div class="preview-card">
+        <div class="preview-avatar">SG</div>
+
+        <div>
+          <strong>Servicio confirmado</strong>
+          <span>Tu técnico llegará a las 15:30</span>
+        </div>
+
+        <span class="preview-status">Activo</span>
+      </div>
+    </section>
+
+    <p class="settings-note">
+      Tema activo:
+      <strong>
+        {{ themeService.currentTheme === 'dark' ? 'Oscuro' : 'Claro' }}
+      </strong>
+    </p>
+  </main>
+</ion-content>

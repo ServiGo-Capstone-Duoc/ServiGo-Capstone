@@ -1,0 +1,500 @@
+<ion-content>
+
+  <main class="application-container">
+
+    <header class="application-header">
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+      </button>
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="application-logo"
+      />
+
+    </header>
+
+
+    <!-- ÉXITO -->
+
+    <section
+      class="success-card"
+      *ngIf="success"
+    >
+
+      <div class="success-icon">
+
+        <ion-icon
+          name="checkmark-circle"
+        ></ion-icon>
+
+      </div>
+
+      <h1>
+        Solicitud enviada
+      </h1>
+
+      <p>
+        Revisaremos tus antecedentes
+        antes de habilitar tu perfil
+        como técnico.
+      </p>
+
+      <span class="pending-badge">
+        Pendiente de revisión
+      </span>
+
+      <ion-button
+        expand="block"
+        type="button"
+        (click)="back()"
+      >
+        Volver a mi perfil
+      </ion-button>
+
+    </section>
+
+
+    <!-- FORMULARIO -->
+
+    <ng-container
+      *ngIf="!success"
+    >
+
+      <section class="intro">
+
+        <span>
+          Perfil profesional
+        </span>
+
+        <h1>
+          Ofrece tus servicios
+          en ServiGo
+        </h1>
+
+        <p>
+          Completa tus antecedentes.
+          Tu perfil será revisado antes
+          de quedar disponible para clientes.
+        </p>
+
+      </section>
+
+
+      <form
+        [formGroup]="form"
+      >
+
+        <!-- DATOS PROFESIONALES -->
+
+        <section class="form-card">
+
+          <div class="section-title">
+
+            <ion-icon
+              name="construct-outline"
+            ></ion-icon>
+
+            <div>
+
+              <h2>
+                Datos profesionales
+              </h2>
+
+              <p>
+                Información para validar
+                tu postulación.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <!-- NOMBRE -->
+
+          <ion-input
+            label="Nombre completo"
+            labelPlacement="stacked"
+            formControlName="fullName"
+          ></ion-input>
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.fullName.touched &&
+              form.controls.fullName.invalid
+            "
+          >
+            Ingresa tu nombre completo.
+          </div>
+
+
+          <!-- RUT -->
+
+          <ion-input
+            label="RUT"
+            labelPlacement="stacked"
+            formControlName="rut"
+            placeholder="12.345.678-9"
+          ></ion-input>
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.rut.touched &&
+              form.controls.rut.invalid
+            "
+          >
+            Ingresa tu RUT.
+          </div>
+
+
+          <!-- TELÉFONO -->
+
+          <ion-input
+            label="Teléfono"
+            labelPlacement="stacked"
+            type="tel"
+            formControlName="phone"
+            placeholder="+56 9 1234 5678"
+          ></ion-input>
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.phone.touched &&
+              form.controls.phone.invalid
+            "
+          >
+            Ingresa un teléfono válido.
+          </div>
+
+        </section>
+
+
+        <!-- ESPECIALIDADES -->
+
+        <section class="form-card">
+
+          <div class="section-title">
+
+            <ion-icon
+              name="construct-outline"
+            ></ion-icon>
+
+            <div>
+
+              <h2>
+                Especialidades
+              </h2>
+
+              <p>
+                Selecciona uno o más
+                servicios que realizas.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="specialties-grid">
+
+            <button
+              type="button"
+              *ngFor="
+                let specialty
+                of specialties
+              "
+              class="specialty-chip"
+              [class.selected]="
+                isSelected(
+                  specialty
+                )
+              "
+              (click)="
+                toggleSpecialty(
+                  specialty
+                )
+              "
+            >
+              {{ specialty }}
+            </button>
+
+          </div>
+
+
+          <div
+            class="field-error"
+            *ngIf="
+              selectedSpecialties.length === 0 &&
+              errorMessage
+            "
+          >
+            Selecciona al menos una especialidad.
+          </div>
+
+        </section>
+
+
+        <!-- EXPERIENCIA -->
+
+        <section class="form-card">
+
+          <h2>
+            Experiencia
+          </h2>
+
+
+          <!-- AÑOS -->
+
+          <ion-input
+            label="Años de experiencia"
+            labelPlacement="stacked"
+            type="number"
+            formControlName="experienceYears"
+          ></ion-input>
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.experienceYears.touched &&
+              form.controls.experienceYears.invalid
+            "
+          >
+            Ingresa un valor entre 0 y 60 años.
+          </div>
+
+
+          <!-- DESCRIPCIÓN -->
+
+          <ion-textarea
+            label="Cuéntanos sobre tu experiencia"
+            labelPlacement="stacked"
+            formControlName="experienceDescription"
+            [autoGrow]="true"
+            placeholder="Describe los trabajos que realizas, experiencia, conocimientos, etc."
+          ></ion-textarea>
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.experienceDescription.touched &&
+              form.controls.experienceDescription.invalid
+            "
+          >
+            Describe tu experiencia con al menos
+            20 caracteres.
+          </div>
+
+        </section>
+
+
+        <!-- COBERTURA -->
+
+        <section class="form-card">
+
+          <div class="section-title">
+
+            <ion-icon
+              name="location-outline"
+            ></ion-icon>
+
+            <div>
+
+              <h2>
+                Zona de atención
+              </h2>
+
+              <p>
+                Define desde dónde trabajas
+                y cuánto puedes desplazarte.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <!-- COMUNA -->
+
+          <ion-input
+            label="Comuna base"
+            labelPlacement="stacked"
+            formControlName="baseCommune"
+            placeholder="Ej: La Florida"
+          ></ion-input>
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.baseCommune.touched &&
+              form.controls.baseCommune.invalid
+            "
+          >
+            Ingresa tu comuna base.
+          </div>
+
+
+          <!-- RADIO -->
+
+          <ion-input
+            label="Radio de atención (km)"
+            labelPlacement="stacked"
+            type="number"
+            formControlName="serviceRadiusKm"
+          ></ion-input>
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.serviceRadiusKm.touched &&
+              form.controls.serviceRadiusKm.invalid
+            "
+          >
+            El radio de atención debe estar
+            entre 1 y 100 km.
+          </div>
+
+        </section>
+
+
+        <!-- DOCUMENTOS -->
+
+        <section class="form-card">
+
+          <div class="section-title">
+
+            <ion-icon
+              name="document-text-outline"
+            ></ion-icon>
+
+            <div>
+
+              <h2>
+                Documentación
+              </h2>
+
+              <p>
+                Prepararemos la carga
+                documental para la validación.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <label class="check-row">
+
+            <ion-checkbox
+              formControlName="hasIdentification"
+            ></ion-checkbox>
+
+            <span>
+              Tengo identificación vigente
+            </span>
+
+          </label>
+
+
+          <label class="check-row">
+
+            <ion-checkbox
+              formControlName="hasCertifications"
+            ></ion-checkbox>
+
+            <span>
+              Poseo certificaciones
+              relacionadas con mis servicios
+            </span>
+
+          </label>
+
+        </section>
+
+
+        <!-- TÉRMINOS -->
+
+        <section
+          class="terms-card"
+          [class.invalid]="
+            form.controls.termsAccepted.touched &&
+            form.controls.termsAccepted.invalid
+          "
+        >
+
+          <ion-checkbox
+            formControlName="termsAccepted"
+          ></ion-checkbox>
+
+          <span>
+            Declaro que la información
+            proporcionada es correcta y
+            acepto los términos de ServiGo.
+          </span>
+
+        </section>
+
+
+        <div
+          class="field-error"
+          *ngIf="
+            form.controls.termsAccepted.touched &&
+            form.controls.termsAccepted.invalid
+          "
+        >
+          Debes aceptar los términos para
+          enviar la solicitud.
+        </div>
+
+
+        <!-- ERROR GENERAL -->
+
+        <div
+          class="form-error"
+          *ngIf="errorMessage"
+        >
+          {{ errorMessage }}
+        </div>
+
+
+        <!-- BOTÓN -->
+
+        <ion-button
+          expand="block"
+          type="button"
+          class="submit-button"
+          [disabled]="loading"
+          (click)="submit()"
+        >
+
+          <ion-spinner
+            *ngIf="loading"
+            name="crescent"
+          ></ion-spinner>
+
+          <span
+            *ngIf="!loading"
+          >
+            Enviar solicitud
+          </span>
+
+        </ion-button>
+
+      </form>
+
+    </ng-container>
+
+  </main>
+
+</ion-content>

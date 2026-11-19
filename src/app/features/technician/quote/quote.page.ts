@@ -1,0 +1,963 @@
+import {
+  CommonModule
+} from '@angular/common';
+
+import {
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  inject
+} from '@angular/core';
+
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
+
+import {
+  ActivatedRoute,
+  Router
+} from '@angular/router';
+
+import {
+  IonButton,
+  IonContent,
+  IonIcon,
+  IonInput,
+  IonSpinner,
+  IonTextarea
+} from '@ionic/angular';
+
+import {
+  addIcons
+} from 'ionicons';
+
+import {
+  arrowBackOutline,
+  checkmarkCircle,
+  documentTextOutline
+} from 'ionicons/icons';
+
+import {
+  firstValueFrom,
+  filter,
+  take
+} from 'rxjs';
+
+import {
+  AuthService
+} from '../../../core/services/auth.service';
+
+import {
+  ProfileService
+} from '../../../core/services/profile.service';
+
+import {
+  QuoteService
+} from '../../../core/services/quote.service';
+
+import {
+  ServiceCatalogService
+} from '../../../core/services/service-catalog.service';
+
+import {
+  TechnicianOpportunityService,
+  TechnicianOpportunityView
+} from '../../../core/services/technician-opportunity.service';
+
+
+@Component({
+  selector:
+    'app-quote',
+
+  templateUrl:
+    './quote.page.html',
+
+  styleUrls: [
+    './quote.page.scss'
+  ],
+
+  standalone:
+    true,
+
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+
+    IonButton,
+    IonContent,
+    IonIcon,
+    IonInput,
+    IonSpinner,
+    IonTextarea
+  ]
+})
+export class QuotePage
+  implements OnInit {
+
+
+  /*
+   * =========================================
+   * SERVICIOS
+   * =========================================
+   */
+
+  private readonly fb =
+    inject(FormBuilder);
+
+
+  private readonly router =
+    inject(Router);
+
+
+  private readonly route =
+    inject(ActivatedRoute);
+
+
+  private readonly authService =
+    inject(AuthService);
+
+
+  private readonly profileService =
+    inject(ProfileService);
+
+
+  private readonly quoteService =
+    inject(QuoteService);
+
+
+  private readonly serviceCatalogService =
+    inject(ServiceCatalogService);
+
+
+  private readonly opportunityService =
+    inject(
+      TechnicianOpportunityService
+    );
+
+
+  private readonly cdr =
+    inject(ChangeDetectorRef);
+
+
+  /*
+   * =========================================
+   * ESTADO
+   * =========================================
+   */
+
+  opportunity:
+    TechnicianOpportunityView | null =
+      null;
+
+
+  requestId =
+    '';
+
+
+  loading =
+    true;
+
+
+  sending =
+    false;
+
+
+  success =
+    false;
+
+
+  errorMessage =
+    '';
+
+
+  quoteId =
+    '';
+
+
+  visitFeeMin = 0;
+
+  visitFeeMax = 100000000;
+
+  catalogLabel = 'Visita técnica';
+
+  catalogAvailable = false;
+
+
+  /*
+   * =========================================
+   * FORMULARIO
+   * =========================================
+   */
+
+  form =
+    this.fb.nonNullable.group({
+
+      visitFeeAmount: [
+        0,
+        [
+          Validators.required,
+          Validators.min(0)
+        ]
+      ],
+
+      laborAmount: [
+        0,
+        [
+          Validators.required,
+          Validators.min(0)
+        ]
+      ],
+
+      materialsAmount: [
+        0,
+        [
+          Validators.required,
+          Validators.min(0)
+        ]
+      ],
+
+      otherAmount: [
+        0,
+        [
+          Validators.required,
+          Validators.min(0)
+        ]
+      ],
+
+      scheduleAccepted: [
+        false,
+        Validators.requiredTrue
+      ],
+
+      comment: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(10)
+        ]
+      ]
+    });
+
+
+  constructor() {
+
+    addIcons({
+
+      arrowBackOutline,
+
+      checkmarkCircle,
+
+      documentTextOutline
+    });
+  }
+
+
+  /*
+   * =========================================
+   * INIT
+   * =========================================
+   */
+
+  async ngOnInit():
+    Promise<void> {
+
+
+    this.loading =
+      true;
+
+
+    this.errorMessage =
+      '';
+
+
+    /*
+     * =====================================
+     * REQUEST ID DESDE URL
+     * =====================================
+     *
+     * Ya no utilizamos router.state.
+     *
+     * Ejemplo:
+     *
+     * /app/technician/quote/ABC123
+     */
+
+    const requestId =
+      this.route.snapshot
+        .paramMap
+        .get(
+          'requestId'
+        );
+
+
+    if (
+      !requestId
+    ) {
+
+      this.errorMessage =
+        'No pudimos identificar la solicitud.';
+
+
+      this.loading =
+        false;
+
+
+      this.cdr.detectChanges();
+
+      return;
+    }
+
+
+    this.requestId =
+      requestId;
+
+
+    /*
+     * =====================================
+     * SESIÓN
+     * =====================================
+     */
+
+    const user =
+      await this.authService
+        .waitForAuthReady();
+
+
+    if (
+      !user
+    ) {
+
+      this.errorMessage =
+        'No existe una sesión válida.';
+
+
+      this.loading =
+        false;
+
+
+      this.cdr.detectChanges();
+
+      return;
+    }
+
+
+    /*
+     * =====================================
+     * CARGAR OPORTUNIDAD
+     * =====================================
+     */
+
+    try {
+
+      const result =
+        await this.opportunityService
+          .getOpportunityByRequestId(
+            user.uid,
+            requestId
+          );
+
+
+      if (
+        !result
+      ) {
+
+        this.errorMessage =
+          'Esta oportunidad ya no está disponible.';
+
+        return;
+      }
+
+
+      this.opportunity =
+        result;
+
+
+      const catalogItem =
+        await this.serviceCatalogService
+          .getByName(
+            result.request.category
+          );
+
+
+      if (
+        catalogItem
+      ) {
+        this.catalogAvailable =
+          true;
+
+        this.visitFeeMin =
+          catalogItem.visitFeeMin;
+
+        this.visitFeeMax =
+          catalogItem.visitFeeMax;
+
+        this.catalogLabel =
+          catalogItem.name;
+
+        const visitControl =
+          this.form.controls.visitFeeAmount;
+
+        visitControl.setValidators([
+          Validators.required,
+          Validators.min(
+            this.visitFeeMin
+          ),
+          Validators.max(
+            this.visitFeeMax
+          )
+        ]);
+
+        visitControl.setValue(
+          this.visitFeeMin
+        );
+
+        visitControl.updateValueAndValidity();
+      } else {
+        this.catalogAvailable =
+          false;
+
+        this.errorMessage =
+          'La categoría no tiene un tarifario de visita configurado.';
+      }
+
+
+      if (
+        !this.getScheduledAt()
+      ) {
+        this.errorMessage =
+          'La solicitud no contiene una fecha y hora de reserva válida.';
+      }
+
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo] Error cargando oportunidad para cotizar:',
+        error
+      );
+
+
+      this.errorMessage =
+        'No pudimos cargar la oportunidad.';
+
+
+    } finally {
+
+      this.loading =
+        false;
+
+
+      this.cdr.detectChanges();
+    }
+  }
+
+
+  /*
+   * =========================================
+   * TOTAL PRESUPUESTO
+   * =========================================
+   */
+
+  get totalAmount():
+    number {
+
+
+    const values =
+      this.form.getRawValue();
+
+
+    const visitFeeAmount =
+      Number(
+        values.visitFeeAmount
+      ) || 0;
+
+
+    const laborAmount =
+      Number(
+        values.laborAmount
+      ) || 0;
+
+
+    const materialsAmount =
+      Number(
+        values.materialsAmount
+      ) || 0;
+
+
+    const otherAmount =
+      Number(
+        values.otherAmount
+      ) || 0;
+
+
+    return (
+      visitFeeAmount
+      +
+      laborAmount
+      +
+      materialsAmount
+      +
+      otherAmount
+    );
+  }
+
+
+  /*
+   * =========================================
+   * ENVIAR PRESUPUESTO
+   * =========================================
+   */
+
+  async submit():
+    Promise<void> {
+
+
+    if (
+      this.sending
+      ||
+      !this.opportunity
+      ||
+      !this.catalogAvailable
+    ) {
+
+      return;
+    }
+
+
+    this.errorMessage =
+      '';
+
+
+    this.form
+      .markAllAsTouched();
+
+
+    /*
+     * =====================================
+     * VALIDAR FORMULARIO
+     * =====================================
+     */
+
+    if (
+      this.form.invalid
+    ) {
+
+      this.errorMessage =
+        'Completa correctamente los datos del presupuesto.';
+
+      return;
+    }
+
+
+    /*
+     * Al menos uno de los conceptos
+     * debe contener un monto.
+     */
+
+    if (
+      this.totalAmount <= 0
+    ) {
+
+      this.errorMessage =
+        'El total del presupuesto debe ser mayor a $0.';
+
+      return;
+    }
+
+
+    /*
+     * =====================================
+     * VALIDAR SESIÓN
+     * =====================================
+     */
+
+    const user =
+      await this.authService
+        .waitForAuthReady();
+
+
+    if (
+      !user
+    ) {
+
+      this.errorMessage =
+        'No pudimos validar tu sesión.';
+
+      return;
+    }
+
+
+    /*
+     * =====================================
+     * PERFIL DEL TÉCNICO
+     * =====================================
+     *
+     * currentProfile puede todavía no
+     * estar disponible si la pantalla fue
+     * abierta directamente desde una URL.
+     */
+
+    let profile =
+      this.profileService
+        .currentProfile;
+
+
+    if (
+      !profile
+    ) {
+
+      try {
+
+        profile =
+          await firstValueFrom(
+
+            this.profileService
+              .profile$
+              .pipe(
+
+                filter(
+                  value =>
+                    value !== null
+                ),
+
+                take(1)
+              )
+          );
+
+
+      } catch (error) {
+
+        console.error(
+          '[ServiGo] Error obteniendo perfil técnico:',
+          error
+        );
+      }
+    }
+
+
+    if (
+      !profile
+    ) {
+
+      this.errorMessage =
+        'No pudimos validar tu perfil técnico.';
+
+      return;
+    }
+
+
+    /*
+     * Protección adicional.
+     *
+     * El técnico no puede cotizar
+     * una solicitud propia.
+     */
+
+    if (
+      this.opportunity
+        .request
+        .clientId ===
+      user.uid
+    ) {
+
+      this.errorMessage =
+        'No puedes cotizar tu propia solicitud.';
+
+      return;
+    }
+
+
+    this.sending =
+      true;
+
+
+    this.cdr.detectChanges();
+
+
+    /*
+     * =====================================
+     * CREAR QUOTE
+     * =====================================
+     */
+
+    try {
+
+      const values =
+        this.form.getRawValue();
+
+
+      const scheduledAt =
+        this.getScheduledAt();
+
+
+      if (
+        !scheduledAt
+      ) {
+        this.errorMessage =
+          'La solicitud no contiene una fecha y hora de reserva válida.';
+        return;
+      }
+
+
+      this.quoteId =
+        await this.quoteService
+          .createQuote({
+
+            requestId:
+              this.opportunity
+                .request
+                .id,
+
+            clientId:
+              this.opportunity
+                .request
+                .clientId,
+
+            technicianId:
+              user.uid,
+
+            technicianName:
+              profile.displayName,
+
+            visitFeeAmount:
+              Number(
+                values.visitFeeAmount
+              ),
+
+            laborAmount:
+              Number(
+                values.laborAmount
+              ),
+
+            materialsAmount:
+              Number(
+                values.materialsAmount
+              ),
+
+            otherAmount:
+              Number(
+                values.otherAmount
+              ),
+
+            availableDate:
+              scheduledAt,
+
+            scheduleAccepted:
+              values.scheduleAccepted,
+
+            comment:
+              values.comment.trim()
+          });
+
+
+      
+
+
+      this.success =
+        true;
+
+
+    } catch (error: any) {
+
+      console.error(
+        '[ServiGo] Error enviando presupuesto:',
+        error
+      );
+
+
+      if (
+        error?.message ===
+        'quote-already-exists'
+      ) {
+
+        this.errorMessage =
+          'Ya enviaste un presupuesto para esta solicitud.';
+
+
+      } else if (
+        error?.message ===
+        'schedule-not-accepted'
+      ) {
+
+        this.errorMessage =
+          'Debes aceptar el horario solicitado por el cliente.';
+
+
+      } else if (
+        error?.message ===
+        'cannot-quote-own-request'
+      ) {
+
+        this.errorMessage =
+          'No puedes cotizar tu propia solicitud.';
+
+
+      } else if (
+        error?.code ===
+        'permission-denied'
+      ) {
+
+        this.errorMessage =
+          'Firestore rechazó el presupuesto por permisos.';
+
+
+      } else {
+
+        this.errorMessage =
+          'No pudimos enviar el presupuesto.';
+      }
+
+
+    } finally {
+
+      this.sending =
+        false;
+
+
+      this.cdr.detectChanges();
+    }
+  }
+
+
+  /*
+   * =========================================
+   * VOLVER
+   * =========================================
+   */
+
+  async back():
+    Promise<void> {
+
+
+    /*
+     * Si conocemos requestId,
+     * siempre volvemos al detalle
+     * reconstruible desde Firestore.
+     *
+     * No usamos router.state.
+     */
+
+    if (
+      this.requestId
+    ) {
+
+      await this.router.navigate(
+        [
+          '/app/technician/opportunity',
+          this.requestId
+        ]
+      );
+
+      return;
+    }
+
+
+    await this.router.navigateByUrl(
+      '/app/technician/home'
+    );
+  }
+
+
+  /*
+   * =========================================
+   * HOME TÉCNICO
+   * =========================================
+   */
+
+  async goHome():
+    Promise<void> {
+
+
+    await this.router.navigateByUrl(
+      '/app/technician/home'
+    );
+  }
+
+
+  /*
+   * =========================================
+   * HORARIO RESERVADO POR EL CLIENTE
+   * =========================================
+   */
+
+  get scheduleStartLabel(): string {
+    const value = this.getScheduledAt();
+    return value
+      ? new Intl.DateTimeFormat(
+          'es-CL',
+          {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          }
+        ).format(value)
+      : 'Horario no disponible';
+  }
+
+
+  get scheduleEndLabel(): string {
+    const start = this.getScheduledAt();
+
+    if (!start) {
+      return 'Horario no disponible';
+    }
+
+    const end =
+      this.opportunity?.request.arrivalWindowEndAt
+      ?? new Date(
+        start.getTime() +
+        (2 * 60 * 60 * 1000)
+      );
+
+    return new Intl.DateTimeFormat(
+      'es-CL',
+      {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }
+    ).format(end);
+  }
+
+
+  private getScheduledAt(): Date | null {
+    const request =
+      this.opportunity?.request;
+
+    if (!request) {
+      return null;
+    }
+
+    if (request.scheduledAt instanceof Date) {
+      return request.scheduledAt;
+    }
+
+    if (
+      !request.preferredDate
+      ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+        request.timeSlot
+      )
+    ) {
+      return null;
+    }
+
+    const date =
+      request.preferredDate;
+
+    const [hours, minutes] =
+      request.timeSlot
+        .split(':')
+        .map(Number);
+
+    return new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      hours,
+      minutes,
+      0,
+      0
+    );
+  }
+}

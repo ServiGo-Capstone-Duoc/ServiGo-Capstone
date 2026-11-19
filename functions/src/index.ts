@@ -1,0 +1,10357 @@
+import {
+
+  onDocumentCreated
+
+} from 'firebase-functions/v2/firestore';
+
+
+
+import {
+
+  logger
+
+} from 'firebase-functions';
+
+
+import {
+
+  HttpsError,
+
+  onCall,
+
+  onRequest
+
+} from 'firebase-functions/v2/https';
+
+
+
+import {
+
+  initializeApp
+
+} from 'firebase-admin/app';
+
+
+
+import {
+
+  FieldValue,
+
+  Timestamp,
+
+  getFirestore
+
+} from 'firebase-admin/firestore';
+
+
+
+import {
+
+  getMessaging
+
+} from 'firebase-admin/messaging';
+
+
+import {
+  getAuth
+} from 'firebase-admin/auth';
+
+import {
+  getStorage
+} from 'firebase-admin/storage';
+
+
+import {
+  WebpayPlus
+} from 'transbank-sdk';
+
+import {
+  getNextJobStatus,
+  isValidJobAction,
+  type JobStatus
+} from './domain/job-status';
+
+import {
+  AcceptedQuoteContext,
+  resolveAcceptedQuoteContext
+} from './domain/accepted-quote';
+
+import {
+  calculateCancellationPenalty
+} from './domain/cancellation';
+
+initializeApp();
+
+
+
+
+
+const db =
+
+  getFirestore();
+
+
+
+
+
+const messaging =
+
+  getMessaging();
+
+
+
+
+
+/*
+
+ * =========================================
+
+ * ENTORNO SERVIGO
+
+ * =========================================
+
+ */
+
+
+
+const servigoEnvironment =
+
+  process.env['SERVIGO_ENV']
+
+  ?? 'development';
+
+
+
+
+
+const pushEnabled =
+
+  process.env['PUSH_ENABLED']
+
+  === 'true';
+
+
+const technicianFallbackLocation = {
+  latitude: -33.589965678034076,
+  longitude: -70.66675504900094,
+  accuracy: 5000
+} as const;
+
+
+type WebpayMode =
+  | 'integration'
+  | 'production';
+
+
+function getWebpayMode(): WebpayMode {
+  return process.env['WEBPAY_MODE']
+    ?.trim()
+    .toLowerCase() === 'production'
+      ? 'production'
+      : 'integration';
+}
+
+
+function buildWebpayTransaction() {
+  const mode =
+    getWebpayMode();
+
+  const configuredCommerceCode =
+    process.env['WEBPAY_COMMERCE_CODE']
+      ?.trim()
+    ?? '';
+
+  const configuredApiKey =
+    process.env['WEBPAY_API_KEY']
+      ?.trim()
+    ?? '';
+
+  if (
+    mode === 'production'
+  ) {
+    if (
+      !configuredCommerceCode
+      || !configuredApiKey
+    ) {
+      throw new HttpsError(
+        'failed-precondition',
+        'Las credenciales productivas de Webpay no están configuradas.'
+      );
+    }
+
+    return WebpayPlus.Transaction
+      .buildForProduction(
+        configuredCommerceCode,
+        configuredApiKey
+      );
+  }
+
+  return WebpayPlus.Transaction
+    .buildForIntegration(
+      configuredCommerceCode
+        || '597055555532',
+      configuredApiKey
+        || '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C'
+    );
+}
+
+
+
+
+
+logger.info(
+
+  'Configuración ServiGo Functions',
+
+  {
+
+    environment:
+
+      servigoEnvironment,
+
+
+
+    pushEnabled
+
+  }
+
+);
+
+
+
+
+
+function asRecord(
+  value: unknown
+): Record<string, unknown> | null {
+  return value
+    && typeof value === 'object'
+      ? value as Record<string, unknown>
+      : null;
+}
+
+
+function buildAcceptedQuoteSnapshot(
+  context: AcceptedQuoteContext
+): Record<string, unknown> {
+  return {
+    ...context,
+    acceptedAt:
+      context.acceptedAt
+      ?? Timestamp.now()
+  };
+}
+
+
+function getAcceptedQuoteId(
+  serviceRequest: Record<string, unknown>
+): string {
+  const directId =
+    typeof serviceRequest['acceptedQuoteId'] === 'string'
+      ? serviceRequest['acceptedQuoteId'].trim()
+      : '';
+
+  if (
+    directId
+  ) {
+    return directId;
+  }
+
+  const snapshot =
+    asRecord(
+      serviceRequest['acceptedQuoteSnapshot']
+    );
+
+  return typeof snapshot?.['quoteId'] === 'string'
+    ? snapshot['quoteId'].trim()
+    : '';
+}
+
+
+interface ResolvedQuoteDocument {
+  id: string;
+  data: Record<string, unknown>;
+}
+
+
+/*
+ * Recupera el presupuesto aceptado aun cuando una solicitud histórica haya
+ * perdido acceptedQuoteId o el snapshot. La consulta por requestId se utiliza
+ * solamente como mecanismo de reparación y nunca permite elegir un monto que
+ * no haya quedado con status accepted.
+ */
+async function findAcceptedQuoteDocument(
+  requestId: string,
+  preferredQuoteId: string
+): Promise<ResolvedQuoteDocument | null> {
+  if (
+    preferredQuoteId
+  ) {
+    const preferredDocument =
+      await db
+        .collection('quotes')
+        .doc(preferredQuoteId)
+        .get();
+
+    if (
+      preferredDocument.exists
+      && preferredDocument.data()?.['status'] === 'accepted'
+    ) {
+      return {
+        id: preferredDocument.id,
+        data: preferredDocument.data() ?? {}
+      };
+    }
+  }
+
+  const candidates =
+    await db
+      .collection('quotes')
+      .where('requestId', '==', requestId)
+      .get();
+
+  const acceptedCandidates =
+    candidates.docs
+      .filter(
+        candidate =>
+          candidate.data()['status'] === 'accepted'
+      );
+
+  if (
+    acceptedCandidates.length === 0
+  ) {
+    return null;
+  }
+
+  if (
+    acceptedCandidates.length > 1
+  ) {
+    logger.error(
+      'Se detectaron múltiples presupuestos aceptados para una solicitud.',
+      {
+        requestId,
+        quoteIds:
+          acceptedCandidates.map(
+            candidate => candidate.id
+          )
+      }
+    );
+
+    return null;
+  }
+
+  const acceptedDocument =
+    acceptedCandidates[0];
+
+  return {
+    id: acceptedDocument.id,
+    data: acceptedDocument.data()
+  };
+}
+
+
+async function resolveAcceptedQuoteForRequest(
+  requestId: string,
+  clientId: string,
+  assignedTechnicianId: string | null,
+  serviceRequest: Record<string, unknown>
+): Promise<AcceptedQuoteContext | null> {
+  const preferredQuoteId =
+    getAcceptedQuoteId(
+      serviceRequest
+    );
+
+  const quoteDocument =
+    await findAcceptedQuoteDocument(
+      requestId,
+      preferredQuoteId
+    );
+
+  return resolveAcceptedQuoteContext({
+    requestId,
+    clientId,
+    assignedTechnicianId,
+    acceptedQuoteId:
+      quoteDocument?.id
+      ?? preferredQuoteId,
+    storedQuote:
+      quoteDocument?.data
+      ?? null,
+    acceptedSnapshot:
+      asRecord(
+        serviceRequest['acceptedQuoteSnapshot']
+      )
+  });
+}
+
+
+function normalizeWebUrl(
+  rawValue: string,
+  variableName: string
+): URL {
+  let parsedUrl: URL;
+
+  try {
+    parsedUrl =
+      new URL(
+        rawValue
+      );
+  } catch {
+    throw new Error(
+      `${variableName} no contiene una URL válida.`
+    );
+  }
+
+  const localHostname =
+    parsedUrl.hostname === 'localhost'
+    || parsedUrl.hostname === '127.0.0.1';
+
+  if (
+    parsedUrl.protocol !== 'https:'
+    && !localHostname
+  ) {
+    throw new Error(
+      `${variableName} debe utilizar HTTPS fuera del entorno local.`
+    );
+  }
+
+  return parsedUrl;
+}
+
+
+function getWebAppUrl(): URL {
+  const configuredUrl =
+    process.env['SERVIGO_WEB_APP_URL']
+      ?.trim()
+    ?? '';
+
+  const fallbackUrl =
+    servigoEnvironment === 'development'
+      ? 'http://localhost:8100'
+      : '';
+
+  const webAppUrl =
+    configuredUrl
+    || fallbackUrl;
+
+  if (
+    !webAppUrl
+  ) {
+    throw new Error(
+      'SERVIGO_WEB_APP_URL no está configurada para este ambiente.'
+    );
+  }
+
+  return normalizeWebUrl(
+    webAppUrl,
+    'SERVIGO_WEB_APP_URL'
+  );
+}
+
+
+function readHttpParameter(
+  requestValue: unknown,
+  queryValue: unknown
+): string {
+  const candidates = [
+    requestValue,
+    queryValue
+  ];
+
+  for (
+    const candidate
+    of candidates
+  ) {
+    if (
+      typeof candidate === 'string'
+    ) {
+      const normalized =
+        candidate.trim();
+
+      if (
+        normalized
+      ) {
+        return normalized;
+      }
+    }
+
+    if (
+      Array.isArray(candidate)
+      && typeof candidate[0] === 'string'
+    ) {
+      const normalized =
+        candidate[0].trim();
+
+      if (
+        normalized
+      ) {
+        return normalized;
+      }
+    }
+  }
+
+  return '';
+}
+
+
+/*
+ * ============================================================
+ * PUENTE HTTP DE RETORNO WEBPAY
+ * ============================================================
+ *
+ * Transbank retorna mediante POST. Firebase Hosting es una aplicación
+ * estática y Angular no puede leer el cuerpo de ese POST, por lo que esta
+ * función recibe los parámetros y responde con un redirect 303 hacia la
+ * pantalla SPA. El commit sigue ejecutándose mediante callable autenticada.
+ */
+export const webpayReturn =
+  onRequest(
+    {
+      region: 'southamerica-west1',
+      cors: false
+    },
+    (request, response) => {
+      response.set(
+        'Cache-Control',
+        'no-store, max-age=0'
+      );
+      response.set(
+        'Referrer-Policy',
+        'no-referrer'
+      );
+
+      if (
+        request.method !== 'POST'
+        && request.method !== 'GET'
+      ) {
+        response
+          .status(405)
+          .set('Allow', 'GET, POST')
+          .send('Method Not Allowed');
+        return;
+      }
+
+      try {
+        const body =
+          asRecord(
+            request.body
+          )
+          ?? {};
+
+        const tokenWs =
+          readHttpParameter(
+            body['token_ws'],
+            request.query['token_ws']
+          );
+
+        const tbkToken =
+          readHttpParameter(
+            body['TBK_TOKEN'],
+            request.query['TBK_TOKEN']
+          );
+
+        const tbkOrder =
+          readHttpParameter(
+            body['TBK_ORDEN_COMPRA'],
+            request.query['TBK_ORDEN_COMPRA']
+          );
+
+        const tbkSession =
+          readHttpParameter(
+            body['TBK_ID_SESION'],
+            request.query['TBK_ID_SESION']
+          );
+
+        const appReturnUrl =
+          new URL(
+            '/payment/webpay-return',
+            getWebAppUrl()
+          );
+
+        if (
+          tokenWs
+        ) {
+          appReturnUrl.searchParams.set(
+            'token_ws',
+            tokenWs
+          );
+        }
+
+        if (
+          tbkToken
+        ) {
+          appReturnUrl.searchParams.set(
+            'TBK_TOKEN',
+            tbkToken
+          );
+        }
+
+        if (
+          tbkOrder
+        ) {
+          appReturnUrl.searchParams.set(
+            'TBK_ORDEN_COMPRA',
+            tbkOrder
+          );
+        }
+
+        if (
+          tbkSession
+        ) {
+          appReturnUrl.searchParams.set(
+            'TBK_ID_SESION',
+            tbkSession
+          );
+        }
+
+        if (
+          !tokenWs
+          && !tbkToken
+          && !tbkOrder
+          && !tbkSession
+        ) {
+          appReturnUrl.searchParams.set(
+            'return_error',
+            'missing_webpay_parameters'
+          );
+        }
+
+        response.redirect(
+          303,
+          appReturnUrl.toString()
+        );
+
+      } catch (error) {
+        logger.error(
+          'No fue posible procesar el retorno HTTP de Webpay.',
+          {
+            method: request.method,
+            error
+          }
+        );
+
+        response
+          .status(500)
+          .send('No fue posible completar el retorno de Webpay.');
+      }
+    }
+  );
+
+
+/*
+
+ * =========================================
+
+ * NORMALIZAR TEXTO
+
+ * =========================================
+
+ */
+
+
+
+function normalizeText(
+
+  value: unknown
+
+): string {
+
+
+
+
+
+  if (
+
+    typeof value !==
+
+    'string'
+
+  ) {
+
+
+
+    return '';
+
+  }
+
+
+
+
+
+  return value
+
+    .normalize(
+
+      'NFD'
+
+    )
+
+    .replace(
+
+      /[\u0300-\u036f]/g,
+
+      ''
+
+    )
+
+    .trim()
+
+    .toLowerCase();
+
+}
+
+
+
+
+
+/*
+
+ * =========================================
+
+ * ID DETERMINISTA DE OPORTUNIDAD
+
+ * =========================================
+
+ */
+
+
+
+function buildOpportunityId(
+
+  technicianId: string,
+
+  requestId: string
+
+): string {
+
+
+
+
+
+  return (
+
+    `${technicianId}_${requestId}`
+
+  );
+
+}
+
+
+/*
+ * ============================================================
+ * PUSH SERVIGO
+ * ============================================================
+ *
+ * Punto central de envío de notificaciones.
+ *
+ * En desarrollo PUSH_ENABLED puede permanecer false.
+ * En ese caso registramos el evento pero no enviamos FCM.
+ */
+
+interface ServiGoPushData {
+
+  requestId: string;
+
+type:
+  | 'technician_opportunity'
+  | 'client_new_quote'
+  | 'technician_quote_accepted'
+  | 'client_technician_en_route'
+  | 'client_technician_arrived'
+  | 'client_job_started'
+  | 'client_job_completed'
+  | 'client_service_cancelled'
+  | 'technician_service_cancelled'
+  | 'client_new_message'
+  | 'technician_new_message'
+  | 'technician_payment_received';
+
+  opportunityId?: string;
+
+  quoteId?: string;
+
+  category?: string;
+
+  commune?: string;
+
+  matchScore?: string;
+
+  messageId?: string;
+
+  paymentId?: string;
+}
+
+
+/*
+ * ============================================================
+ * NOTIFICACIÓN PERSISTENTE EN LA APP
+ * ============================================================
+ *
+ * Se crea incluso cuando PUSH_ENABLED=false.
+ * Esto permite que el centro de notificaciones funcione en:
+ *
+ * - ionic serve
+ * - Firebase Emulator Suite
+ * - Android sin token FCM registrado
+ */
+
+function sanitizeNotificationIdPart(
+  value: string
+): string {
+
+
+  return value
+    .replace(
+      /[^a-zA-Z0-9_-]/g,
+      '_'
+    )
+    .substring(
+      0,
+      240
+    );
+}
+
+
+function buildInAppNotificationId(
+  data: ServiGoPushData
+): string {
+
+
+  const sourceId =
+    data.paymentId
+    ?? data.messageId
+    ?? data.quoteId
+    ?? data.opportunityId
+    ?? 'event';
+
+
+  return [
+    data.type,
+    data.requestId,
+    sourceId
+  ]
+    .map(
+      sanitizeNotificationIdPart
+    )
+    .join(
+      '_'
+    );
+}
+
+
+async function saveInAppNotification(
+  userId: string,
+  title: string,
+  body: string,
+  data: ServiGoPushData
+): Promise<string> {
+
+
+  const notificationId =
+    buildInAppNotificationId(
+      data
+    );
+
+
+  const notificationRef =
+    db
+      .collection(
+        'users'
+      )
+      .doc(
+        userId
+      )
+      .collection(
+        'notifications'
+      )
+      .doc(
+        notificationId
+      );
+
+
+  const notificationData:
+    Record<string, unknown> = {
+
+      id:
+        notificationId,
+
+      userId,
+
+      type:
+        data.type,
+
+      title,
+
+      body,
+
+      requestId:
+        data.requestId,
+
+      read:
+        false,
+
+      readAt:
+        null,
+
+      createdAt:
+        FieldValue.serverTimestamp(),
+
+      updatedAt:
+        FieldValue.serverTimestamp()
+    };
+
+
+  if (
+    data.messageId
+  ) {
+
+    notificationData[
+      'messageId'
+    ] =
+      data.messageId;
+  }
+
+
+  if (
+    data.opportunityId
+  ) {
+
+    notificationData[
+      'opportunityId'
+    ] =
+      data.opportunityId;
+  }
+
+
+  if (
+    data.quoteId
+  ) {
+
+    notificationData[
+      'quoteId'
+    ] =
+      data.quoteId;
+  }
+
+
+  if (
+    data.category
+  ) {
+
+    notificationData[
+      'category'
+    ] =
+      data.category;
+  }
+
+
+  if (
+    data.commune
+  ) {
+
+    notificationData[
+      'commune'
+    ] =
+      data.commune;
+  }
+
+
+  if (
+    data.matchScore
+  ) {
+
+    notificationData[
+      'matchScore'
+    ] =
+      data.matchScore;
+  }
+
+
+  /*
+   * ID determinista + transacción:
+   *
+   * si Functions reintenta el mismo evento,
+   * no duplicamos la notificación ni volvemos
+   * a marcar como no leída una que el usuario
+   * ya alcanzó a revisar.
+   */
+
+  await db.runTransaction(
+    async transaction => {
+
+
+      const existingSnapshot =
+        await transaction.get(
+          notificationRef
+        );
+
+
+      if (
+        existingSnapshot.exists
+      ) {
+
+        return;
+      }
+
+
+      transaction.set(
+        notificationRef,
+        notificationData
+      );
+    }
+  );
+
+
+  return notificationId;
+}
+
+
+async function sendPushToUser(
+  userId: string,
+  title: string,
+  body: string,
+  data: ServiGoPushData
+): Promise<boolean> {
+
+
+  if (
+    !userId
+  ) {
+
+    logger.warn(
+      'Push omitido: userId vacío.',
+      {
+        type:
+          data.type,
+
+        requestId:
+          data.requestId
+      }
+    );
+
+    return false;
+  }
+
+
+  let notificationId =
+    buildInAppNotificationId(
+      data
+    );
+
+
+  try {
+
+    notificationId =
+      await saveInAppNotification(
+        userId,
+        title,
+        body,
+        data
+      );
+
+
+    logger.info(
+      'Notificación guardada en el centro ServiGo.',
+      {
+        notificationId,
+        userId,
+        type:
+          data.type,
+        requestId:
+          data.requestId
+      }
+    );
+
+
+  } catch (error) {
+
+    logger.error(
+      'No fue posible guardar la notificación en la app.',
+      {
+        notificationId,
+        userId,
+        type:
+          data.type,
+        requestId:
+          data.requestId,
+        error
+      }
+    );
+  }
+
+
+  /*
+   * =========================================
+   * CONTROL POR ENTORNO
+   * =========================================
+   */
+
+  if (
+    !pushEnabled
+  ) {
+
+    logger.info(
+      'Push preparado pero omitido por configuración.',
+      {
+
+        environment:
+          servigoEnvironment,
+
+        userId,
+
+        type:
+          data.type,
+
+        requestId:
+          data.requestId,
+
+        title,
+
+        body
+      }
+    );
+
+    return false;
+  }
+
+
+  /*
+   * =========================================
+   * TOKEN ANDROID
+   * =========================================
+   */
+
+  const tokenId =
+    `${userId}_android`;
+
+
+  const tokenSnapshot =
+    await db
+      .collection(
+        'deviceTokens'
+      )
+      .doc(
+        tokenId
+      )
+      .get();
+
+
+  if (
+    !tokenSnapshot.exists
+  ) {
+
+    logger.info(
+      'Push omitido: usuario sin token Android.',
+      {
+
+        userId,
+
+        type:
+          data.type,
+
+        requestId:
+          data.requestId
+      }
+    );
+
+    return false;
+  }
+
+
+  const tokenData =
+    tokenSnapshot.data()
+    ?? {};
+
+
+  const token =
+    tokenData[
+      'token'
+    ];
+
+
+  const active =
+    tokenData[
+      'active'
+    ];
+
+
+  if (
+    typeof token !==
+      'string'
+    ||
+    !token
+    ||
+    active !==
+      true
+  ) {
+
+    logger.info(
+      'Push omitido: token inválido o inactivo.',
+      {
+
+        userId,
+
+        type:
+          data.type,
+
+        requestId:
+          data.requestId
+      }
+    );
+
+    return false;
+  }
+
+
+  /*
+   * =========================================
+   * PAYLOAD
+   * =========================================
+   *
+   * FCM data exige valores string.
+   */
+
+  const pushData:
+    Record<string, string> = {
+
+      requestId:
+        data.requestId,
+
+      type:
+        data.type,
+
+      notificationId
+    };
+
+
+  if (
+    data.messageId
+  ) {
+
+    pushData[
+      'messageId'
+    ] =
+      data.messageId;
+  }
+
+
+  if (
+    data.opportunityId
+  ) {
+
+    pushData[
+      'opportunityId'
+    ] =
+      data.opportunityId;
+  }
+
+
+  if (
+    data.quoteId
+  ) {
+
+    pushData[
+      'quoteId'
+    ] =
+      data.quoteId;
+  }
+
+
+  if (
+    data.category
+  ) {
+
+    pushData[
+      'category'
+    ] =
+      data.category;
+  }
+
+
+  if (
+    data.commune
+  ) {
+
+    pushData[
+      'commune'
+    ] =
+      data.commune;
+  }
+
+
+  if (
+    data.matchScore
+  ) {
+
+    pushData[
+      'matchScore'
+    ] =
+      data.matchScore;
+  }
+
+
+  /*
+   * =========================================
+   * ENVIAR
+   * =========================================
+   */
+
+  try {
+
+    await messaging.send({
+
+      token,
+
+      notification: {
+
+        title,
+
+        body
+      },
+
+      data:
+        pushData,
+
+      android: {
+
+        priority:
+          'high',
+
+        notification: {
+
+          channelId:
+            'servigo_general',
+
+          sound:
+            'default'
+        }
+      }
+    });
+
+
+    logger.info(
+      'Push enviado correctamente.',
+      {
+
+        userId,
+
+        type:
+          data.type,
+
+        requestId:
+          data.requestId
+      }
+    );
+
+
+    return true;
+
+
+  } catch (error) {
+
+    logger.error(
+      'Error enviando push.',
+      {
+
+        userId,
+
+        type:
+          data.type,
+
+        requestId:
+          data.requestId,
+
+        error
+      }
+    );
+
+
+    return false;
+  }
+}
+
+
+/*
+ * ============================================================
+ * NOTIFICACIÓN DE PAGO AL TÉCNICO
+ * ============================================================
+ *
+ * Se invoca después de que Webpay queda aprobado. El ID de la
+ * notificación utiliza paymentId, por lo que los reintentos del
+ * commit no generan avisos duplicados.
+ */
+
+async function notifyTechnicianPaymentReceived(
+  technicianId: string,
+  requestId: string,
+  paymentId: string,
+  amount: number
+): Promise<void> {
+
+  if (
+    !technicianId
+    || !requestId
+    || !paymentId
+    || amount <= 0
+  ) {
+    logger.warn(
+      'Notificación de pago omitida por datos incompletos.',
+      { technicianId, requestId, paymentId, amount }
+    );
+    return;
+  }
+
+  const formattedAmount =
+    new Intl.NumberFormat(
+      'es-CL',
+      {
+        style: 'currency',
+        currency: 'CLP',
+        maximumFractionDigits: 0
+      }
+    ).format(amount);
+
+  await sendPushToUser(
+    technicianId,
+    'Pago recibido',
+    `El cliente realizó el pago de ${formattedAmount}.`,
+    {
+      type: 'technician_payment_received',
+      requestId,
+      paymentId
+    }
+  );
+}
+
+
+/*
+
+ * ============================================================
+
+ * SERVICE REQUEST CREADA
+
+ * ============================================================
+
+ *
+
+ * Flujo:
+
+ *
+
+ * serviceRequests/{requestId}
+
+ *          ↓
+
+ * buscar técnicos aprobados
+
+ *          ↓
+
+ * validar especialidad
+
+ *          ↓
+
+ * validar comuna
+
+ *          ↓
+
+ * calcular match
+
+ *          ↓
+
+ * technicianOpportunities
+
+ *          ↓
+
+ * FCM si corresponde
+
+ */
+
+
+
+export const onServiceRequestCreated =
+
+  onDocumentCreated(
+
+    {
+
+      document:
+
+        'serviceRequests/{requestId}',
+
+
+
+      region:
+
+        'southamerica-west1'
+
+    },
+
+
+
+    async event => {
+
+
+
+
+
+      const snapshot =
+
+        event.data;
+
+
+
+
+
+      if (
+
+        !snapshot
+
+      ) {
+
+
+
+        logger.warn(
+
+          'Solicitud creada sin snapshot.'
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      const request =
+
+        snapshot.data();
+
+
+
+
+
+      const requestId =
+
+        event.params.requestId;
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * VALIDAR ESTADO
+
+       * =====================================
+
+       */
+
+
+
+      if (
+
+        request['status'] !==
+
+        'published'
+
+      ) {
+
+
+
+        logger.info(
+
+          'Solicitud ignorada por status.',
+
+          {
+
+            requestId,
+
+
+
+            status:
+
+              request['status']
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * DATOS DE SOLICITUD
+
+       * =====================================
+
+       */
+
+
+
+      const clientId =
+
+        request['clientId']
+
+        ?? '';
+
+
+
+
+
+      const category =
+
+        request['category']
+
+        ?? '';
+
+
+
+
+
+      const commune =
+
+        request['commune']
+
+        ?? '';
+
+
+
+
+
+      const urgency =
+
+        request['urgency']
+
+        ?? 'normal';
+
+
+
+
+
+      const normalizedCategory =
+
+        normalizeText(
+
+          category
+
+        );
+
+
+
+
+
+      const normalizedCommune =
+
+        normalizeText(
+
+          commune
+
+        );
+
+
+
+
+
+      logger.info(
+
+        'Procesando nueva solicitud.',
+
+        {
+
+          requestId,
+
+          category,
+
+          commune,
+
+          urgency
+
+        }
+
+      );
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * TÉCNICOS APROBADOS
+
+       * =====================================
+
+       */
+
+
+
+      const applicationsSnapshot =
+
+        await db
+
+          .collection(
+
+            'technicianProfiles'
+
+          )
+
+          .where(
+
+            'status',
+
+            '==',
+
+            'active'
+
+          )
+
+          .get();
+
+
+
+
+
+      if (
+
+        applicationsSnapshot.empty
+
+      ) {
+
+
+
+        logger.info(
+
+          'No existen perfiles técnicos activos.'
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      let matchesCreated =
+
+        0;
+
+
+
+
+
+      let pushesSent =
+
+        0;
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * MATCHING
+
+       * =====================================
+
+       */
+
+
+
+      for (
+
+        const applicationDoc
+
+        of applicationsSnapshot.docs
+
+      ) {
+
+
+
+
+
+        const application =
+
+          applicationDoc.data();
+
+
+
+
+
+        const technicianId =
+
+          application['userId']
+
+          ?? '';
+
+
+
+        const accountStatus =
+
+          application['accountStatus']
+
+          ?? 'active';
+
+
+
+
+
+        /*
+
+         * Técnico inválido o cliente
+
+         * cotizando su propia solicitud.
+
+         */
+
+
+
+        if (
+
+          !technicianId
+
+          ||
+
+          accountStatus !==
+
+            'active'
+
+          ||
+
+          technicianId ===
+
+            clientId
+
+        ) {
+
+
+
+          continue;
+
+        }
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * ESPECIALIDADES
+
+         * ===================================
+
+         */
+
+
+
+        const specialties =
+
+          Array.isArray(
+
+            application[
+
+              'specialties'
+
+            ]
+
+          )
+
+            ? application[
+
+              'specialties'
+
+            ]
+
+            : [];
+
+
+
+
+
+        const technicianSpecialties =
+
+          specialties.map(
+
+            normalizeText
+
+          );
+
+        const specialtyMatches =
+          technicianSpecialties
+            .some(
+              specialty =>
+                specialty ===
+                  normalizedCategory
+                || normalizedCategory
+                  .includes(
+                    specialty
+                  )
+                || specialty
+                  .includes(
+                    normalizedCategory
+                  )
+            );
+
+
+        if (
+          !specialtyMatches
+        ) {
+          continue;
+        }
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * COMUNA
+
+         * ===================================
+
+         */
+
+
+
+        const technicianCommune =
+
+          normalizeText(
+
+            application[
+
+              'baseCommune'
+
+            ]
+
+          );
+
+
+
+
+
+        if (
+
+          technicianCommune !==
+
+          normalizedCommune
+
+        ) {
+
+
+
+          continue;
+
+        }
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * SCORE
+
+         * ===================================
+
+         *
+
+         * Base:
+
+         *
+
+         * + especialidad
+
+         * + misma comuna
+
+         *
+
+         * = 80
+
+         */
+
+
+
+        let matchScore =
+
+          80;
+
+
+
+
+
+        const matchReasons:
+
+          string[] = [
+
+            'Especialidad compatible',
+
+            'Misma comuna'
+
+          ];
+
+
+
+
+
+        if (
+
+          urgency ===
+
+          'urgent'
+
+        ) {
+
+
+
+          matchScore +=
+
+            15;
+
+
+
+
+
+          matchReasons.push(
+
+            'Solicitud urgente'
+
+          );
+
+
+
+
+
+        } else if (
+
+          urgency ===
+
+          'soon'
+
+        ) {
+
+
+
+          matchScore +=
+
+            5;
+
+
+
+
+
+          matchReasons.push(
+
+            'Solicitud prioritaria'
+
+          );
+
+        }
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * PERFIL DEL TÉCNICO
+
+         * ===================================
+
+         */
+
+
+
+        const userSnapshot =
+
+          await db
+
+            .collection(
+
+              'users'
+
+            )
+
+            .doc(
+
+              technicianId
+
+            )
+
+            .get();
+
+
+
+
+
+        if (
+
+          !userSnapshot.exists
+
+        ) {
+
+
+
+          continue;
+
+        }
+
+
+
+
+
+        const user =
+
+          userSnapshot.data()
+
+          ?? {};
+
+
+
+        if (
+
+          user['status'] !==
+
+            'active'
+
+        ) {
+
+          continue;
+        }
+
+
+
+
+
+        const technicianRating =
+
+          typeof user[
+
+            'averageRating'
+
+          ] ===
+
+          'number'
+
+            ? user[
+
+              'averageRating'
+
+            ]
+
+            : null;
+
+
+
+
+
+        const technicianRatingCount =
+
+          typeof user[
+
+            'ratingCount'
+
+          ] ===
+
+          'number'
+
+            ? user[
+
+              'ratingCount'
+
+            ]
+
+            : 0;
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * ELEGIBILIDAD PUSH
+
+         * ===================================
+
+         *
+
+         * Técnico nuevo:
+
+         * ratingCount === 0
+
+         *
+
+         * Técnico con historial:
+
+         * rating >= 4
+
+         */
+
+
+
+        const eligibleForPush =
+
+          technicianRatingCount ===
+
+            0
+
+          ||
+
+          (
+
+            technicianRating !==
+
+              null
+
+            &&
+
+            technicianRating >=
+
+              4
+
+          );
+
+
+
+
+
+        const notificationPriority =
+
+          eligibleForPush
+
+            ? 'priority'
+
+            : 'standard';
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * ID OPORTUNIDAD
+
+         * ===================================
+
+         */
+
+
+
+        const opportunityId =
+
+          buildOpportunityId(
+
+            technicianId,
+
+            requestId
+
+          );
+
+
+
+
+
+        const opportunityRef =
+
+          db
+
+            .collection(
+
+              'technicianOpportunities'
+
+            )
+
+            .doc(
+
+              opportunityId
+
+            );
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * EVITAR DUPLICADOS
+
+         * ===================================
+
+         */
+
+
+
+        const existingOpportunity =
+
+          await opportunityRef
+
+            .get();
+
+
+
+
+
+        if (
+
+          existingOpportunity.exists
+
+        ) {
+
+
+
+          logger.info(
+
+            'Oportunidad ya existente.',
+
+            {
+
+              opportunityId
+
+            }
+
+          );
+
+
+
+          continue;
+
+        }
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * CREAR OPORTUNIDAD
+
+         * ===================================
+
+         */
+
+
+
+        await opportunityRef
+
+          .set({
+
+
+
+            id:
+
+              opportunityId,
+
+
+
+            technicianId,
+
+
+
+            requestId,
+
+
+
+            clientId,
+
+
+
+            category,
+
+
+
+            commune,
+
+
+
+            matchScore,
+
+
+
+            matchReasons,
+
+
+
+            status:
+
+              'available',
+
+
+
+            notificationPriority,
+
+
+
+            eligibleForPush,
+
+
+
+            technicianRating,
+
+
+
+            technicianRatingCount,
+
+
+
+            createdAt:
+
+              FieldValue
+
+                .serverTimestamp(),
+
+
+
+            updatedAt:
+
+              FieldValue
+
+                .serverTimestamp(),
+
+
+
+            notifiedAt:
+
+              null,
+
+
+
+            viewedAt:
+
+              null
+
+          });
+
+
+
+
+
+        matchesCreated++;
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * NO PUSH
+
+         * ===================================
+
+         */
+
+
+
+        if (
+
+          !eligibleForPush
+
+        ) {
+
+
+
+          continue;
+
+        }
+
+        const opportunityNotificationTitle =
+          'Nueva oportunidad cerca de ti';
+
+
+        const opportunityNotificationBody =
+          `${category} · ${commune} · ${matchScore}% compatible`;
+
+
+        const opportunityNotificationData:
+          ServiGoPushData = {
+
+            requestId,
+
+            opportunityId,
+
+            category,
+
+            commune,
+
+            matchScore:
+              String(
+                matchScore
+              ),
+
+            type:
+              'technician_opportunity'
+          };
+
+
+        let opportunityNotificationId =
+          buildInAppNotificationId(
+            opportunityNotificationData
+          );
+
+
+        try {
+
+          opportunityNotificationId =
+            await saveInAppNotification(
+              technicianId,
+              opportunityNotificationTitle,
+              opportunityNotificationBody,
+              opportunityNotificationData
+            );
+
+
+        } catch (error) {
+
+          logger.error(
+            'No fue posible guardar la oportunidad en el centro de notificaciones.',
+            {
+              technicianId,
+              requestId,
+              opportunityId,
+              error
+            }
+          );
+        }
+
+
+
+
+
+
+        /*
+
+         * =====================================
+
+         * CONTROL DE PUSH POR ENTORNO
+
+         * =====================================
+
+         *
+
+         * DEV / TEST:
+
+         *
+
+         * creamos oportunidad,
+
+         * pero podemos desactivar FCM real.
+
+         */
+
+
+
+        if (
+
+          !pushEnabled
+
+        ) {
+
+
+
+          logger.info(
+
+            'Push omitido por configuración.',
+
+            {
+
+              environment:
+
+                servigoEnvironment,
+
+
+
+              technicianId,
+
+
+
+              requestId,
+
+
+
+              opportunityId
+
+            }
+
+          );
+
+
+
+          continue;
+
+        }
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * TOKEN ANDROID
+
+         * ===================================
+
+         */
+
+
+
+        const tokenId =
+
+          `${technicianId}_android`;
+
+
+
+
+
+        const tokenSnapshot =
+
+          await db
+
+            .collection(
+
+              'deviceTokens'
+
+            )
+
+            .doc(
+
+              tokenId
+
+            )
+
+            .get();
+
+
+
+
+
+        if (
+
+          !tokenSnapshot.exists
+
+        ) {
+
+
+
+          logger.info(
+
+            'Técnico elegible sin token.',
+
+            {
+
+              technicianId
+
+            }
+
+          );
+
+
+
+          continue;
+
+        }
+
+
+
+
+
+        const tokenData =
+
+          tokenSnapshot.data()
+
+          ?? {};
+
+
+
+
+
+        const token =
+
+          tokenData[
+
+            'token'
+
+          ];
+
+
+
+
+
+        const active =
+
+          tokenData[
+
+            'active'
+
+          ];
+
+
+
+
+
+        if (
+
+          typeof token !==
+
+            'string'
+
+          ||
+
+          !token
+
+          ||
+
+          active !==
+
+            true
+
+        ) {
+
+
+
+          continue;
+
+        }
+
+
+
+
+
+        /*
+
+         * ===================================
+
+         * PUSH FCM
+
+         * ===================================
+
+         */
+
+
+
+        try {
+
+
+
+          await messaging.send({
+
+
+
+            token,
+
+
+
+            notification: {
+
+
+
+              title:
+
+                opportunityNotificationTitle,
+
+
+
+              body:
+
+                opportunityNotificationBody
+
+            },
+
+
+
+            data: {
+
+
+
+              requestId,
+
+
+
+              opportunityId,
+
+
+
+              category,
+
+
+
+              commune,
+
+
+
+              matchScore:
+
+                String(
+
+                  matchScore
+
+                ),
+
+
+
+              notificationId:
+
+                opportunityNotificationId,
+
+
+
+              type:
+
+                'technician_opportunity'
+
+            },
+
+
+
+            android: {
+
+
+
+              priority:
+
+                'high',
+
+
+
+              notification: {
+
+
+
+                channelId:
+
+                  'servigo_opportunities',
+
+
+
+                sound:
+
+                  'default'
+
+              }
+
+            }
+
+          });
+
+
+
+
+
+          /*
+
+           * Registrar momento
+
+           * de notificación.
+
+           */
+
+
+
+          await opportunityRef
+
+            .update({
+
+
+
+              notifiedAt:
+
+                FieldValue
+
+                  .serverTimestamp(),
+
+
+
+              updatedAt:
+
+                FieldValue
+
+                  .serverTimestamp()
+
+            });
+
+
+
+
+
+          pushesSent++;
+
+
+
+
+
+          logger.info(
+
+            'Push enviado.',
+
+            {
+
+              technicianId,
+
+              requestId,
+
+              opportunityId
+
+            }
+
+          );
+
+
+
+
+
+        } catch (error) {
+
+
+
+          logger.error(
+
+            'Error enviando push.',
+
+            {
+
+              technicianId,
+
+              requestId,
+
+              error
+
+            }
+
+          );
+
+        }
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * RESULTADO MATCHING
+
+       * =====================================
+
+       */
+
+
+
+      logger.info(
+
+        'Matching finalizado.',
+
+        {
+
+          requestId,
+
+          matchesCreated,
+
+          pushesSent
+
+        }
+
+      );
+
+    }
+
+  );
+
+
+
+
+
+/*
+
+ * ============================================================
+
+ * QUOTE CREADA
+
+ * ============================================================
+
+ *
+
+ * Esta función se ejecuta cada vez que
+
+ * aparece:
+
+ *
+
+ * quotes/{quoteId}
+
+ *
+
+ * Flujo:
+
+ *
+
+ * técnico envía presupuesto
+
+ *        ↓
+
+ * quote status = sent
+
+ *        ↓
+
+ * validar solicitud
+
+ *        ↓
+
+ * validar oportunidad
+
+ *        ↓
+
+ * available/viewed -> quoted
+
+ *
+
+ * La modificación se hace mediante
+
+ * Admin SDK.
+
+ *
+
+ * El cliente Angular NO tiene permiso
+
+ * para modificar directamente estos
+
+ * campos de technicianOpportunities.
+
+ */
+
+
+
+export const onQuoteCreated =
+
+  onDocumentCreated(
+
+    {
+
+      document:
+
+        'quotes/{quoteId}',
+
+
+
+      region:
+
+        'southamerica-west1'
+
+    },
+
+
+
+    async event => {
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * SNAPSHOT
+
+       * =====================================
+
+       */
+
+
+
+      const snapshot =
+
+        event.data;
+
+
+
+
+
+      if (
+
+        !snapshot
+
+      ) {
+
+
+
+        logger.warn(
+
+          'Presupuesto creado sin snapshot.'
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      const quote =
+
+        snapshot.data();
+
+
+
+
+
+      const quoteId =
+
+        event.params.quoteId;
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * DATOS PRINCIPALES
+
+       * =====================================
+
+       */
+
+
+
+      const requestId =
+
+        quote[
+
+          'requestId'
+
+        ]
+
+        ?? '';
+
+
+
+
+
+      const technicianId =
+
+        quote[
+
+          'technicianId'
+
+        ]
+
+        ?? '';
+
+
+
+
+
+      const clientId =
+
+        quote[
+
+          'clientId'
+
+        ]
+
+        ?? '';
+
+
+
+
+
+      const quoteStatus =
+
+        quote[
+
+          'status'
+
+        ]
+
+        ?? '';
+
+
+
+
+
+      logger.info(
+
+        'Procesando nuevo presupuesto.',
+
+        {
+
+          quoteId,
+
+          requestId,
+
+          technicianId,
+
+          clientId,
+
+          quoteStatus
+
+        }
+
+      );
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * VALIDACIÓN DE IDENTIFICADORES
+
+       * =====================================
+
+       */
+
+
+
+      if (
+
+        !requestId
+
+        ||
+
+        !technicianId
+
+        ||
+
+        !clientId
+
+      ) {
+
+
+
+        logger.error(
+
+          'Presupuesto inválido: faltan identificadores.',
+
+          {
+
+            quoteId,
+
+            requestId,
+
+            technicianId,
+
+            clientId
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * VALIDACIÓN STATUS QUOTE
+
+       * =====================================
+
+       *
+
+       * Solo procesamos presupuestos
+
+       * recién enviados.
+
+       */
+
+
+
+      if (
+
+        quoteStatus !==
+
+        'sent'
+
+      ) {
+
+
+
+        logger.info(
+
+          'Presupuesto ignorado por status.',
+
+          {
+
+            quoteId,
+
+            quoteStatus
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * OBTENER SERVICE REQUEST
+
+       * =====================================
+
+       */
+
+
+
+      const requestRef =
+
+        db
+
+          .collection(
+
+            'serviceRequests'
+
+          )
+
+          .doc(
+
+            requestId
+
+          );
+
+
+
+
+
+      const requestSnapshot =
+
+        await requestRef
+
+          .get();
+
+
+
+
+
+      if (
+
+        !requestSnapshot.exists
+
+      ) {
+
+
+
+        logger.error(
+
+          'Solicitud asociada al presupuesto no existe.',
+
+          {
+
+            quoteId,
+
+            requestId
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      const serviceRequest =
+
+        requestSnapshot.data()
+
+        ?? {};
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * VALIDAR CLIENTE
+
+       * =====================================
+
+       *
+
+       * Evita que una quote apunte
+
+       * artificialmente a otro cliente.
+
+       */
+
+
+
+      if (
+
+        serviceRequest[
+
+          'clientId'
+
+        ] !==
+
+        clientId
+
+      ) {
+
+
+
+        logger.error(
+
+          'Cliente del presupuesto no coincide con la solicitud.',
+
+          {
+
+            quoteId,
+
+
+
+            requestId,
+
+
+
+            quoteClientId:
+
+              clientId,
+
+
+
+            requestClientId:
+
+              serviceRequest[
+
+                'clientId'
+
+              ]
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * VALIDAR SERVICE REQUEST
+
+       * =====================================
+
+       *
+
+       * Una solicitud solamente puede
+
+       * recibir presupuestos mientras
+
+       * continúe publicada.
+
+       */
+
+
+
+      if (
+
+        serviceRequest[
+
+          'status'
+
+        ] !==
+
+        'published'
+
+      ) {
+
+
+
+        logger.warn(
+
+          'La solicitud ya no admite presupuestos.',
+
+          {
+
+            quoteId,
+
+
+
+            requestId,
+
+
+
+            requestStatus:
+
+              serviceRequest[
+
+                'status'
+
+              ]
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * EVITAR AUTOCOTIZACIÓN
+
+       * =====================================
+
+       */
+
+
+
+      if (
+
+        technicianId ===
+
+        clientId
+
+      ) {
+
+
+
+        logger.error(
+
+          'Presupuesto inválido: técnico y cliente son el mismo usuario.',
+
+          {
+
+            quoteId,
+
+            requestId,
+
+            technicianId
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * ID OPORTUNIDAD
+
+       * =====================================
+
+       *
+
+       * Exactamente la misma fórmula
+
+       * utilizada durante el matching:
+
+       *
+
+       * technicianId_requestId
+
+       */
+
+
+
+      const opportunityId =
+
+        buildOpportunityId(
+
+          technicianId,
+
+          requestId
+
+        );
+
+
+
+
+
+      const opportunityRef =
+
+        db
+
+          .collection(
+
+            'technicianOpportunities'
+
+          )
+
+          .doc(
+
+            opportunityId
+
+          );
+
+
+
+
+
+      const opportunitySnapshot =
+
+        await opportunityRef
+
+          .get();
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * VALIDAR EXISTENCIA
+
+       * =====================================
+
+       */
+
+
+
+      if (
+
+        !opportunitySnapshot.exists
+
+      ) {
+
+
+
+        logger.error(
+
+          'No existe oportunidad asociada al presupuesto.',
+
+          {
+
+            quoteId,
+
+            requestId,
+
+            technicianId,
+
+            opportunityId
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      const opportunity =
+
+        opportunitySnapshot.data()
+
+        ?? {};
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * VALIDAR RELACIÓN
+
+       * =====================================
+
+       */
+
+
+
+      if (
+
+        opportunity[
+
+          'technicianId'
+
+        ] !==
+
+          technicianId
+
+        ||
+
+        opportunity[
+
+          'requestId'
+
+        ] !==
+
+          requestId
+
+      ) {
+
+
+
+        logger.error(
+
+          'La oportunidad no coincide con el presupuesto.',
+
+          {
+
+            quoteId,
+
+            opportunityId,
+
+            technicianId,
+
+            requestId
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * ESTADO ACTUAL
+
+       * =====================================
+
+       *
+
+       * Permitimos:
+
+       *
+
+       * available -> quoted
+
+       *
+
+       * viewed -> quoted
+
+       */
+
+
+
+      const opportunityStatus =
+
+        opportunity[
+
+          'status'
+
+        ];
+
+
+
+
+
+      if (
+
+        opportunityStatus !==
+
+          'available'
+
+        &&
+
+        opportunityStatus !==
+
+          'viewed'
+
+      ) {
+
+
+
+        logger.warn(
+
+          'Oportunidad no admite transición a quoted.',
+
+          {
+
+            quoteId,
+
+            opportunityId,
+
+            opportunityStatus
+
+          }
+
+        );
+
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * ACTUALIZAR OPORTUNIDAD
+
+       * =====================================
+
+       */
+
+
+
+      await opportunityRef
+
+        .update({
+
+
+
+          status:
+
+            'quoted',
+
+
+
+          quoteId,
+
+
+
+          quotedAt:
+
+            FieldValue
+
+              .serverTimestamp(),
+
+
+
+          updatedAt:
+
+            FieldValue
+
+              .serverTimestamp()
+
+        });
+
+
+
+
+
+      /*
+
+       * =====================================
+
+       * LOG RESULTADO
+
+       * =====================================
+
+       */
+
+
+
+      logger.info(
+
+        'Oportunidad marcada como cotizada.',
+
+        {
+
+          quoteId,
+
+          requestId,
+
+          technicianId,
+
+          opportunityId,
+
+
+
+          previousStatus:
+
+            opportunityStatus,
+
+
+
+          newStatus:
+
+            'quoted'
+
+        }
+
+      );
+/*
+ * =====================================
+ * PUSH AL CLIENTE
+ * =====================================
+ */
+
+await sendPushToUser(
+
+  clientId,
+
+  'Recibiste un nuevo presupuesto',
+
+  `Tienes una nueva propuesta para ${serviceRequest['category'] ?? 'tu servicio'}.`,
+
+  {
+
+    requestId,
+
+    quoteId,
+
+    type:
+      'client_new_quote',
+
+    category:
+      serviceRequest[
+        'category'
+      ]
+      ?? ''
+  }
+);
+
+
+
+
+      /*
+
+       * =====================================
+
+       * SIGUIENTE ETAPA
+
+       * =====================================
+
+       *
+
+       * Posteriormente agregaremos:
+
+       *
+
+       * 1. Push al cliente.
+
+       * 2. Registro de notificación.
+
+       * 3. Contador de quotes.
+
+       * 4. Flujo de aceptación.
+
+       *
+
+       * Primero validamos:
+
+       *
+
+       * quote
+
+       *   ↓
+
+       * opportunity = quoted
+
+       */
+
+    }
+
+  );
+
+
+/*
+ * ============================================================
+ * ACEPTAR COTIZACION
+ * ============================================================
+ *
+ * Callable autoritativa para contratar a un tecnico.
+ *
+ * El cliente solamente envia quoteId.
+ * La identidad del cliente se obtiene desde Firebase Auth.
+ *
+ * La transaccion realiza de forma atomica:
+ *
+ * - quote seleccionada -> accepted
+ * - otras quotes sent -> rejected
+ * - serviceRequest -> accepted
+ * - assignedTechnicianId
+ * - acceptedQuoteId
+ * - oportunidad ganadora -> assigned
+ * - otras oportunidades -> assigned_elsewhere
+ */
+
+export const acceptQuote =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async request => {
+
+      const clientId =
+        request.auth?.uid;
+
+
+      if (
+        !clientId
+      ) {
+
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesion para aceptar un presupuesto.'
+        );
+      }
+
+
+      const quoteId =
+        typeof request.data?.quoteId === 'string'
+          ? request.data.quoteId.trim()
+          : '';
+
+
+      if (
+        !quoteId
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'quoteId es obligatorio.'
+        );
+      }
+
+
+      logger.info(
+        'Solicitud de aceptacion de presupuesto.',
+        {
+          quoteId,
+          clientId
+        }
+      );
+
+
+      try {
+
+        const result =
+          await db.runTransaction(
+            async transaction => {
+
+              const quoteRef =
+                db
+                  .collection(
+                    'quotes'
+                  )
+                  .doc(
+                    quoteId
+                  );
+
+
+              const quoteSnapshot =
+                await transaction.get(
+                  quoteRef
+                );
+
+
+              if (
+                !quoteSnapshot.exists
+              ) {
+
+                throw new HttpsError(
+                  'not-found',
+                  'El presupuesto no existe.'
+                );
+              }
+
+
+              const quote =
+                quoteSnapshot.data()
+                ?? {};
+
+
+              const requestId =
+                typeof quote['requestId'] === 'string'
+                  ? quote['requestId']
+                  : '';
+
+
+              const technicianId =
+                typeof quote['technicianId'] === 'string'
+                  ? quote['technicianId']
+                  : '';
+
+
+              const quoteClientId =
+                typeof quote['clientId'] === 'string'
+                  ? quote['clientId']
+                  : '';
+
+
+              if (
+                !requestId
+                ||
+                !technicianId
+                ||
+                !quoteClientId
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El presupuesto no contiene relaciones validas.'
+                );
+              }
+
+
+              if (
+                quoteClientId !==
+                clientId
+              ) {
+
+                throw new HttpsError(
+                  'permission-denied',
+                  'Este presupuesto no pertenece al cliente autenticado.'
+                );
+              }
+
+
+              if (
+                quote['status'] !==
+                'sent'
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El presupuesto ya no esta disponible.'
+                );
+              }
+
+
+              const visitFeeAmount =
+                typeof quote['visitFeeAmount'] === 'number'
+                  ? quote['visitFeeAmount']
+                  : 0;
+
+
+              const laborAmount =
+                typeof quote['laborAmount'] === 'number'
+                  ? quote['laborAmount']
+                  : 0;
+
+
+              const materialsAmount =
+                typeof quote['materialsAmount'] === 'number'
+                  ? quote['materialsAmount']
+                  : 0;
+
+
+              const otherAmount =
+                typeof quote['otherAmount'] === 'number'
+                  ? quote['otherAmount']
+                  : 0;
+
+
+              const totalAmount =
+                typeof quote['totalAmount'] === 'number'
+                  ? quote['totalAmount']
+                  : 0;
+
+
+              if (
+                !Number.isFinite(
+                  visitFeeAmount
+                )
+                ||
+                !Number.isFinite(
+                  laborAmount
+                )
+                ||
+                !Number.isFinite(
+                  materialsAmount
+                )
+                ||
+                !Number.isFinite(
+                  otherAmount
+                )
+                ||
+                !Number.isFinite(
+                  totalAmount
+                )
+                ||
+                visitFeeAmount < 0
+                ||
+                laborAmount < 0
+                ||
+                materialsAmount < 0
+                ||
+                otherAmount < 0
+                ||
+                totalAmount <= 0
+                ||
+                totalAmount !==
+                  visitFeeAmount
+                  + laborAmount
+                  + materialsAmount
+                  + otherAmount
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El presupuesto no contiene montos validos.'
+                );
+              }
+
+
+              if (
+                quote['scheduleAccepted'] !== true
+                ||
+                !(quote['availableDate'] instanceof Timestamp)
+              ) {
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El técnico debe aceptar el horario reservado por el cliente.'
+                );
+              }
+
+
+              const acceptedAt =
+                Timestamp.now();
+
+
+              const acceptedQuoteSnapshot = {
+                quoteId,
+                requestId,
+                clientId:
+                  quoteClientId,
+                technicianId,
+                technicianName:
+                  typeof quote['technicianName'] === 'string'
+                    ? quote['technicianName']
+                    : '',
+                visitFeeAmount,
+                laborAmount,
+                materialsAmount,
+                otherAmount,
+                totalAmount,
+                availableDate:
+                  quote['availableDate']
+                  ?? null,
+                comment:
+                  typeof quote['comment'] === 'string'
+                    ? quote['comment']
+                    : '',
+                acceptedAt
+              };
+
+
+              const serviceRequestRef =
+                db
+                  .collection(
+                    'serviceRequests'
+                  )
+                  .doc(
+                    requestId
+                  );
+
+
+              const serviceRequestSnapshot =
+                await transaction.get(
+                  serviceRequestRef
+                );
+
+
+              if (
+                !serviceRequestSnapshot.exists
+              ) {
+
+                throw new HttpsError(
+                  'not-found',
+                  'La solicitud asociada no existe.'
+                );
+              }
+
+
+              const serviceRequest =
+                serviceRequestSnapshot.data()
+                ?? {};
+
+
+              if (
+                serviceRequest['clientId'] !==
+                clientId
+              ) {
+
+                throw new HttpsError(
+                  'permission-denied',
+                  'La solicitud no pertenece al cliente autenticado.'
+                );
+              }
+
+
+              if (
+                serviceRequest['status'] !==
+                'published'
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'La solicitud ya no admite contratacion.'
+                );
+              }
+
+
+              const scheduledAt =
+                serviceRequest['scheduledAt'];
+
+
+              if (
+                !(scheduledAt instanceof Timestamp)
+                ||
+                (quote['availableDate'] as Timestamp).toMillis() !==
+                  scheduledAt.toMillis()
+              ) {
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El presupuesto no respeta el horario reservado por el cliente.'
+                );
+              }
+
+
+              const rawCategory =
+                typeof serviceRequest['category'] === 'string'
+                  ? serviceRequest['category'].trim()
+                  : '';
+
+
+              const normalizedCategory =
+                rawCategory
+                  .normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '')
+                  .toLowerCase();
+
+
+              const categoryAliases: Record<string, string> = {
+                'electricidad': 'Electricidad básica',
+                'gasfiteria': 'Gasfitería y fugas de agua',
+                'carpinteria': 'Carpintería y reparaciones menores',
+                'linea blanca': 'Lavadoras, secadoras y refrigeradores'
+              };
+
+
+              const catalogName =
+                categoryAliases[normalizedCategory]
+                ?? rawCategory;
+
+
+              const catalogQuery =
+                db
+                  .collection('serviceCatalog')
+                  .where('name', '==', catalogName)
+                  .limit(1);
+
+
+              const catalogSnapshot =
+                await transaction.get(
+                  catalogQuery
+                );
+
+
+              if (
+                catalogSnapshot.empty
+              ) {
+                throw new HttpsError(
+                  'failed-precondition',
+                  'La categoría no tiene un tarifario de visita configurado.'
+                );
+              }
+
+
+              const catalogData =
+                catalogSnapshot.docs[0].data();
+
+
+              const visitFeeMin =
+                typeof catalogData['visitFeeMin'] === 'number'
+                  ? catalogData['visitFeeMin']
+                  : Number.NaN;
+
+
+              const visitFeeMax =
+                typeof catalogData['visitFeeMax'] === 'number'
+                  ? catalogData['visitFeeMax']
+                  : Number.NaN;
+
+
+              if (
+                !Number.isFinite(visitFeeMin)
+                || !Number.isFinite(visitFeeMax)
+                || visitFeeAmount < visitFeeMin
+                || visitFeeAmount > visitFeeMax
+              ) {
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El valor de visita técnica está fuera del rango permitido para la categoría.'
+                );
+              }
+
+
+              const quotesQuery =
+                db
+                  .collection(
+                    'quotes'
+                  )
+                  .where(
+                    'requestId',
+                    '==',
+                    requestId
+                  );
+
+
+              const opportunitiesQuery =
+                db
+                  .collection(
+                    'technicianOpportunities'
+                  )
+                  .where(
+                    'requestId',
+                    '==',
+                    requestId
+                  );
+
+
+              const quotesSnapshot =
+                await transaction.get(
+                  quotesQuery
+                );
+
+
+              const opportunitiesSnapshot =
+                await transaction.get(
+                  opportunitiesQuery
+                );
+
+
+              const winningOpportunityId =
+                buildOpportunityId(
+                  technicianId,
+                  requestId
+                );
+
+
+              const winningOpportunity =
+                opportunitiesSnapshot.docs.find(
+                  opportunityDoc =>
+                    opportunityDoc.id ===
+                    winningOpportunityId
+                );
+
+
+              if (
+                !winningOpportunity
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'No existe una oportunidad valida para el tecnico seleccionado.'
+                );
+              }
+
+
+              const winningOpportunityData =
+                winningOpportunity.data();
+
+
+              if (
+                winningOpportunityData['technicianId'] !==
+                  technicianId
+                ||
+                winningOpportunityData['requestId'] !==
+                  requestId
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'La oportunidad seleccionada no coincide con el presupuesto.'
+                );
+              }
+
+
+              const now =
+                FieldValue.serverTimestamp();
+
+
+              transaction.update(
+                quoteRef,
+                {
+                  status:
+                    'accepted',
+
+                  acceptedAt:
+                    now,
+
+                  updatedAt:
+                    now
+                }
+              );
+
+
+              for (
+                const quoteDoc
+                of quotesSnapshot.docs
+              ) {
+
+                if (
+                  quoteDoc.id ===
+                  quoteId
+                ) {
+
+                  continue;
+                }
+
+
+                const otherQuote =
+                  quoteDoc.data();
+
+
+                if (
+                  otherQuote['status'] !==
+                  'sent'
+                ) {
+
+                  continue;
+                }
+
+
+                transaction.update(
+                  quoteDoc.ref,
+                  {
+                    status:
+                      'rejected',
+
+                    rejectedReason:
+                      'another_quote_accepted',
+
+                    rejectedAt:
+                      now,
+
+                    updatedAt:
+                      now
+                  }
+                );
+              }
+
+
+              transaction.update(
+                serviceRequestRef,
+                {
+                  status:
+                    'accepted',
+
+                  assignedTechnicianId:
+                    technicianId,
+
+                  acceptedQuoteId:
+                    quoteId,
+
+                  acceptedQuoteSnapshot,
+
+                  paymentStatus:
+                    'pending',
+
+                  paymentId:
+                    null,
+
+                  acceptedAt:
+                    now,
+
+                  updatedAt:
+                    now
+                }
+              );
+
+
+              for (
+                const opportunityDoc
+                of opportunitiesSnapshot.docs
+              ) {
+
+                const opportunity =
+                  opportunityDoc.data();
+
+
+                if (
+                  opportunityDoc.id ===
+                  winningOpportunityId
+                ) {
+
+                  transaction.update(
+                    opportunityDoc.ref,
+                    {
+                      status:
+                        'assigned',
+
+                      quoteId,
+
+                      assignedAt:
+                        now,
+
+                      updatedAt:
+                        now
+                    }
+                  );
+
+                  continue;
+                }
+
+
+                const opportunityStatus =
+                  opportunity['status'];
+
+
+                if (
+                  opportunityStatus !== 'available'
+                  &&
+                  opportunityStatus !== 'viewed'
+                  &&
+                  opportunityStatus !== 'quoted'
+                ) {
+
+                  continue;
+                }
+
+
+                transaction.update(
+                  opportunityDoc.ref,
+                  {
+                    status:
+                      'assigned_elsewhere',
+
+                    assignedElsewhereAt:
+                      now,
+
+                    updatedAt:
+                      now
+                  }
+                );
+              }
+
+
+              return {
+                quoteId,
+                requestId,
+                technicianId
+              };
+            }
+          );
+
+
+        logger.info(
+          'Presupuesto aceptado correctamente.',
+          result
+        );
+/*
+ * =====================================
+ * PUSH AL TÉCNICO CONTRATADO
+ * =====================================
+ */
+
+await sendPushToUser(
+
+  result.technicianId,
+
+  'Tu presupuesto fue aceptado',
+
+  'El cliente confirmó tu propuesta. Ya puedes revisar el trabajo asignado.',
+
+  {
+
+    requestId:
+      result.requestId,
+
+    quoteId:
+      result.quoteId,
+
+    type:
+      'technician_quote_accepted'
+  }
+);
+
+        return {
+          ok:
+            true,
+
+          ...result
+        };
+
+
+      } catch (error) {
+
+        if (
+          error instanceof HttpsError
+        ) {
+
+          throw error;
+        }
+
+
+        logger.error(
+          'Error aceptando presupuesto.',
+          {
+            quoteId,
+            clientId,
+            error
+          }
+        );
+
+
+        throw new HttpsError(
+          'internal',
+          'No fue posible aceptar el presupuesto.'
+        );
+      }
+    }
+  );
+
+
+
+/*
+ * =========================================
+ * ACTUALIZAR ESTADO DEL TRABAJO
+ * =========================================
+ *
+ * Callable utilizada por el tecnico asignado.
+ *
+ * Transiciones permitidas:
+ *
+ * accepted -> in_progress
+ * in_progress -> completed
+ *
+ * El cliente no puede ejecutar esta funcion y
+ * un tecnico no puede modificar trabajos ajenos.
+ */
+
+/*
+ * ============================================================
+ * ACTUALIZAR ESTADO DEL TRABAJO
+ * ============================================================
+ *
+ * Callable autoritativa utilizada por el técnico asignado.
+ *
+ * Transiciones permitidas:
+ *
+ * accepted
+ *    ↓ start_trip
+ * en_route
+ *    ↓ arrive
+ * arrived
+ *    ↓ start
+ * in_progress
+ *    ↓ complete
+ * completed
+ *
+ * El cliente no puede ejecutar esta función.
+ * Un técnico tampoco puede modificar trabajos ajenos.
+ */
+
+export const updateJobStatus =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async request => {
+
+
+      /*
+       * =====================================
+       * AUTENTICACIÓN
+       * =====================================
+       */
+
+      const technicianId =
+        request.auth?.uid;
+
+
+      if (
+        !technicianId
+      ) {
+
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para gestionar un trabajo.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * DATOS
+       * =====================================
+       */
+
+      const requestId =
+        typeof request.data?.requestId ===
+          'string'
+          ? request.data.requestId.trim()
+          : '';
+
+
+      const action =
+        typeof request.data?.action ===
+          'string'
+          ? request.data.action.trim()
+          : '';
+
+
+      if (
+        !requestId
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'requestId es obligatorio.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * ACCIONES PERMITIDAS
+       * =====================================
+       */
+
+      if (
+  !isValidJobAction(
+    action
+  )
+) {
+
+  throw new HttpsError(
+    'invalid-argument',
+    'La acción debe ser start_trip, arrive, start o complete.'
+  );
+}
+
+
+      /*
+       * =====================================
+       * REFERENCIA
+       * =====================================
+       */
+
+      const requestRef =
+        db
+          .collection(
+            'serviceRequests'
+          )
+          .doc(
+            requestId
+          );
+
+
+      try {
+
+
+        /*
+         * =====================================
+         * TRANSACCIÓN
+         * =====================================
+         */
+
+        const result =
+          await db.runTransaction(
+            async transaction => {
+
+
+              const snapshot =
+                await transaction.get(
+                  requestRef
+                );
+
+
+              if (
+                !snapshot.exists
+              ) {
+
+                throw new HttpsError(
+                  'not-found',
+                  'El trabajo no existe.'
+                );
+              }
+
+
+              const data =
+                snapshot.data()
+                ?? {};
+
+
+              const assignedTechnicianId =
+                typeof data[
+                  'assignedTechnicianId'
+                ] ===
+                  'string'
+                  ? data[
+                      'assignedTechnicianId'
+                    ]
+                  : '';
+
+
+              const currentStatus =
+                typeof data[
+                  'status'
+                ] ===
+                  'string'
+                  ? data[
+                      'status'
+                    ]
+                  : '';
+
+
+              /*
+               * =================================
+               * REGLA CENTRAL DE TRANSICION
+               * =================================
+               *
+               * Usa la misma logica cubierta por
+               * las pruebas unitarias job-status.
+               */
+
+              const nextStatus =
+                getNextJobStatus(
+                  currentStatus as JobStatus,
+                  action
+                );
+
+
+              if (
+                !nextStatus
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'La transicion de estado solicitada no esta permitida.'
+                );
+              }
+
+
+              const clientId =
+                typeof data[
+                  'clientId'
+                ] ===
+                  'string'
+                  ? data[
+                      'clientId'
+                    ]
+                  : '';
+
+
+              const category =
+                typeof data[
+                  'category'
+                ] ===
+                  'string'
+                  ? data[
+                      'category'
+                    ]
+                  : 'Servicio';
+
+
+              const arrivalWindowEndAt =
+                data['arrivalWindowEndAt'] instanceof Timestamp
+                  ? data['arrivalWindowEndAt'] as Timestamp
+                  : null;
+
+
+              /*
+               * =================================
+               * TÉCNICO ASIGNADO
+               * =================================
+               */
+
+              if (
+                assignedTechnicianId !==
+                technicianId
+              ) {
+
+                throw new HttpsError(
+                  'permission-denied',
+                  'Este trabajo no está asignado a tu cuenta.'
+                );
+              }
+
+
+              if (
+                !clientId
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El trabajo no contiene un cliente válido.'
+                );
+              }
+
+
+              if (
+                (action === 'start_trip' || action === 'arrive')
+                && arrivalWindowEndAt
+                && Timestamp.now().toMillis() > arrivalWindowEndAt.toMillis()
+              ) {
+                throw new HttpsError(
+                  'failed-precondition',
+                  'La ventana máxima de llegada de 2 horas ya expiró.'
+                );
+              }
+
+
+              const now =
+                FieldValue
+                  .serverTimestamp();
+
+
+              /*
+               * =================================
+               * IR AL DOMICILIO
+               *
+               * accepted -> en_route
+               * =================================
+               */
+
+              if (
+                action ===
+                'start_trip'
+              ) {
+
+                if (
+                  currentStatus !==
+                  'accepted'
+                ) {
+
+                  throw new HttpsError(
+                    'failed-precondition',
+                    'El desplazamiento ya no puede iniciarse.'
+                  );
+                }
+
+
+                transaction.update(
+                  requestRef,
+                  {
+
+                    status:
+                      'en_route',
+
+                    enRouteAt:
+                      now,
+
+                    updatedAt:
+                      now
+                  }
+                );
+
+
+                /*
+                 * Publicamos una ubicación inicial de continuidad desde el
+                 * backend. El dispositivo la reemplaza por GPS real cuando
+                 * logra obtenerlo, pero el cliente nunca queda sin un punto
+                 * visible por permisos o servicios de ubicación bloqueados.
+                 */
+                transaction.set(
+                  db
+                    .collection('technicianLocations')
+                    .doc(requestId),
+                  {
+                    technicianId,
+                    requestId,
+                    latitude:
+                      technicianFallbackLocation.latitude,
+                    longitude:
+                      technicianFallbackLocation.longitude,
+                    accuracy:
+                      technicianFallbackLocation.accuracy,
+                    heading: null,
+                    speed: null,
+                    source: 'fallback',
+                    fallbackReason:
+                      'Ubicación inicial de respaldo mientras el dispositivo obtiene GPS.',
+                    active: true,
+                    updatedAt: now
+                  },
+                  {
+                    merge: true
+                  }
+                );
+
+
+                return {
+
+                  requestId,
+
+                  status:
+                    'en_route',
+
+                  previousStatus:
+                    currentStatus,
+
+                  clientId,
+
+                  category
+                };
+              }
+
+
+              /*
+               * =================================
+               * TÉCNICO LLEGÓ
+               *
+               * en_route -> arrived
+               * =================================
+               */
+
+              if (
+                action ===
+                'arrive'
+              ) {
+
+                if (
+                  currentStatus !==
+                  'en_route'
+                ) {
+
+                  throw new HttpsError(
+                    'failed-precondition',
+                    'Solo puedes marcar llegada mientras vas en camino.'
+                  );
+                }
+
+
+                transaction.update(
+                  requestRef,
+                  {
+
+                    status:
+                      'arrived',
+
+                    arrivedAt:
+                      now,
+
+                    updatedAt:
+                      now
+                  }
+                );
+
+
+                transaction.delete(
+                  db
+                    .collection('technicianLocations')
+                    .doc(requestId)
+                );
+
+
+                return {
+
+                  requestId,
+
+                  status:
+                    'arrived',
+
+                  previousStatus:
+                    currentStatus,
+
+                  clientId,
+
+                  category
+                };
+              }
+
+
+              /*
+               * =================================
+               * INICIAR TRABAJO
+               *
+               * arrived -> in_progress
+               * =================================
+               */
+
+              if (
+                action ===
+                'start'
+              ) {
+
+                if (
+                  currentStatus !==
+                  'arrived'
+                ) {
+
+                  throw new HttpsError(
+                    'failed-precondition',
+                    'Debes marcar tu llegada antes de iniciar el trabajo.'
+                  );
+                }
+
+
+                transaction.update(
+                  requestRef,
+                  {
+
+                    status:
+                      'in_progress',
+
+                    startedAt:
+                      now,
+
+                    updatedAt:
+                      now
+                  }
+                );
+
+
+                return {
+
+                  requestId,
+
+                  status:
+                    'in_progress',
+
+                  previousStatus:
+                    currentStatus,
+
+                  clientId,
+
+                  category
+                };
+              }
+
+
+              /*
+               * =================================
+               * FINALIZAR TRABAJO
+               *
+               * in_progress -> completed
+               * =================================
+               */
+
+              if (
+                currentStatus !==
+                'in_progress'
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El trabajo no está en curso.'
+                );
+              }
+
+
+              const acceptedQuoteId =
+                getAcceptedQuoteId(
+                  data
+                );
+
+
+              let acceptedQuoteDocumentData:
+                Record<string, unknown> | null = null;
+
+
+              if (
+                acceptedQuoteId
+              ) {
+                const acceptedQuoteDocument =
+                  await transaction.get(
+                    db
+                      .collection('quotes')
+                      .doc(acceptedQuoteId)
+                  );
+
+                acceptedQuoteDocumentData =
+                  acceptedQuoteDocument.exists
+                    ? acceptedQuoteDocument.data() ?? null
+                    : null;
+              }
+
+
+              let acceptedQuoteContext =
+                resolveAcceptedQuoteContext({
+                  requestId,
+                  clientId,
+                  assignedTechnicianId:
+                    technicianId,
+                  acceptedQuoteId,
+                  storedQuote:
+                    acceptedQuoteDocumentData,
+                  acceptedSnapshot:
+                    asRecord(
+                      data['acceptedQuoteSnapshot']
+                    )
+                });
+
+
+              if (
+                !acceptedQuoteContext
+              ) {
+                const acceptedQuotes =
+                  await transaction.get(
+                    db
+                      .collection('quotes')
+                      .where('requestId', '==', requestId)
+                  );
+
+                const validAcceptedQuotes =
+                  acceptedQuotes.docs
+                    .map(
+                      quoteDocument =>
+                        resolveAcceptedQuoteContext({
+                          requestId,
+                          clientId,
+                          assignedTechnicianId:
+                            technicianId,
+                          acceptedQuoteId:
+                            quoteDocument.id,
+                          storedQuote:
+                            quoteDocument.data(),
+                          acceptedSnapshot:
+                            null
+                        })
+                    )
+                    .filter(
+                      (context): context is AcceptedQuoteContext =>
+                        context !== null
+                    );
+
+                if (
+                  validAcceptedQuotes.length === 1
+                ) {
+                  acceptedQuoteContext =
+                    validAcceptedQuotes[0];
+                }
+              }
+
+
+              if (
+                !acceptedQuoteContext
+              ) {
+                throw new HttpsError(
+                  'failed-precondition',
+                  'No fue posible validar el presupuesto aceptado del trabajo.'
+                );
+              }
+
+
+              const acceptedQuoteSnapshotForCompletion =
+                buildAcceptedQuoteSnapshot(
+                  acceptedQuoteContext
+                );
+
+
+              transaction.delete(
+                db
+                  .collection('technicianLocations')
+                  .doc(requestId)
+              );
+
+
+              transaction.update(
+                requestRef,
+                {
+
+                  status:
+                    'completed',
+
+                  completedAt:
+                    now,
+
+                  acceptedQuoteId:
+                    acceptedQuoteContext.quoteId,
+
+                  assignedTechnicianId:
+                    acceptedQuoteContext.technicianId,
+
+                  acceptedQuoteSnapshot:
+                    acceptedQuoteSnapshotForCompletion,
+
+                  paymentStatus:
+                    data['paymentStatus'] === 'paid'
+                      ? 'paid'
+                      : 'pending',
+
+                  paymentId:
+                    data['paymentStatus'] === 'paid'
+                      ? data['paymentId'] ?? null
+                      : null,
+
+                  updatedAt:
+                    now
+                }
+              );
+
+
+              return {
+
+                requestId,
+
+                status:
+                  'completed',
+
+                previousStatus:
+                  currentStatus,
+
+                clientId,
+
+                category
+              };
+            }
+          );
+
+
+        /*
+         * =====================================
+         * LOG
+         * =====================================
+         */
+
+        logger.info(
+          'Estado del trabajo actualizado correctamente.',
+          {
+
+            technicianId,
+
+            action,
+
+            ...result
+          }
+        );
+
+
+        /*
+         * =====================================
+         * PUSH AL CLIENTE
+         * =====================================
+         */
+
+
+        /*
+         * TÉCNICO VA EN CAMINO
+         */
+
+        if (
+          action ===
+          'start_trip'
+        ) {
+
+          await sendPushToUser(
+
+            result.clientId,
+
+            'Tu técnico va en camino',
+
+            `El técnico asignado a ${result.category} comenzó el viaje hacia tu domicilio.`,
+
+            {
+
+              requestId:
+                result.requestId,
+
+              type:
+                'client_technician_en_route',
+
+              category:
+                result.category
+            }
+          );
+        }
+
+
+        /*
+         * TÉCNICO LLEGÓ
+         */
+
+        else if (
+          action ===
+          'arrive'
+        ) {
+
+          await sendPushToUser(
+
+            result.clientId,
+
+            'Tu técnico llegó',
+
+            `El técnico de ${result.category} ya se encuentra en el domicilio.`,
+
+            {
+
+              requestId:
+                result.requestId,
+
+              type:
+                'client_technician_arrived',
+
+              category:
+                result.category
+            }
+          );
+        }
+
+
+        /*
+         * TRABAJO INICIADO
+         */
+
+        else if (
+          action ===
+          'start'
+        ) {
+
+          await sendPushToUser(
+
+            result.clientId,
+
+            'Tu servicio está en curso',
+
+            `El técnico comenzó el trabajo de ${result.category}.`,
+
+            {
+
+              requestId:
+                result.requestId,
+
+              type:
+                'client_job_started',
+
+              category:
+                result.category
+            }
+          );
+        }
+
+
+        /*
+         * TRABAJO FINALIZADO
+         */
+
+        else {
+
+          await sendPushToUser(
+
+            result.clientId,
+
+            'Tu servicio fue finalizado',
+
+            `El técnico finalizó el trabajo de ${result.category}. Puedes revisar el servicio y completar el pago.`,
+
+            {
+
+              requestId:
+                result.requestId,
+
+              type:
+                'client_job_completed',
+
+              category:
+                result.category
+            }
+          );
+        }
+
+
+        /*
+         * =====================================
+         * RESPONSE
+         * =====================================
+         */
+
+        return {
+
+          ok:
+            true,
+
+          ...result
+        };
+
+
+      } catch (error) {
+
+
+        if (
+          error instanceof
+          HttpsError
+        ) {
+
+          throw error;
+        }
+
+
+        logger.error(
+          'Error actualizando estado del trabajo.',
+          {
+
+            technicianId,
+
+            requestId,
+
+            action,
+
+            error
+          }
+        );
+
+
+        throw new HttpsError(
+          'internal',
+          'No fue posible actualizar el estado del trabajo.'
+        );
+      }
+    }
+  );
+
+/*
+ * ============================================================
+ * RESUMEN ECONÓMICO AUTORITATIVO
+ * ============================================================
+ *
+ * Recupera y, cuando corresponde, repara las referencias económicas de una
+ * solicitud. Permite que solicitudes históricas sigan mostrando el monto
+ * aceptado aunque una consulta de cotizaciones no lo incluya.
+ */
+export const getServicePaymentSummary =
+  onCall(
+    {
+      region: 'southamerica-west1'
+    },
+    async request => {
+      const clientId =
+        request.auth?.uid;
+
+      if (
+        !clientId
+      ) {
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para consultar el pago.'
+        );
+      }
+
+      const requestId =
+        typeof request.data?.requestId === 'string'
+          ? request.data.requestId.trim()
+          : '';
+
+      if (
+        !requestId
+      ) {
+        throw new HttpsError(
+          'invalid-argument',
+          'requestId es obligatorio.'
+        );
+      }
+
+      const serviceRequestRef =
+        db
+          .collection('serviceRequests')
+          .doc(requestId);
+
+      const serviceRequestDocument =
+        await serviceRequestRef.get();
+
+      if (
+        !serviceRequestDocument.exists
+      ) {
+        throw new HttpsError(
+          'not-found',
+          'La solicitud no existe.'
+        );
+      }
+
+      const serviceRequest =
+        serviceRequestDocument.data()
+        ?? {};
+
+      if (
+        serviceRequest['clientId'] !== clientId
+      ) {
+        throw new HttpsError(
+          'permission-denied',
+          'La solicitud no pertenece al cliente autenticado.'
+        );
+      }
+
+      const context =
+        await resolveAcceptedQuoteForRequest(
+          requestId,
+          clientId,
+          typeof serviceRequest['assignedTechnicianId'] === 'string'
+            ? serviceRequest['assignedTechnicianId']
+            : null,
+          serviceRequest
+        );
+
+      const serviceStatus =
+        typeof serviceRequest['status'] === 'string'
+          ? serviceRequest['status']
+          : '';
+
+      let paymentStatus =
+        serviceRequest['paymentStatus'] === 'paid'
+          ? 'paid'
+          : 'pending';
+
+      let approvedPaymentId =
+        typeof serviceRequest['paymentId'] === 'string'
+          ? serviceRequest['paymentId']
+          : '';
+
+      if (
+        paymentStatus !== 'paid'
+      ) {
+        const paymentAttempts =
+          await db
+            .collection('payments')
+            .where('requestId', '==', requestId)
+            .get();
+
+        const approvedPayment =
+          paymentAttempts.docs.find(paymentDocument => {
+            const paymentData =
+              paymentDocument.data();
+
+            return paymentData['status'] === 'approved'
+              && paymentData['clientId'] === clientId;
+          });
+
+        if (
+          approvedPayment
+        ) {
+          paymentStatus =
+            'paid';
+
+          approvedPaymentId =
+            approvedPayment.id;
+        }
+      }
+
+      if (
+        !context
+      ) {
+        if (
+          paymentStatus === 'paid'
+          && (
+            serviceRequest['paymentStatus'] !== 'paid'
+            || serviceRequest['paymentId'] !== approvedPaymentId
+          )
+        ) {
+          await serviceRequestRef.update({
+            paymentStatus:
+              'paid',
+            paymentId:
+              approvedPaymentId,
+            paidAt:
+              serviceRequest['paidAt']
+              ?? FieldValue.serverTimestamp(),
+            updatedAt:
+              FieldValue.serverTimestamp()
+          });
+        }
+
+        return {
+          ok: true,
+          available: false,
+          eligible: false,
+          reason:
+            paymentStatus === 'paid'
+              ? 'already_paid'
+              : 'accepted_quote_unavailable',
+          requestId,
+          serviceStatus,
+          paymentStatus,
+          paymentId:
+            approvedPaymentId || null,
+          currency: 'CLP'
+        };
+      }
+
+      const acceptedQuoteSnapshot =
+        buildAcceptedQuoteSnapshot(
+          context
+        );
+
+      const currentSnapshot =
+        asRecord(
+          serviceRequest['acceptedQuoteSnapshot']
+        );
+
+      const requiresRepair =
+        serviceRequest['acceptedQuoteId'] !== context.quoteId
+        || serviceRequest['assignedTechnicianId'] !== context.technicianId
+        || !currentSnapshot
+        || currentSnapshot['totalAmount'] !== context.totalAmount
+        || currentSnapshot['quoteId'] !== context.quoteId
+        || serviceRequest['paymentStatus'] !== paymentStatus
+        || (
+          paymentStatus === 'paid'
+          && serviceRequest['paymentId'] !== approvedPaymentId
+        );
+
+      if (
+        requiresRepair
+      ) {
+        await serviceRequestRef.update({
+          acceptedQuoteId:
+            context.quoteId,
+          assignedTechnicianId:
+            context.technicianId,
+          acceptedQuoteSnapshot,
+          paymentStatus,
+          paymentId:
+            paymentStatus === 'paid'
+              ? approvedPaymentId
+              : serviceRequest['paymentId'] ?? null,
+          paidAt:
+            paymentStatus === 'paid'
+              ? serviceRequest['paidAt'] ?? FieldValue.serverTimestamp()
+              : serviceRequest['paidAt'] ?? null,
+          updatedAt:
+            FieldValue.serverTimestamp()
+        });
+      }
+
+      return {
+        ok: true,
+        available: true,
+        eligible:
+          serviceStatus === 'completed'
+          && paymentStatus !== 'paid',
+        reason:
+          serviceStatus !== 'completed'
+            ? 'service_not_completed'
+            : paymentStatus === 'paid'
+              ? 'already_paid'
+              : null,
+        requestId,
+        serviceStatus,
+        paymentStatus,
+        paymentId:
+          paymentStatus === 'paid'
+            ? approvedPaymentId
+            : typeof serviceRequest['paymentId'] === 'string'
+              ? serviceRequest['paymentId']
+              : null,
+        quoteId:
+          context.quoteId,
+        technicianId:
+          context.technicianId,
+        technicianName:
+          context.technicianName,
+        visitFeeAmount:
+          context.visitFeeAmount,
+        laborAmount:
+          context.laborAmount,
+        materialsAmount:
+          context.materialsAmount,
+        otherAmount:
+          context.otherAmount,
+        totalAmount:
+          context.totalAmount,
+        currency: 'CLP'
+      };
+    }
+  );
+
+
+  /*
+ * ============================================================
+ * SIMULAR PAGO
+ * ============================================================
+ *
+ * Pago simulado para el MVP / Capstone.
+ *
+ * El cliente solamente envía:
+ *
+ * requestId
+ *
+ * El backend determina de forma autoritativa:
+ *
+ * - cliente autenticado
+ * - solicitud
+ * - presupuesto aceptado
+ * - técnico contratado
+ * - monto real
+ *
+ * La transacción realiza de forma atómica:
+ *
+ * - crea un intento independiente en payments/{paymentId}
+ * - conserva el monto autoritativo del presupuesto aceptado
+ * - serviceRequest.paymentId referencia el intento actual
+ *
+ * IMPORTANTE:
+ *
+ * El frontend NO puede definir el monto.
+ */
+/*
+ * ============================================================
+ * CREAR TRANSACCIÓN WEBPAY PLUS
+ * ============================================================
+ *
+ * SEGURIDAD:
+ *
+ * El frontend solamente entrega:
+ *
+ * requestId
+ *
+ * El backend determina autoritativamente:
+ *
+ * - cliente autenticado
+ * - presupuesto aceptado
+ * - técnico
+ * - monto
+ * - buyOrder
+ * - sessionId
+ *
+ * El frontend NUNCA define el monto.
+ */
+
+export const createWebpayTransaction =
+  onCall(
+    {
+      region: 'southamerica-west1'
+    },
+    async request => {
+      const clientId =
+        request.auth?.uid;
+
+      if (
+        !clientId
+      ) {
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para realizar el pago.'
+        );
+      }
+
+      const requestId =
+        typeof request.data?.requestId === 'string'
+          ? request.data.requestId.trim()
+          : '';
+
+      if (
+        !requestId
+      ) {
+        throw new HttpsError(
+          'invalid-argument',
+          'requestId es obligatorio.'
+        );
+      }
+
+      logger.info(
+        'Creando transacción Webpay Plus.',
+        {
+          requestId,
+          clientId
+        }
+      );
+
+      try {
+        const serviceRequestRef =
+          db
+            .collection('serviceRequests')
+            .doc(requestId);
+
+        const serviceRequestSnapshot =
+          await serviceRequestRef.get();
+
+        if (
+          !serviceRequestSnapshot.exists
+        ) {
+          throw new HttpsError(
+            'not-found',
+            'La solicitud no existe.'
+          );
+        }
+
+        const serviceRequest =
+          serviceRequestSnapshot.data()
+          ?? {};
+
+        if (
+          serviceRequest['clientId'] !== clientId
+        ) {
+          throw new HttpsError(
+            'permission-denied',
+            'La solicitud no pertenece al cliente autenticado.'
+          );
+        }
+
+        if (
+          serviceRequest['status'] !== 'completed'
+        ) {
+          throw new HttpsError(
+            'failed-precondition',
+            'El servicio debe estar finalizado antes de pagar.'
+          );
+        }
+
+        if (
+          serviceRequest['paymentStatus'] === 'paid'
+        ) {
+          throw new HttpsError(
+            'already-exists',
+            'Este servicio ya fue pagado.'
+          );
+        }
+
+        const acceptedQuoteContext =
+          await resolveAcceptedQuoteForRequest(
+            requestId,
+            clientId,
+            typeof serviceRequest['assignedTechnicianId'] === 'string'
+              ? serviceRequest['assignedTechnicianId']
+              : null,
+            serviceRequest
+          );
+
+        if (
+          !acceptedQuoteContext
+        ) {
+          throw new HttpsError(
+            'failed-precondition',
+            'No fue posible validar el presupuesto aceptado.'
+          );
+        }
+
+        const acceptedQuoteSnapshot =
+          buildAcceptedQuoteSnapshot(
+            acceptedQuoteContext
+          );
+
+        const resolvedQuoteId =
+          acceptedQuoteContext.quoteId;
+
+        const technicianId =
+          acceptedQuoteContext.technicianId;
+
+        const amount =
+          Math.round(
+            acceptedQuoteContext.totalAmount
+          );
+
+        /*
+         * Cada intento de pago utiliza un documento propio. Antes de crear
+         * otro intento, recuperamos uno aprobado o uno pendiente reciente.
+         * Esto evita sobrescribir tokens y mantiene el flujo idempotente.
+         */
+        const paymentAttemptsSnapshot =
+          await db
+            .collection('payments')
+            .where('requestId', '==', requestId)
+            .get();
+
+        const approvedAttempt =
+          paymentAttemptsSnapshot.docs
+            .find(paymentDocument => {
+              const data =
+                paymentDocument.data();
+
+              return data['status'] === 'approved'
+                && data['clientId'] === clientId;
+            });
+
+        if (
+          approvedAttempt
+        ) {
+          const approvedData =
+            approvedAttempt.data();
+
+          await serviceRequestRef.update({
+            acceptedQuoteId:
+              resolvedQuoteId,
+            assignedTechnicianId:
+              technicianId,
+            acceptedQuoteSnapshot,
+            paymentStatus:
+              'paid',
+            paymentId:
+              approvedAttempt.id,
+            paidAt:
+              approvedData['paidAt']
+              ?? FieldValue.serverTimestamp(),
+            updatedAt:
+              FieldValue.serverTimestamp()
+          });
+
+          throw new HttpsError(
+            'already-exists',
+            'Este servicio ya tiene un pago aprobado.'
+          );
+        }
+
+        const pendingReuseWindowMs =
+          15 * 60 * 1000;
+
+        const nowMillis =
+          Date.now();
+
+        const reusablePendingAttempt =
+          paymentAttemptsSnapshot.docs
+            .map(paymentDocument => ({
+              document: paymentDocument,
+              data: paymentDocument.data()
+            }))
+            .filter(candidate => {
+              const createdAt =
+                candidate.data['createdAt'];
+
+              const createdAtMillis =
+                createdAt instanceof Timestamp
+                  ? createdAt.toMillis()
+                  : 0;
+
+              return candidate.data['status'] === 'pending'
+                && candidate.data['clientId'] === clientId
+                && candidate.data['technicianId'] === technicianId
+                && candidate.data['quoteId'] === resolvedQuoteId
+                && candidate.data['amount'] === amount
+                && typeof candidate.data['token'] === 'string'
+                && candidate.data['token'].trim().length > 0
+                && typeof candidate.data['webpayUrl'] === 'string'
+                && candidate.data['webpayUrl'].trim().length > 0
+                && createdAtMillis > 0
+                && nowMillis - createdAtMillis <= pendingReuseWindowMs;
+            })
+            .sort((left, right) => {
+              const leftCreatedAt =
+                left.data['createdAt'];
+
+              const rightCreatedAt =
+                right.data['createdAt'];
+
+              const leftMillis =
+                leftCreatedAt instanceof Timestamp
+                  ? leftCreatedAt.toMillis()
+                  : 0;
+
+              const rightMillis =
+                rightCreatedAt instanceof Timestamp
+                  ? rightCreatedAt.toMillis()
+                  : 0;
+
+              return rightMillis - leftMillis;
+            })[0];
+
+        if (
+          reusablePendingAttempt
+        ) {
+          const pendingData =
+            reusablePendingAttempt.data;
+
+          await serviceRequestRef.update({
+            acceptedQuoteId:
+              resolvedQuoteId,
+            assignedTechnicianId:
+              technicianId,
+            acceptedQuoteSnapshot,
+            paymentStatus:
+              'pending',
+            paymentId:
+              reusablePendingAttempt.document.id,
+            updatedAt:
+              FieldValue.serverTimestamp()
+          });
+
+          return {
+            ok: true,
+            paymentId:
+              reusablePendingAttempt.document.id,
+            requestId,
+            quoteId:
+              resolvedQuoteId,
+            technicianId,
+            amount,
+            currency:
+              'CLP',
+            status:
+              'pending',
+            buyOrder:
+              String(pendingData['buyOrder'] ?? ''),
+            token:
+              String(pendingData['token']),
+            url:
+              String(pendingData['webpayUrl'])
+          };
+        }
+
+        const timestamp =
+          Date.now().toString();
+
+        const requestFragment =
+          requestId
+            .replace(
+              /[^a-zA-Z0-9]/g,
+              ''
+            )
+            .slice(
+              0,
+              8
+            );
+
+        const buyOrder =
+          `SG${timestamp.slice(-12)}${requestFragment}`
+            .slice(
+              0,
+              26
+            );
+
+        const sessionId =
+          `SG-${clientId.slice(0, 12)}-${timestamp}`
+            .slice(
+              0,
+              61
+            );
+
+        const configuredReturnUrl =
+          process.env['WEBPAY_RETURN_URL']
+            ?.trim()
+          ?? '';
+
+        const emulatorProjectId =
+          process.env['GCLOUD_PROJECT']
+          ?? process.env['GOOGLE_CLOUD_PROJECT']
+          ?? 'servigo-dev';
+
+        const localWebpayBridgeUrl =
+          `http://127.0.0.1:5001/${emulatorProjectId}/southamerica-west1/webpayReturn`;
+
+        const returnUrl =
+          configuredReturnUrl
+          || (
+            servigoEnvironment === 'development'
+              ? localWebpayBridgeUrl
+              : ''
+          );
+
+        if (
+          !returnUrl
+        ) {
+          throw new HttpsError(
+            'failed-precondition',
+            'WEBPAY_RETURN_URL no está configurada para este ambiente.'
+          );
+        }
+
+        let parsedReturnUrl:
+          URL;
+
+        try {
+          parsedReturnUrl =
+            new URL(
+              returnUrl
+            );
+        } catch {
+          throw new HttpsError(
+            'failed-precondition',
+            'WEBPAY_RETURN_URL no contiene una URL válida.'
+          );
+        }
+
+        if (
+          parsedReturnUrl.protocol !== 'https:'
+          && parsedReturnUrl.hostname !== 'localhost'
+          && parsedReturnUrl.hostname !== '127.0.0.1'
+        ) {
+          throw new HttpsError(
+            'failed-precondition',
+            'WEBPAY_RETURN_URL debe utilizar HTTPS fuera del entorno local.'
+          );
+        }
+
+        const paymentRef =
+          db
+            .collection('payments')
+            .doc();
+
+        const paymentId =
+          paymentRef.id;
+
+        const serverNow =
+          FieldValue.serverTimestamp();
+
+        const initializationBatch =
+          db.batch();
+
+        initializationBatch.set(
+          paymentRef,
+          {
+            id:
+              paymentId,
+            requestId,
+            quoteId:
+              resolvedQuoteId,
+            clientId,
+            technicianId,
+            amount,
+            currency:
+              'CLP',
+            method:
+              'webpay_plus',
+            provider:
+              'transbank',
+            status:
+              'initializing',
+            buyOrder,
+            sessionId,
+            token:
+              null,
+            webpayUrl:
+              null,
+            returnUrl,
+            transactionId:
+              null,
+            authorizationCode:
+              null,
+            responseCode:
+              null,
+            paymentTypeCode:
+              null,
+            installmentsNumber:
+              null,
+            cardLast4:
+              null,
+            createdAt:
+              serverNow,
+            updatedAt:
+              serverNow,
+            paidAt:
+              null
+          }
+        );
+
+        initializationBatch.update(
+          serviceRequestRef,
+          {
+            acceptedQuoteId:
+              resolvedQuoteId,
+            assignedTechnicianId:
+              technicianId,
+            acceptedQuoteSnapshot,
+            paymentStatus:
+              'pending',
+            paymentId,
+            updatedAt:
+              serverNow
+          }
+        );
+
+        await initializationBatch.commit();
+
+        const transaction =
+          buildWebpayTransaction();
+
+        let webpayResponse:
+          Awaited<ReturnType<typeof transaction.create>>;
+
+        try {
+          webpayResponse =
+            await transaction.create(
+              buyOrder,
+              sessionId,
+              amount,
+              returnUrl
+            );
+        } catch (error) {
+          await paymentRef.update({
+            status:
+              'creation_failed',
+            updatedAt:
+              FieldValue.serverTimestamp(),
+            failedAt:
+              FieldValue.serverTimestamp()
+          });
+
+          throw error;
+        }
+
+        const token =
+          webpayResponse.token;
+
+        const url =
+          webpayResponse.url;
+
+        if (
+          !token
+          || !url
+        ) {
+          await paymentRef.update({
+            status:
+              'creation_failed',
+            updatedAt:
+              FieldValue.serverTimestamp(),
+            failedAt:
+              FieldValue.serverTimestamp()
+          });
+
+          throw new Error(
+            'webpay-invalid-create-response'
+          );
+        }
+
+        await paymentRef.update({
+          status:
+            'pending',
+          token,
+          webpayUrl:
+            url,
+          updatedAt:
+            FieldValue.serverTimestamp()
+        });
+
+        logger.info(
+          'Transacción Webpay Plus creada.',
+          {
+            requestId,
+            paymentId,
+            clientId,
+            technicianId,
+            amount,
+            buyOrder
+          }
+        );
+
+        return {
+          ok: true,
+          paymentId,
+          requestId,
+          quoteId:
+            resolvedQuoteId,
+          technicianId,
+          amount,
+          currency:
+            'CLP',
+          status:
+            'pending',
+          buyOrder,
+          token,
+          url
+        };
+      } catch (error) {
+        if (
+          error instanceof HttpsError
+        ) {
+          throw error;
+        }
+
+        logger.error(
+          'Error creando transacción Webpay Plus.',
+          {
+            requestId,
+            clientId,
+            error
+          }
+        );
+
+        throw new HttpsError(
+          'internal',
+          'No fue posible iniciar el pago con Webpay.'
+        );
+      }
+    }
+  );
+
+
+/*
+ * ============================================================
+ * REGISTRAR ABORTO WEBPAY PLUS
+ * ============================================================
+ *
+ * Transbank retorna TBK_TOKEN cuando el usuario abandona o interrumpe el
+ * flujo. Marcamos el intento para que no vuelva a reutilizarse y liberamos
+ * la referencia de pago pendiente de la solicitud.
+ */
+export const abortWebpayTransaction =
+  onCall(
+    {
+      region: 'southamerica-west1'
+    },
+    async request => {
+      const clientId =
+        request.auth?.uid;
+
+      if (
+        !clientId
+      ) {
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para registrar el pago abortado.'
+        );
+      }
+
+      const token =
+        typeof request.data?.token === 'string'
+          ? request.data.token.trim()
+          : '';
+
+      if (
+        !token
+      ) {
+        throw new HttpsError(
+          'invalid-argument',
+          'El token Webpay es obligatorio.'
+        );
+      }
+
+      const paymentQuery =
+        await db
+          .collection('payments')
+          .where('token', '==', token)
+          .limit(1)
+          .get();
+
+      if (
+        paymentQuery.empty
+      ) {
+        throw new HttpsError(
+          'not-found',
+          'No encontramos el intento de pago.'
+        );
+      }
+
+      const paymentRef =
+        paymentQuery.docs[0].ref;
+
+      const result =
+        await db.runTransaction(
+          async transaction => {
+            const paymentSnapshot =
+              await transaction.get(
+                paymentRef
+              );
+
+            if (
+              !paymentSnapshot.exists
+            ) {
+              throw new HttpsError(
+                'not-found',
+                'No encontramos el intento de pago.'
+              );
+            }
+
+            const payment =
+              paymentSnapshot.data()
+              ?? {};
+
+            if (
+              payment['clientId'] !== clientId
+            ) {
+              throw new HttpsError(
+                'permission-denied',
+                'El intento de pago no pertenece al cliente autenticado.'
+              );
+            }
+
+            const requestId =
+              typeof payment['requestId'] === 'string'
+                ? payment['requestId']
+                : '';
+
+            if (
+              !requestId
+            ) {
+              throw new HttpsError(
+                'failed-precondition',
+                'El intento de pago no contiene una solicitud válida.'
+              );
+            }
+
+            if (
+              payment['status'] === 'approved'
+            ) {
+              return {
+                requestId,
+                paymentId: paymentSnapshot.id,
+                status: 'approved',
+                updated: false
+              };
+            }
+
+            const serviceRequestRef =
+              db
+                .collection('serviceRequests')
+                .doc(requestId);
+
+            const serviceRequestSnapshot =
+              await transaction.get(
+                serviceRequestRef
+              );
+
+            const now =
+              FieldValue.serverTimestamp();
+
+            if (
+              payment['status'] === 'pending'
+              || payment['status'] === 'initializing'
+            ) {
+              transaction.update(
+                paymentRef,
+                {
+                  status: 'aborted',
+                  abortedAt: now,
+                  updatedAt: now
+                }
+              );
+            }
+
+            if (
+              serviceRequestSnapshot.exists
+            ) {
+              const serviceRequest =
+                serviceRequestSnapshot.data()
+                ?? {};
+
+              if (
+                serviceRequest['clientId'] === clientId
+                && serviceRequest['paymentStatus'] !== 'paid'
+                && serviceRequest['paymentId'] === paymentSnapshot.id
+              ) {
+                transaction.update(
+                  serviceRequestRef,
+                  {
+                    paymentStatus: 'pending',
+                    paymentId: null,
+                    updatedAt: now
+                  }
+                );
+              }
+            }
+
+            return {
+              requestId,
+              paymentId: paymentSnapshot.id,
+              status: 'aborted',
+              updated: true
+            };
+          }
+        );
+
+      return {
+        ok: true,
+        ...result
+      };
+    }
+  );
+
+
+/*
+ * ============================================================
+ * CONFIRMAR TRANSACCIÓN WEBPAY PLUS
+ * ============================================================
+ */
+
+export const commitWebpayTransaction =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async request => {
+
+
+      /*
+       * =====================================
+       * AUTENTICACIÓN
+       * =====================================
+       */
+
+      const clientId =
+        request.auth?.uid;
+
+
+      if (
+        !clientId
+      ) {
+
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para confirmar el pago.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * TOKEN
+       * =====================================
+       */
+
+      const token =
+        typeof request.data?.token ===
+          'string'
+          ? request.data.token.trim()
+          : '';
+
+
+      if (
+        !token
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'El token Webpay es obligatorio.'
+        );
+      }
+
+
+      logger.info(
+        'Confirmando transacción Webpay Plus.',
+        {
+          clientId
+        }
+      );
+
+
+      try {
+
+
+        /*
+         * =====================================
+         * BUSCAR PAYMENT POR TOKEN
+         * =====================================
+         */
+
+        const paymentQuery =
+          await db
+            .collection(
+              'payments'
+            )
+            .where(
+              'token',
+              '==',
+              token
+            )
+            .limit(
+              1
+            )
+            .get();
+
+
+        if (
+          paymentQuery.empty
+        ) {
+
+          throw new HttpsError(
+            'not-found',
+            'No encontramos la transacción Webpay.'
+          );
+        }
+
+
+        const paymentSnapshot =
+          paymentQuery.docs[
+            0
+          ];
+
+
+        const payment =
+          paymentSnapshot.data();
+
+
+        const paymentId =
+          paymentSnapshot.id;
+
+
+        /*
+         * =====================================
+         * PROPIEDAD
+         * =====================================
+         */
+
+        if (
+          payment[
+            'clientId'
+          ] !==
+          clientId
+        ) {
+
+          throw new HttpsError(
+            'permission-denied',
+            'La transacción no pertenece al cliente autenticado.'
+          );
+        }
+
+
+        /*
+         * =====================================
+         * YA APROBADO
+         * =====================================
+         */
+
+        if (
+          payment[
+            'status'
+          ] ===
+          'approved'
+        ) {
+          const existingRequestId =
+            typeof payment['requestId'] === 'string'
+              ? payment['requestId']
+              : '';
+
+          const existingAmount =
+            typeof payment['amount'] === 'number'
+              ? payment['amount']
+              : 0;
+
+          if (
+            !existingRequestId
+            || existingAmount <= 0
+          ) {
+            throw new HttpsError(
+              'failed-precondition',
+              'La transacción aprobada no contiene datos válidos.'
+            );
+          }
+
+          await db
+            .collection('serviceRequests')
+            .doc(existingRequestId)
+            .update({
+              paymentStatus:
+                'paid',
+              paymentId,
+              paidAt:
+                payment['paidAt']
+                ?? FieldValue.serverTimestamp(),
+              paidAmount:
+                existingAmount,
+              paymentCurrency:
+                'CLP',
+              updatedAt:
+                FieldValue.serverTimestamp()
+            });
+
+          const existingTechnicianId =
+            typeof payment['technicianId'] === 'string'
+              ? payment['technicianId']
+              : '';
+
+          await notifyTechnicianPaymentReceived(
+            existingTechnicianId,
+            existingRequestId,
+            paymentId,
+            existingAmount
+          );
+
+          return {
+            ok: true,
+            approved: true,
+            paymentId,
+            requestId: existingRequestId,
+            amount: existingAmount,
+            currency: 'CLP',
+            status: 'approved',
+            responseCode:
+              typeof payment['responseCode'] === 'number'
+                ? payment['responseCode']
+                : 0,
+            authorizationCode:
+              typeof payment['authorizationCode'] === 'string'
+                ? payment['authorizationCode']
+                : '',
+            paymentTypeCode:
+              typeof payment['paymentTypeCode'] === 'string'
+                ? payment['paymentTypeCode']
+                : '',
+            installmentsNumber:
+              typeof payment['installmentsNumber'] === 'number'
+                ? payment['installmentsNumber']
+                : 0,
+            cardLast4:
+              typeof payment['cardLast4'] === 'string'
+                ? payment['cardLast4']
+                : ''
+          };
+        }
+
+
+        const requestId =
+          typeof payment[
+            'requestId'
+          ] ===
+            'string'
+            ? payment[
+                'requestId'
+              ]
+            : '';
+
+
+        const expectedBuyOrder =
+          typeof payment[
+            'buyOrder'
+          ] ===
+            'string'
+            ? payment[
+                'buyOrder'
+              ]
+            : '';
+
+
+        const expectedAmount =
+          typeof payment[
+            'amount'
+          ] ===
+            'number'
+            ? payment[
+                'amount'
+              ]
+            : 0;
+
+
+        if (
+          !requestId
+          ||
+          !expectedBuyOrder
+          ||
+          expectedAmount <= 0
+        ) {
+
+          throw new HttpsError(
+            'failed-precondition',
+            'La transacción almacenada es inválida.'
+          );
+        }
+
+
+        /*
+         * =====================================
+         * TRANSBANK
+         * =====================================
+         */
+
+        const transaction =
+          buildWebpayTransaction();
+
+
+        /*
+         * =====================================
+         * COMMIT WEBPAY
+         * =====================================
+         */
+
+        const result =
+          await transaction
+            .commit(
+              token
+            );
+
+
+        logger.info(
+          'Respuesta commit Webpay.',
+          {
+            requestId,
+            responseCode:
+              result.response_code,
+            buyOrder:
+              result.buy_order,
+            amount:
+              result.amount
+          }
+        );
+
+
+        /*
+         * =====================================
+         * VALIDAR IDENTIDAD TRANSACCIÓN
+         * =====================================
+         */
+
+        if (
+          result.buy_order !==
+          expectedBuyOrder
+        ) {
+
+          logger.error(
+            'Webpay buyOrder no coincide.',
+            {
+              requestId,
+              expectedBuyOrder,
+              receivedBuyOrder:
+                result.buy_order
+            }
+          );
+
+
+          throw new HttpsError(
+            'failed-precondition',
+            'La orden retornada por Webpay no coincide.'
+          );
+        }
+
+
+        /*
+         * =====================================
+         * VALIDAR MONTO
+         * =====================================
+         */
+
+        if (
+          Number(
+            result.amount
+          ) !==
+          expectedAmount
+        ) {
+
+          logger.error(
+            'Webpay amount no coincide.',
+            {
+              requestId,
+              expectedAmount,
+              receivedAmount:
+                result.amount
+            }
+          );
+
+
+          throw new HttpsError(
+            'failed-precondition',
+            'El monto retornado por Webpay no coincide.'
+          );
+        }
+
+
+        /*
+         * =====================================
+         * APROBACIÓN
+         * =====================================
+         */
+
+        const approved =
+          result.response_code ===
+            0;
+
+
+        /*
+         * =====================================
+         * PAGO RECHAZADO
+         * =====================================
+         */
+
+        if (
+          !approved
+        ) {
+
+          await paymentSnapshot
+            .ref
+            .update(
+              {
+
+                status:
+                  'rejected',
+
+                responseCode:
+                  result.response_code,
+
+                updatedAt:
+                  FieldValue
+                    .serverTimestamp()
+              }
+            );
+
+
+          return {
+
+            ok:
+              false,
+
+            approved:
+              false,
+
+            paymentId,
+
+            requestId,
+
+            responseCode:
+              result.response_code
+          };
+        }
+
+
+        /*
+         * =====================================
+         * DATOS TRANSBANK
+         * =====================================
+         */
+
+        const authorizationCode =
+          result.authorization_code
+          ??
+          '';
+
+
+        const paymentTypeCode =
+          result.payment_type_code
+          ??
+          '';
+
+
+        const installmentsNumber =
+          result.installments_number
+          ??
+          0;
+
+
+        const cardLast4 =
+          result.card_detail
+            ?.card_number
+          ??
+          '';
+
+
+        /*
+         * =====================================
+         * ACTUALIZACIÓN ATÓMICA
+         * =====================================
+         */
+
+        const serviceRequestRef =
+          db
+            .collection(
+              'serviceRequests'
+            )
+            .doc(
+              requestId
+            );
+
+
+        await db.runTransaction(
+          async firestoreTransaction => {
+
+
+            const currentPayment =
+              await firestoreTransaction
+                .get(
+                  paymentSnapshot.ref
+                );
+
+
+            const currentRequest =
+              await firestoreTransaction
+                .get(
+                  serviceRequestRef
+                );
+
+
+            if (
+              !currentPayment.exists
+              ||
+              !currentRequest.exists
+            ) {
+
+              throw new HttpsError(
+                'not-found',
+                'No encontramos los datos del servicio.'
+              );
+            }
+
+
+            const requestData =
+              currentRequest.data()
+              ??
+              {};
+
+
+            /*
+             * Segunda validación de propiedad.
+             */
+
+            if (
+              requestData[
+                'clientId'
+              ] !==
+              clientId
+            ) {
+
+              throw new HttpsError(
+                'permission-denied',
+                'La solicitud no pertenece al cliente autenticado.'
+              );
+            }
+
+
+            const now =
+              FieldValue
+                .serverTimestamp();
+
+
+            /*
+             * PAYMENT
+             */
+
+            firestoreTransaction
+              .update(
+                paymentSnapshot.ref,
+                {
+
+                  status:
+                    'approved',
+
+                  responseCode:
+                    result.response_code,
+
+                  authorizationCode,
+
+                  paymentTypeCode,
+
+                  installmentsNumber,
+
+                  cardLast4,
+
+                  transactionDate:
+                    result.transaction_date
+                    ??
+                    null,
+
+                  accountingDate:
+                    result.accounting_date
+                    ??
+                    null,
+
+                  updatedAt:
+                    now,
+
+                  paidAt:
+                    now
+                }
+              );
+
+
+            /*
+             * SERVICE REQUEST
+             */
+
+            firestoreTransaction
+              .update(
+                serviceRequestRef,
+                {
+
+                  paymentStatus:
+                    'paid',
+
+                  paymentId,
+
+                  paidAt:
+                    now,
+
+                  paidAmount:
+                    expectedAmount,
+
+                  paymentCurrency:
+                    'CLP',
+
+                  updatedAt:
+                    now
+                }
+              );
+          }
+        );
+
+
+        logger.info(
+          'Pago Webpay aprobado y registrado.',
+          {
+            paymentId,
+            requestId,
+            clientId,
+            amount:
+              expectedAmount,
+            authorizationCode
+          }
+        );
+
+
+        const technicianId =
+          typeof payment['technicianId'] === 'string'
+            ? payment['technicianId']
+            : '';
+
+        await notifyTechnicianPaymentReceived(
+          technicianId,
+          requestId,
+          paymentId,
+          expectedAmount
+        );
+
+
+        return {
+
+          ok:
+            true,
+
+          approved:
+            true,
+
+          paymentId,
+
+          requestId,
+
+          amount:
+            expectedAmount,
+
+          currency:
+            'CLP',
+
+          status:
+            'approved',
+
+          responseCode:
+            result.response_code,
+
+          authorizationCode,
+
+          paymentTypeCode,
+
+          installmentsNumber,
+
+          cardLast4
+        };
+
+
+      } catch (error) {
+
+
+        if (
+          error instanceof
+          HttpsError
+        ) {
+
+          throw error;
+        }
+
+
+        /*
+ * =====================================
+ * DIAGNÓSTICO ERROR TRANSBANK
+ * =====================================
+ */
+
+const errorMessage =
+  error instanceof Error
+    ? error.message
+    : String(
+        error
+      );
+
+
+const errorName =
+  error instanceof Error
+    ? error.name
+    : 'UnknownError';
+
+
+const errorStack =
+  error instanceof Error
+    ? error.stack
+    : undefined;
+
+
+let responseStatus:
+  unknown =
+    undefined;
+
+
+let responseData:
+  unknown =
+    undefined;
+
+
+if (
+  error
+  &&
+  typeof error ===
+    'object'
+  &&
+  'response' in error
+) {
+
+  const response =
+    (
+      error as {
+        response?: {
+          status?: unknown;
+          data?: unknown;
+        };
+      }
+    ).response;
+
+
+  responseStatus =
+    response?.status;
+
+
+  responseData =
+    response?.data;
+}
+
+
+logger.error(
+  'Error confirmando transacción Webpay Plus.',
+  {
+
+    clientId,
+
+    errorName,
+
+    errorMessage,
+
+    responseStatus,
+
+    responseData,
+
+    errorStack
+  }
+);
+
+
+throw new HttpsError(
+  'internal',
+  'No fue posible confirmar el pago con Webpay.'
+);
+      }
+    }
+  );
+
+
+  /*
+ * ============================================================
+ * OBTENER EVALUACIÓN DE SERVICIO
+ * ============================================================
+ *
+ * Permite saber si un servicio ya fue evaluado.
+ *
+ * La review se identifica de forma determinista:
+ *
+ * reviews/{requestId}
+ */
+
+export const getReviewForRequest =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async call => {
+
+
+      /*
+       * =====================================
+       * AUTH
+       * =====================================
+       */
+
+      const userId =
+        call.auth
+          ?.uid;
+
+
+      if (
+        !userId
+      ) {
+
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * REQUEST ID
+       * =====================================
+       */
+
+      const requestId =
+        typeof call.data
+          ?.requestId ===
+          'string'
+          ? call.data
+              .requestId
+              .trim()
+          : '';
+
+
+      if (
+        !requestId
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'requestId es obligatorio.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * SERVICE REQUEST
+       * =====================================
+       */
+
+      const serviceRef =
+        db
+          .collection(
+            'serviceRequests'
+          )
+          .doc(
+            requestId
+          );
+
+
+      const serviceSnapshot =
+        await serviceRef
+          .get();
+
+
+      if (
+        !serviceSnapshot.exists
+      ) {
+
+        throw new HttpsError(
+          'not-found',
+          'El servicio no existe.'
+        );
+      }
+
+
+      const service =
+        serviceSnapshot.data()
+        ?? {};
+
+
+      const clientId =
+        service[
+          'clientId'
+        ]
+        ?? '';
+
+
+      const technicianId =
+        service[
+          'assignedTechnicianId'
+        ]
+        ?? '';
+
+
+      /*
+       * Cliente y técnico asignado
+       * pueden consultar la evaluación.
+       */
+
+      if (
+        userId !==
+          clientId
+        &&
+        userId !==
+          technicianId
+      ) {
+
+        throw new HttpsError(
+          'permission-denied',
+          'No tienes acceso a este servicio.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * REVIEW
+       * =====================================
+       */
+
+      const reviewRef =
+        db
+          .collection(
+            'reviews'
+          )
+          .doc(
+            requestId
+          );
+
+
+      const reviewSnapshot =
+        await reviewRef
+          .get();
+
+
+      if (
+        !reviewSnapshot.exists
+      ) {
+
+        return {
+
+          exists:
+            false,
+
+          review:
+            null
+        };
+      }
+
+
+      const review =
+        reviewSnapshot.data()
+        ?? {};
+
+
+      return {
+
+        exists:
+          true,
+
+        review: {
+
+          id:
+            review[
+              'id'
+            ]
+            ?? requestId,
+
+          requestId:
+            review[
+              'requestId'
+            ]
+            ?? requestId,
+
+          clientId:
+            review[
+              'clientId'
+            ]
+            ?? '',
+
+          technicianId:
+            review[
+              'technicianId'
+            ]
+            ?? '',
+
+          rating:
+            review[
+              'rating'
+            ]
+            ?? 0,
+
+          comment:
+            review[
+              'comment'
+            ]
+            ?? ''
+        }
+      };
+    }
+  );
+
+
+/*
+ * ============================================================
+ * ENVIAR EVALUACIÓN
+ * ============================================================
+ *
+ * Seguridad:
+ *
+ * - usuario autenticado
+ * - servicio existe
+ * - usuario es cliente propietario
+ * - servicio está completed
+ * - existe técnico asignado
+ * - una evaluación por servicio
+ * - rating 1..5
+ *
+ * Además recalcula:
+ *
+ * averageRating
+ * ratingCount
+ */
+
+export const submitReview =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async call => {
+
+
+      /*
+       * =====================================
+       * AUTH
+       * =====================================
+       */
+
+      const clientId =
+        call.auth
+          ?.uid;
+
+
+      if (
+        !clientId
+      ) {
+
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * DATOS
+       * =====================================
+       */
+
+      const requestId =
+        typeof call.data
+          ?.requestId ===
+          'string'
+          ? call.data
+              .requestId
+              .trim()
+          : '';
+
+
+      const rating =
+        Number(
+          call.data
+            ?.rating
+        );
+
+
+      const comment =
+        typeof call.data
+          ?.comment ===
+          'string'
+          ? call.data
+              .comment
+              .trim()
+          : '';
+
+
+      /*
+       * =====================================
+       * VALIDACIONES
+       * =====================================
+       */
+
+      if (
+        !requestId
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'requestId es obligatorio.'
+        );
+      }
+
+
+      if (
+        !Number.isInteger(
+          rating
+        )
+        ||
+        rating < 1
+        ||
+        rating > 5
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'La evaluación debe estar entre 1 y 5.'
+        );
+      }
+
+
+      if (
+        comment.length < 3
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'El comentario es demasiado corto.'
+        );
+      }
+
+
+      if (
+        comment.length > 500
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'El comentario no puede superar 500 caracteres.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * REFERENCIAS
+       * =====================================
+       */
+
+      const serviceRef =
+        db
+          .collection(
+            'serviceRequests'
+          )
+          .doc(
+            requestId
+          );
+
+
+      const reviewRef =
+        db
+          .collection(
+            'reviews'
+          )
+          .doc(
+            requestId
+          );
+
+
+      /*
+       * =====================================
+       * TRANSACCIÓN
+       * =====================================
+       */
+
+      const result =
+        await db
+          .runTransaction(
+            async transaction => {
+
+
+              /*
+               * ---------------------------------
+               * SERVICE REQUEST
+               * ---------------------------------
+               */
+
+              const serviceSnapshot =
+                await transaction
+                  .get(
+                    serviceRef
+                  );
+
+
+              if (
+                !serviceSnapshot.exists
+              ) {
+
+                throw new HttpsError(
+                  'not-found',
+                  'El servicio no existe.'
+                );
+              }
+
+
+              const service =
+                serviceSnapshot.data()
+                ?? {};
+
+
+              /*
+               * ---------------------------------
+               * PROPIETARIO
+               * ---------------------------------
+               */
+
+              if (
+                service[
+                  'clientId'
+                ] !==
+                clientId
+              ) {
+
+                throw new HttpsError(
+                  'permission-denied',
+                  'Solo el cliente propietario puede evaluar.'
+                );
+              }
+
+
+              /*
+               * ---------------------------------
+               * COMPLETED
+               * ---------------------------------
+               */
+
+              if (
+                service[
+                  'status'
+                ] !==
+                'completed'
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'Solo puedes evaluar un servicio finalizado.'
+                );
+              }
+/*
+ * ---------------------------------
+ * PAGO COMPLETADO
+ * ---------------------------------
+ *
+ * La evaluación solamente se habilita
+ * cuando el servicio fue finalizado
+ * y su pago fue aprobado.
+ */
+
+if (
+  service[
+    'paymentStatus'
+  ] !==
+  'paid'
+) {
+
+  throw new HttpsError(
+    'failed-precondition',
+    'Debes completar el pago antes de evaluar el servicio.'
+  );
+}
+
+              /*
+               * ---------------------------------
+               * TÉCNICO
+               * ---------------------------------
+               */
+
+              const technicianId =
+                service[
+                  'assignedTechnicianId'
+                ]
+                ?? '';
+
+
+              if (
+                !technicianId
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El servicio no tiene técnico asignado.'
+                );
+              }
+
+
+              const technicianRef =
+                db
+                  .collection(
+                    'users'
+                  )
+                  .doc(
+                    technicianId
+                  );
+
+
+              /*
+               * ---------------------------------
+               * REVIEW EXISTENTE
+               * ---------------------------------
+               */
+
+              const reviewSnapshot =
+                await transaction
+                  .get(
+                    reviewRef
+                  );
+
+
+              if (
+                reviewSnapshot.exists
+              ) {
+
+                throw new HttpsError(
+                  'already-exists',
+                  'Este servicio ya fue evaluado.'
+                );
+              }
+
+
+              /*
+               * ---------------------------------
+               * PERFIL TÉCNICO
+               * ---------------------------------
+               */
+
+              const technicianSnapshot =
+                await transaction
+                  .get(
+                    technicianRef
+                  );
+
+
+              if (
+                !technicianSnapshot.exists
+              ) {
+
+                throw new HttpsError(
+                  'not-found',
+                  'No encontramos el perfil del técnico.'
+                );
+              }
+
+
+              const technician =
+                technicianSnapshot.data()
+                ?? {};
+
+
+              const currentRatingCount =
+                typeof technician[
+                  'ratingCount'
+                ] ===
+                'number'
+                  ? technician[
+                    'ratingCount'
+                  ]
+                  : 0;
+
+
+              const currentAverage =
+                typeof technician[
+                  'averageRating'
+                ] ===
+                'number'
+                  ? technician[
+                    'averageRating'
+                  ]
+                  : 0;
+
+
+              /*
+               * =================================
+               * NUEVO PROMEDIO
+               * =================================
+               */
+
+              const newRatingCount =
+                currentRatingCount
+                +
+                1;
+
+
+              const newAverageRating =
+                Number(
+                  (
+                    (
+                      (
+                        currentAverage
+                        *
+                        currentRatingCount
+                      )
+                      +
+                      rating
+                    )
+                    /
+                    newRatingCount
+                  )
+                    .toFixed(
+                      2
+                    )
+                );
+
+
+              /*
+               * =================================
+               * CREAR REVIEW
+               * =================================
+               */
+
+              transaction.set(
+                reviewRef,
+                {
+
+                  id:
+                    requestId,
+
+                  requestId,
+
+                  clientId,
+
+                  technicianId,
+
+                  rating,
+
+                  comment,
+
+                  createdAt:
+                    FieldValue
+                      .serverTimestamp(),
+
+                  updatedAt:
+                    FieldValue
+                      .serverTimestamp()
+                }
+              );
+
+
+              /*
+               * =================================
+               * ACTUALIZAR TÉCNICO
+               * =================================
+               */
+
+              transaction.update(
+                technicianRef,
+                {
+
+                  averageRating:
+                    newAverageRating,
+
+                  ratingCount:
+                    newRatingCount,
+
+                  updatedAt:
+                    FieldValue
+                      .serverTimestamp()
+                }
+              );
+
+
+              /*
+               * =================================
+               * MARCAR SERVICE REQUEST
+               * =================================
+               */
+
+              transaction.update(
+                serviceRef,
+                {
+
+                  reviewId:
+                    requestId,
+
+                  reviewedAt:
+                    FieldValue
+                      .serverTimestamp(),
+
+                  updatedAt:
+                    FieldValue
+                      .serverTimestamp()
+                }
+              );
+
+
+              return {
+
+                reviewId:
+                  requestId,
+
+                technicianId,
+
+                averageRating:
+                  newAverageRating,
+
+                ratingCount:
+                  newRatingCount
+              };
+            }
+          );
+
+
+      /*
+       * =====================================
+       * LOG
+       * =====================================
+       */
+
+      logger.info(
+        'Evaluación registrada.',
+        {
+
+          requestId,
+
+          clientId,
+
+          technicianId:
+            result
+              .technicianId,
+
+          rating,
+
+          averageRating:
+            result
+              .averageRating,
+
+          ratingCount:
+            result
+              .ratingCount
+        }
+      );
+
+
+      return {
+
+        ok:
+          true,
+
+        reviewId:
+          result
+            .reviewId,
+
+        technicianId:
+          result
+            .technicianId,
+
+        rating,
+
+        comment,
+
+        averageRating:
+          result
+            .averageRating,
+
+        ratingCount:
+          result
+            .ratingCount
+      };
+    }
+  );
+
+  /*
+ * ============================================================
+ * GEOCODIFICAR DIRECCIÓN
+ * ============================================================
+ *
+ * Convierte:
+ *
+ * address + commune
+ *
+ * en:
+ *
+ * latitude + longitude
+ *
+ * La geocodificación se ejecuta en backend.
+ *
+ * El frontend NO consulta directamente al proveedor.
+ *
+ * MVP:
+ * Nominatim / OpenStreetMap.
+ *
+ * Más adelante podemos sustituir el proveedor por:
+ *
+ * - Google Maps
+ * - Google Geocoding
+ * - Mapbox
+ * - HERE
+ *
+ * sin modificar el frontend.
+ */
+
+
+/*
+ * ============================================================
+ * FALLBACK DE CONTINUIDAD PARA GEOCODIFICACION
+ * ============================================================
+ * Se utiliza cuando el proveedor externo no puede responder. La respuesta
+ * queda marcada como fallback para que el frontend informe al usuario y le
+ * permita mover el punto antes de publicar.
+ */
+function getGeocodeContinuityFallback(
+  address: string,
+  commune: string
+): {
+  latitude: number;
+  longitude: number;
+  displayName: string;
+} {
+  return {
+    latitude: -33.60580873981834,
+    longitude: -70.57482331349283,
+    displayName:
+      `${address}, ${commune} · ubicación de respaldo ServiGo`
+  };
+}
+
+
+export const geocodeAddress =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async request => {
+
+
+      /*
+       * =====================================
+       * AUTENTICACIÓN
+       * =====================================
+       */
+
+      const userId =
+        request.auth?.uid;
+
+
+      if (
+        !userId
+      ) {
+
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para buscar una dirección.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * INPUT
+       * =====================================
+       */
+
+      const address =
+        typeof request.data?.address ===
+          'string'
+          ? request.data.address.trim()
+          : '';
+
+
+      const commune =
+        typeof request.data?.commune ===
+          'string'
+          ? request.data.commune.trim()
+          : '';
+
+
+      /*
+       * =====================================
+       * VALIDACIONES
+       * =====================================
+       */
+
+      if (
+        address.length < 4
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'Ingresa una dirección válida.'
+        );
+      }
+
+
+      if (
+        commune.length < 2
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'Ingresa una comuna válida.'
+        );
+      }
+
+
+      if (
+        address.length > 180
+        ||
+        commune.length > 100
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'La dirección ingresada es demasiado extensa.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * CONSULTA
+       * =====================================
+       *
+       * Limitamos explícitamente la búsqueda
+       * a Chile.
+       */
+
+      const searchText =
+        `${address}, ${commune}, Chile`;
+
+
+      const params =
+        new URLSearchParams({
+          q:
+            searchText,
+
+          format:
+            'jsonv2',
+
+          limit:
+            '1',
+
+          countrycodes:
+            'cl',
+
+          addressdetails:
+            '1'
+        });
+
+
+      const url =
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+
+
+      try {
+
+
+        logger.info(
+          'Geocodificando dirección.',
+          {
+            userId,
+            commune
+          }
+        );
+
+
+        /*
+         * =====================================
+         * NOMINATIM
+         * =====================================
+         */
+
+        const response =
+          await fetch(
+            url,
+            {
+              method:
+                'GET',
+
+              headers: {
+
+                /*
+                 * Nominatim requiere identificar
+                 * correctamente la aplicación.
+                 */
+
+                'User-Agent':
+                  'ServiGo/1.0',
+
+                'Accept':
+                  'application/json',
+
+                'Accept-Language':
+                  'es-CL,es;q=0.9'
+              },
+
+              signal:
+                AbortSignal.timeout(8000)
+            }
+          );
+
+
+        /*
+         * =====================================
+         * ERROR HTTP
+         * =====================================
+         */
+
+        if (
+          !response.ok
+        ) {
+
+          logger.error(
+            'Proveedor de geocodificación respondió con error.',
+            {
+              status:
+                response.status,
+
+              statusText:
+                response.statusText
+            }
+          );
+
+
+          throw new HttpsError(
+            'unavailable',
+            'El servicio de ubicación no está disponible temporalmente.'
+          );
+        }
+
+
+        /*
+         * =====================================
+         * RESPUESTA
+         * =====================================
+         */
+
+        const results =
+          await response.json() as Array<{
+            lat?: string;
+            lon?: string;
+            display_name?: string;
+
+            address?: {
+              road?: string;
+              house_number?: string;
+              suburb?: string;
+              city?: string;
+              town?: string;
+              village?: string;
+              municipality?: string;
+              state?: string;
+              country?: string;
+            };
+          }>;
+
+
+        /*
+         * =====================================
+         * SIN RESULTADOS
+         * =====================================
+         */
+
+        if (
+          !Array.isArray(
+            results
+          )
+          ||
+          results.length ===
+            0
+        ) {
+
+          logger.info(
+            'Dirección no encontrada.',
+            {
+              userId,
+              commune
+            }
+          );
+
+
+          throw new HttpsError(
+            'not-found',
+            'No encontramos esa dirección. Revisa la dirección y la comuna.'
+          );
+        }
+
+
+        const result =
+          results[0];
+
+
+        /*
+         * =====================================
+         * COORDENADAS
+         * =====================================
+         */
+
+        const latitude =
+          Number(
+            result.lat
+          );
+
+
+        const longitude =
+          Number(
+            result.lon
+          );
+
+
+        if (
+          !Number.isFinite(
+            latitude
+          )
+          ||
+          !Number.isFinite(
+            longitude
+          )
+          ||
+          latitude < -90
+          ||
+          latitude > 90
+          ||
+          longitude < -180
+          ||
+          longitude > 180
+        ) {
+
+          logger.error(
+            'Proveedor entregó coordenadas inválidas.',
+            {
+              userId,
+              commune
+            }
+          );
+
+
+          throw new HttpsError(
+            'internal',
+            'La dirección encontrada no contiene coordenadas válidas.'
+          );
+        }
+
+
+        /*
+         * =====================================
+         * RESULTADO
+         * =====================================
+         */
+
+        const displayName =
+          typeof result.display_name ===
+            'string'
+            ? result.display_name
+            : searchText;
+
+
+        logger.info(
+          'Dirección geocodificada correctamente.',
+          {
+            userId,
+            commune,
+            latitude,
+            longitude
+          }
+        );
+
+
+        return {
+
+          ok:
+            true,
+
+          latitude,
+
+          longitude,
+
+          displayName,
+
+          address,
+
+          commune
+        };
+
+
+      } catch (
+        error:
+          unknown
+      ) {
+
+        if (
+          error instanceof HttpsError
+          &&
+          error.code !== 'unavailable'
+        ) {
+          logger.error(
+            'Error controlado geocodificando dirección.',
+            {
+              userId,
+              commune,
+              code: error.code,
+              message: error.message
+            }
+          );
+
+          throw error;
+        }
+
+        if (
+          error instanceof HttpsError
+        ) {
+          logger.warn(
+            'Proveedor de geocodificación no disponible.',
+            {
+              userId,
+              commune,
+              code: error.code,
+              message: error.message
+            }
+          );
+        } else {
+          logger.error(
+            'Error geocodificando dirección.',
+            {
+              userId,
+              commune,
+              errorName: error instanceof Error ? error.name : null,
+              errorMessage: error instanceof Error ? error.message : String(error),
+              errorStack: error instanceof Error ? error.stack : null,
+              errorCause:
+                error instanceof Error
+                  ? (error as Error & { cause?: unknown }).cause
+                  : null
+            }
+          );
+        }
+
+        const fallback =
+          getGeocodeContinuityFallback(
+            address,
+            commune
+          );
+
+        logger.warn(
+          'Geocoding externo no disponible. Utilizando ubicación de continuidad.',
+          {
+            userId,
+            commune,
+            latitude: fallback.latitude,
+            longitude: fallback.longitude,
+            source: 'fallback'
+          }
+        );
+
+        return {
+          ok: true,
+          latitude: fallback.latitude,
+          longitude: fallback.longitude,
+          displayName: fallback.displayName,
+          address,
+          commune,
+          source: 'fallback'
+        };
+      }
+    }
+  );
+/*
+ * ============================================================
+ * ELIMINAR CUENTA PROPIA
+ * ============================================================
+ *
+ * El cliente puede eliminar su cuenta solamente cuando no tiene
+ * servicios activos ni pagos pendientes. Las cuentas administrativas
+ * requieren intervención de otro superadministrador.
+ *
+ * Antes de borrar el perfil se anonimizan los datos personales de las
+ * solicitudes históricas. Los documentos transaccionales se conservan
+ * para mantener trazabilidad contable y operativa.
+ */
+
+export const deleteMyAccount =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async request => {
+
+      const userId =
+        request.auth?.uid;
+
+      if (
+        !userId
+      ) {
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para eliminar tu cuenta.'
+        );
+      }
+
+      const emailConfirmation =
+        typeof request.data?.email ===
+          'string'
+          ? request.data.email
+              .trim()
+              .toLowerCase()
+          : '';
+
+      const confirmation =
+        typeof request.data?.confirmation ===
+          'string'
+          ? request.data.confirmation
+              .trim()
+              .toUpperCase()
+          : '';
+
+      if (
+        confirmation !== 'ELIMINAR'
+      ) {
+        throw new HttpsError(
+          'invalid-argument',
+          'Debes escribir ELIMINAR para confirmar.'
+        );
+      }
+
+      const userRef =
+        db
+          .collection('users')
+          .doc(userId);
+
+      const userSnapshot =
+        await userRef.get();
+
+      if (
+        !userSnapshot.exists
+      ) {
+        throw new HttpsError(
+          'not-found',
+          'El perfil de usuario no existe.'
+        );
+      }
+
+      const userData =
+        userSnapshot.data()
+        ?? {};
+
+      const storedEmail =
+        typeof userData['email'] ===
+          'string'
+          ? userData['email']
+              .trim()
+              .toLowerCase()
+          : '';
+
+      if (
+        !storedEmail
+        || storedEmail !==
+          emailConfirmation
+      ) {
+        throw new HttpsError(
+          'permission-denied',
+          'El correo de confirmación no coincide con la cuenta.'
+        );
+      }
+
+      const roles =
+        Array.isArray(
+          userData['roles']
+        )
+          ? userData['roles']
+          : [];
+
+      if (
+        roles.includes('administrador')
+        || roles.includes('superadmin')
+      ) {
+        throw new HttpsError(
+          'failed-precondition',
+          'Las cuentas administrativas deben ser gestionadas por otro superadministrador.'
+        );
+      }
+
+      const [
+        clientRequests,
+        technicianRequests
+      ] = await Promise.all([
+        db
+          .collection('serviceRequests')
+          .where('clientId', '==', userId)
+          .get(),
+        db
+          .collection('serviceRequests')
+          .where(
+            'assignedTechnicianId',
+            '==',
+            userId
+          )
+          .get()
+      ]);
+
+      const activeStatuses =
+        new Set([
+          'published',
+          'matched',
+          'quoted',
+          'accepted',
+          'en_route',
+          'arrived',
+          'in_progress'
+        ]);
+
+      const hasActiveService =
+        [
+          ...clientRequests.docs,
+          ...technicianRequests.docs
+        ]
+          .some(documentSnapshot => {
+            const status =
+              documentSnapshot.data()['status'];
+
+            return typeof status === 'string'
+              && activeStatuses.has(status);
+          });
+
+      if (
+        hasActiveService
+      ) {
+        throw new HttpsError(
+          'failed-precondition',
+          'No puedes eliminar la cuenta mientras existan servicios activos.'
+        );
+      }
+
+      const hasPendingPayment =
+        clientRequests.docs
+          .some(documentSnapshot => {
+            const data =
+              documentSnapshot.data();
+
+            return data['status'] === 'completed'
+              && data['paymentStatus'] !== 'paid';
+          });
+
+      if (
+        hasPendingPayment
+      ) {
+        throw new HttpsError(
+          'failed-precondition',
+          'Existe al menos un servicio completado con pago pendiente.'
+        );
+      }
+
+      const requestImagePaths =
+        clientRequests.docs
+          .flatMap(documentSnapshot => {
+            const paths =
+              documentSnapshot.data()['photoPaths'];
+
+            return Array.isArray(paths)
+              ? paths.filter(
+                  (path): path is string =>
+                    typeof path === 'string'
+                    && path.startsWith(
+                      'service-request-images/'
+                    )
+                )
+              : [];
+          });
+
+      const [
+        deviceTokens,
+        applications,
+        technicianLocations
+      ] = await Promise.all([
+        db
+          .collection('deviceTokens')
+          .where('userId', '==', userId)
+          .get(),
+        db
+          .collection('technicianApplications')
+          .where('userId', '==', userId)
+          .get(),
+        db
+          .collection('technicianLocations')
+          .where('technicianId', '==', userId)
+          .get()
+      ]);
+
+      const applicationDocumentPrefixes =
+        applications.docs
+          .map(applicationDocument =>
+            `technician-application-documents/${applicationDocument.id}/${userId}/`
+          );
+
+      const writer =
+        db.bulkWriter();
+
+      for (
+        const requestDocument
+        of clientRequests.docs
+      ) {
+        writer.update(
+          requestDocument.ref,
+          {
+            clientName:
+              'Usuario eliminado',
+            address:
+              'Dirección eliminada',
+            latitude:
+              null,
+            longitude:
+              null,
+            photoUrls:
+              [],
+            photoPaths:
+              [],
+            updatedAt:
+              FieldValue.serverTimestamp()
+          }
+        );
+      }
+
+      for (
+        const tokenDocument
+        of deviceTokens.docs
+      ) {
+        writer.delete(
+          tokenDocument.ref
+        );
+      }
+
+      for (
+        const applicationDocument
+        of applications.docs
+      ) {
+        writer.delete(
+          applicationDocument.ref
+        );
+      }
+
+      writer.delete(
+        db
+          .collection('technicianProfiles')
+          .doc(userId)
+      );
+
+      for (
+        const locationDocument
+        of technicianLocations.docs
+      ) {
+        writer.delete(
+          locationDocument.ref
+        );
+      }
+
+      await writer.close();
+
+      try {
+        const bucket =
+          getStorage().bucket();
+
+        await Promise.all([
+          bucket.deleteFiles({
+            prefix:
+              `profile-avatars/${userId}/`
+          }),
+          ...applicationDocumentPrefixes.map(
+            prefix =>
+              bucket.deleteFiles({
+                prefix
+              })
+          ),
+          ...requestImagePaths.map(
+            path =>
+              bucket
+                .file(path)
+                .delete({
+                  ignoreNotFound:
+                    true
+                })
+          )
+        ]);
+      } catch (storageError) {
+        logger.warn(
+          'No fue posible limpiar todos los archivos al eliminar la cuenta.',
+          {
+            userId,
+            error:
+              storageError
+          }
+        );
+      }
+
+      await db.recursiveDelete(
+        userRef
+      );
+
+      await getAuth().deleteUser(
+        userId
+      );
+
+      logger.info(
+        'Cuenta eliminada por su propietario.',
+        {
+          userId
+        }
+      );
+
+      return {
+        deleted:
+          true
+      };
+    }
+  );
+
+
+/*
+ * ============================================================
+ * CANCELAR SERVICIO
+ * ============================================================
+ *
+ * Cancelación autoritativa de una solicitud ServiGo.
+ *
+ * Puede cancelar:
+ *
+ * CLIENTE:
+ *
+ * published
+ * matched
+ * quoted
+ * accepted
+ * en_route
+ * arrived
+ *
+ * TÉCNICO:
+ *
+ * accepted
+ * en_route
+ * arrived
+ *
+ * NO se permite cancelar:
+ *
+ * in_progress
+ * completed
+ * cancelled
+ *
+ * Se conserva:
+ *
+ * assignedTechnicianId
+ * acceptedQuoteId
+ *
+ * para mantener trazabilidad histórica.
+ *
+ * Si existía ubicación compartida del técnico,
+ * se elimina desde backend.
+ */
+
+export const cancelService =
+  onCall(
+    {
+      region:
+        'southamerica-west1'
+    },
+
+    async request => {
+
+
+      /*
+       * =====================================
+       * AUTENTICACIÓN
+       * =====================================
+       */
+
+      const userId =
+        request.auth?.uid;
+
+
+      if (
+        !userId
+      ) {
+
+        throw new HttpsError(
+          'unauthenticated',
+          'Debes iniciar sesión para cancelar un servicio.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * DATOS
+       * =====================================
+       */
+
+      const requestId =
+        typeof request.data?.requestId ===
+          'string'
+          ? request.data.requestId.trim()
+          : '';
+
+
+      const reason =
+        typeof request.data?.reason ===
+          'string'
+          ? request.data.reason.trim()
+          : '';
+
+
+      if (
+        !requestId
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'requestId es obligatorio.'
+        );
+      }
+
+
+      if (
+        reason.length < 5
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'Debes indicar el motivo de la cancelación.'
+        );
+      }
+
+
+      if (
+        reason.length > 500
+      ) {
+
+        throw new HttpsError(
+          'invalid-argument',
+          'El motivo de cancelación es demasiado extenso.'
+        );
+      }
+
+
+      /*
+       * =====================================
+       * REFERENCIAS
+       * =====================================
+       */
+
+      const requestRef =
+        db
+          .collection(
+            'serviceRequests'
+          )
+          .doc(
+            requestId
+          );
+
+
+      const cancellationEvaluatedAt =
+        new Date();
+
+
+      try {
+
+
+        /*
+         * =====================================
+         * TRANSACCIÓN
+         * =====================================
+         */
+
+        const result =
+          await db.runTransaction(
+            async transaction => {
+
+
+              const snapshot =
+                await transaction.get(
+                  requestRef
+                );
+
+
+              if (
+                !snapshot.exists
+              ) {
+
+                throw new HttpsError(
+                  'not-found',
+                  'El servicio no existe.'
+                );
+              }
+
+
+              const data =
+                snapshot.data()
+                ?? {};
+
+
+              /*
+               * =================================
+               * DATOS DEL SERVICIO
+               * =================================
+               */
+
+              const clientId =
+                typeof data[
+                  'clientId'
+                ] ===
+                  'string'
+                  ? data[
+                      'clientId'
+                    ]
+                  : '';
+
+
+              const assignedTechnicianId =
+                typeof data[
+                  'assignedTechnicianId'
+                ] ===
+                  'string'
+                  ? data[
+                      'assignedTechnicianId'
+                    ]
+                  : '';
+
+
+              const currentStatus =
+                typeof data[
+                  'status'
+                ] ===
+                  'string'
+                  ? data[
+                      'status'
+                    ]
+                  : '';
+
+
+              const category =
+                typeof data[
+                  'category'
+                ] ===
+                  'string'
+                  ? data[
+                      'category'
+                    ]
+                  : 'Servicio';
+
+
+              /*
+               * =================================
+               * ACTOR
+               * =================================
+               */
+
+              const isClient =
+                clientId ===
+                userId;
+
+
+              const isTechnician =
+                assignedTechnicianId ===
+                  userId;
+
+
+              if (
+                !isClient
+                &&
+                !isTechnician
+              ) {
+
+                throw new HttpsError(
+                  'permission-denied',
+                  'No tienes permisos para cancelar este servicio.'
+                );
+              }
+
+
+              /*
+               * =================================
+               * ESTADOS FINALES / BLOQUEADOS
+               * =================================
+               */
+
+              if (
+                currentStatus ===
+                  'cancelled'
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El servicio ya está cancelado.'
+                );
+              }
+
+
+              if (
+                currentStatus ===
+                  'completed'
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'Un servicio finalizado no puede cancelarse.'
+                );
+              }
+
+
+              if (
+                currentStatus ===
+                  'in_progress'
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'Un trabajo que ya comenzó no puede cancelarse mediante este flujo.'
+                );
+              }
+
+
+              /*
+               * =================================
+               * ESTADOS PERMITIDOS CLIENTE
+               * =================================
+               */
+
+              const clientCanCancel =
+                currentStatus ===
+                  'published'
+                ||
+                currentStatus ===
+                  'matched'
+                ||
+                currentStatus ===
+                  'quoted'
+                ||
+                currentStatus ===
+                  'accepted'
+                ||
+                currentStatus ===
+                  'en_route'
+                ||
+                currentStatus ===
+                  'arrived';
+
+
+              /*
+               * =================================
+               * ESTADOS PERMITIDOS TÉCNICO
+               * =================================
+               */
+
+              const technicianCanCancel =
+                currentStatus ===
+                  'accepted'
+                ||
+                currentStatus ===
+                  'en_route'
+                ||
+                currentStatus ===
+                  'arrived';
+
+
+              if (
+                isClient
+                &&
+                !clientCanCancel
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'La solicitud ya no puede ser cancelada por el cliente.'
+                );
+              }
+
+
+              if (
+                isTechnician
+                &&
+                !technicianCanCancel
+              ) {
+
+                throw new HttpsError(
+                  'failed-precondition',
+                  'El trabajo ya no puede ser cancelado por el técnico.'
+                );
+              }
+
+
+              /*
+               * =================================
+               * TIPO DE ACTOR
+               * =================================
+               */
+
+              const cancelledBy:
+                'client'
+                | 'technician' =
+                  isClient
+                    ? 'client'
+                    : 'technician';
+
+
+              const acceptedSnapshot =
+                asRecord(
+                  data['acceptedQuoteSnapshot']
+                );
+
+
+              const visitFeeAmount =
+                typeof acceptedSnapshot?.['visitFeeAmount'] === 'number'
+                  ? acceptedSnapshot['visitFeeAmount']
+                  : 0;
+
+
+              const scheduledAtValue =
+                data['scheduledAt'];
+
+
+              const scheduledAt =
+                scheduledAtValue instanceof Timestamp
+                  ? scheduledAtValue.toDate()
+                  : null;
+
+
+              const cancellationPenalty =
+                calculateCancellationPenalty({
+                  actor:
+                    cancelledBy,
+                  now:
+                    cancellationEvaluatedAt,
+                  scheduledAt,
+                  visitFeeAmount
+                });
+
+
+              const now =
+                FieldValue
+                  .serverTimestamp();
+
+
+              /*
+               * =================================
+               * ACTUALIZAR SERVICIO
+               * =================================
+               */
+
+              transaction.update(
+                requestRef,
+                {
+
+                  status:
+                    'cancelled',
+
+                  previousStatus:
+                    currentStatus,
+
+                  cancelledAt:
+                    now,
+
+                  cancelledBy,
+
+                  cancelledByUserId:
+                    userId,
+
+                  cancellationReason:
+                    reason,
+
+                  cancellationPenaltyPercent:
+                    cancellationPenalty.percent,
+
+                  cancellationPenaltyAmount:
+                    cancellationPenalty.amount,
+
+                  cancellationPenaltyBaseAmount:
+                    cancellationPenalty.baseAmount,
+
+                  cancellationPenaltyStatus:
+                    cancellationPenalty.amount > 0
+                      ? 'pending'
+                      : 'not_applicable',
+
+                  cancellationPenaltyReason:
+                    cancellationPenalty.reason,
+
+                  cancellationPolicyVersion:
+                    '2026-11',
+
+                  updatedAt:
+                    now
+                }
+              );
+
+
+              /*
+               * =================================
+               * RESULTADO TRANSACCIÓN
+               * =================================
+               */
+
+              return {
+
+                requestId,
+
+                category,
+
+                clientId,
+
+                assignedTechnicianId,
+
+                previousStatus:
+                  currentStatus,
+
+                cancelledBy,
+
+                cancellationPenalty
+              };
+            }
+          );
+
+
+        /*
+         * =====================================
+         * ELIMINAR UBICACIÓN COMPARTIDA
+         * =====================================
+         *
+         * Lo hacemos incluso si por alguna
+         * inconsistencia existiera ubicación
+         * fuera de en_route.
+         *
+         * La privacidad tiene prioridad.
+         */
+
+        if (
+          result.assignedTechnicianId
+        ) {
+
+          const locationRef =
+            db
+              .collection(
+                'technicianLocations'
+              )
+              .doc(
+                result.requestId
+              );
+
+
+          try {
+
+            await locationRef
+              .delete();
+
+
+            logger.info(
+              'Ubicación compartida eliminada por cancelación.',
+              {
+                requestId:
+                  result.requestId,
+
+                technicianId:
+                  result.assignedTechnicianId
+              }
+            );
+
+
+          } catch (locationError) {
+
+            /*
+             * La cancelación ya fue realizada.
+             *
+             * Un error limpiando GPS se registra,
+             * pero no revierte el estado.
+             */
+
+            logger.error(
+              'Error eliminando ubicación después de cancelación.',
+              {
+                requestId:
+                  result.requestId,
+
+                technicianId:
+                  result.assignedTechnicianId,
+
+                error:
+                  locationError instanceof
+                    Error
+                    ? locationError.message
+                    : String(
+                        locationError
+                      )
+              }
+            );
+          }
+        }
+
+
+        /*
+         * =====================================
+         * PUSH
+         * =====================================
+         */
+
+        if (
+          result.cancelledBy ===
+            'client'
+        ) {
+
+
+          /*
+           * Solo notificamos técnico si ya
+           * existía uno contratado/asignado.
+           */
+
+          if (
+            result.assignedTechnicianId
+          ) {
+
+            await sendPushToUser(
+
+              result.assignedTechnicianId,
+
+              'Servicio cancelado',
+
+              `El cliente canceló el servicio de ${result.category}.`,
+
+              {
+
+                requestId:
+                  result.requestId,
+
+                type:
+                  'technician_service_cancelled',
+
+                category:
+                  result.category
+              }
+            );
+          }
+
+
+        } else {
+
+
+          /*
+           * Técnico cancela:
+           * notificamos al cliente propietario.
+           */
+
+          if (
+            result.clientId
+          ) {
+
+            await sendPushToUser(
+
+              result.clientId,
+
+              'Servicio cancelado por el técnico',
+
+              `El técnico canceló el servicio de ${result.category}.`,
+
+              {
+
+                requestId:
+                  result.requestId,
+
+                type:
+                  'client_service_cancelled',
+
+                category:
+                  result.category
+              }
+            );
+          }
+        }
+
+
+        /*
+         * =====================================
+         * LOG
+         * =====================================
+         */
+
+        logger.info(
+          'Servicio cancelado correctamente.',
+          {
+            requestId:
+              result.requestId,
+
+            cancelledBy:
+              result.cancelledBy,
+
+            previousStatus:
+              result.previousStatus,
+
+            userId
+          }
+        );
+
+
+        /*
+         * =====================================
+         * RESPUESTA
+         * =====================================
+         */
+
+        return {
+
+          ok:
+            true,
+
+          requestId:
+            result.requestId,
+
+          status:
+            'cancelled',
+
+          previousStatus:
+            result.previousStatus,
+
+          cancelledBy:
+            result.cancelledBy,
+
+          cancellationPenaltyPercent:
+            result.cancellationPenalty.percent,
+
+          cancellationPenaltyAmount:
+            result.cancellationPenalty.amount,
+
+          cancellationPenaltyBaseAmount:
+            result.cancellationPenalty.baseAmount,
+
+          cancellationPenaltyStatus:
+            result.cancellationPenalty.amount > 0
+              ? 'pending'
+              : 'not_applicable'
+        };
+
+
+      } catch (error) {
+
+
+        if (
+          error instanceof
+          HttpsError
+        ) {
+
+          throw error;
+        }
+
+
+        logger.error(
+          'Error cancelando servicio.',
+          {
+            requestId,
+            userId,
+
+            error:
+              error instanceof
+                Error
+                ? error.message
+                : String(
+                    error
+                  )
+          }
+        );
+
+
+        throw new HttpsError(
+          'internal',
+          'No fue posible cancelar el servicio.'
+        );
+      }
+    }
+  );
+
+  /*
+ * ============================================================
+ * NUEVO MENSAJE DE CHAT
+ * ============================================================
+ *
+ * Trigger:
+ *
+ * serviceRequests/{requestId}/messages/{messageId}
+ *
+ * Responsabilidad:
+ *
+ * - validar el mensaje creado
+ * - obtener el servicio padre
+ * - identificar al remitente
+ * - identificar a la contraparte
+ * - enviar Push solamente a la contraparte
+ *
+ * El cliente nunca decide el destinatario.
+ * El backend lo obtiene desde serviceRequests.
+ */
+
+export const onChatMessageCreated =
+  onDocumentCreated(
+    {
+      document:
+        'serviceRequests/{requestId}/messages/{messageId}',
+
+      region:
+        'southamerica-west1'
+    },
+
+    async event => {
+
+
+      /*
+       * =====================================
+       * SNAPSHOT
+       * =====================================
+       */
+
+      const snapshot =
+        event.data;
+
+
+      if (
+        !snapshot
+      ) {
+
+        logger.warn(
+          'Mensaje de chat sin snapshot.'
+        );
+
+
+        return;
+      }
+
+
+      const message =
+        snapshot.data();
+
+
+      /*
+       * =====================================
+       * PARÁMETROS
+       * =====================================
+       */
+
+      const requestId =
+        event.params[
+          'requestId'
+        ];
+
+
+      const messageId =
+        event.params[
+          'messageId'
+        ];
+
+
+      const senderId =
+        typeof message[
+          'senderId'
+        ] ===
+          'string'
+          ? message[
+              'senderId'
+            ].trim()
+          : '';
+
+
+      const senderName =
+        (
+          typeof message[
+            'senderName'
+          ] ===
+            'string'
+            ? message[
+                'senderName'
+              ].trim()
+            : ''
+        )
+        || 'Usuario ServiGo';
+
+
+      const text =
+        typeof message[
+          'text'
+        ] ===
+          'string'
+          ? message[
+              'text'
+            ].trim()
+          : '';
+
+
+      const messageType =
+        message[
+          'type'
+        ] ===
+          'image'
+          ? 'image'
+          : 'text';
+
+
+      const imagePath =
+        typeof message[
+          'imagePath'
+        ] ===
+          'string'
+          ? message[
+              'imagePath'
+            ].trim()
+          : '';
+
+
+      /*
+       * =====================================
+       * VALIDACIÓN BÁSICA
+       * =====================================
+       */
+
+      if (
+        !requestId
+        ||
+        !senderId
+        ||
+        (
+          messageType ===
+            'text'
+          &&
+          !text
+        )
+        ||
+        (
+          messageType ===
+            'image'
+          &&
+          !imagePath
+        )
+      ) {
+
+        logger.warn(
+          'Push de chat omitido: mensaje incompleto.',
+          {
+            requestId,
+            messageId,
+            senderId
+          }
+        );
+
+
+        return;
+      }
+
+
+      /*
+       * =====================================
+       * SERVICIO PADRE
+       * =====================================
+       */
+
+      const requestSnapshot =
+        await db
+          .collection(
+            'serviceRequests'
+          )
+          .doc(
+            requestId
+          )
+          .get();
+
+
+      if (
+        !requestSnapshot.exists
+      ) {
+
+        logger.warn(
+          'Push de chat omitido: servicio no encontrado.',
+          {
+            requestId,
+            messageId
+          }
+        );
+
+
+        return;
+      }
+
+
+      const serviceRequest =
+        requestSnapshot.data()
+        ?? {};
+
+
+      const clientId =
+        typeof serviceRequest[
+          'clientId'
+        ] ===
+          'string'
+          ? serviceRequest[
+              'clientId'
+            ]
+          : '';
+
+
+      const technicianId =
+        typeof serviceRequest[
+          'assignedTechnicianId'
+        ] ===
+          'string'
+          ? serviceRequest[
+              'assignedTechnicianId'
+            ]
+          : '';
+
+
+      const category =
+        typeof serviceRequest[
+          'category'
+        ] ===
+          'string'
+          ? serviceRequest[
+              'category'
+            ]
+          : 'servicio';
+
+
+      /*
+       * =====================================
+       * IDENTIFICAR DESTINATARIO
+       * =====================================
+       *
+       * Cliente escribió:
+       *
+       * → Push al técnico.
+       *
+       * Técnico escribió:
+       *
+       * → Push al cliente.
+       */
+
+      let recipientId =
+        '';
+
+
+      let pushType:
+        ServiGoPushData[
+          'type'
+        ];
+
+
+      if (
+        senderId ===
+          clientId
+      ) {
+
+        if (
+          !technicianId
+        ) {
+
+          logger.info(
+            'Push de chat omitido: servicio sin técnico asignado.',
+            {
+              requestId,
+              messageId
+            }
+          );
+
+
+          return;
+        }
+
+
+        recipientId =
+          technicianId;
+
+
+        pushType =
+          'technician_new_message';
+
+
+      } else if (
+        senderId ===
+          technicianId
+      ) {
+
+        if (
+          !clientId
+        ) {
+
+          logger.warn(
+            'Push de chat omitido: servicio sin cliente.',
+            {
+              requestId,
+              messageId
+            }
+          );
+
+
+          return;
+        }
+
+
+        recipientId =
+          clientId;
+
+
+        pushType =
+          'client_new_message';
+
+
+      } else {
+
+        /*
+         * Protección adicional.
+         *
+         * Firestore Rules ya impide que un
+         * tercero cree el mensaje desde la app,
+         * pero el trigger también valida la
+         * relación de participantes.
+         */
+
+        logger.warn(
+          'Push de chat omitido: remitente no participa del servicio.',
+          {
+            requestId,
+            messageId,
+            senderId
+          }
+        );
+
+
+        return;
+      }
+
+
+      if (
+        recipientId ===
+          senderId
+      ) {
+
+        logger.info(
+          'Notificación de chat omitida: remitente y destinatario son el mismo usuario.',
+          {
+            requestId,
+            messageId,
+            senderId
+          }
+        );
+
+
+        return;
+      }
+
+
+      /*
+       * =====================================
+       * PREVIEW
+       * =====================================
+       *
+       * Evitamos colocar mensajes demasiado
+       * extensos en la notificación.
+       */
+
+      const maxPreviewLength =
+        120;
+
+
+      const preview =
+        messageType ===
+          'image'
+          ? 'Envió una imagen.'
+          : text.length >
+              maxPreviewLength
+            ? `${text.substring(
+                0,
+                maxPreviewLength
+              )}…`
+            : text;
+
+
+      /*
+       * =====================================
+       * PUSH
+       * =====================================
+       */
+
+      await sendPushToUser(
+
+        recipientId,
+
+        `Nuevo mensaje de ${senderName}`,
+
+        preview,
+
+        {
+          requestId,
+
+          type:
+            pushType,
+
+          category,
+
+          messageId
+        }
+      );
+
+
+      logger.info(
+        'Push de nuevo mensaje procesado.',
+        {
+          requestId,
+          messageId,
+          senderId,
+          recipientId,
+          type:
+            pushType
+        }
+      );
+    }
+  );

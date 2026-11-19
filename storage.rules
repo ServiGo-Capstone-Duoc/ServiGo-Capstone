@@ -1,0 +1,176 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function hasActiveAccount() {
+      return signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        )
+        && firestore.get(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ).data.status == 'active';
+    }
+
+    function isAdmin() {
+      return hasActiveAccount()
+        && firestore.get(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ).data.roles is list
+        && firestore.get(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ).data.roles.hasAny([
+          'administrador',
+          'superadmin'
+        ]);
+    }
+
+    function validApplicationDocument() {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType is string
+        && request.resource.contentType.matches(
+          '(application/pdf|image/jpeg|image/png|image/webp)'
+        );
+    }
+
+    function validApplicationDocumentCategory(category) {
+      return category == 'identity'
+        || category == 'professional'
+        || category == 'additional';
+    }
+
+    function applicationExists(applicationId) {
+      return firestore.exists(
+        /databases/(default)/documents/technicianApplications/$(applicationId)
+      );
+    }
+
+    function validImage() {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType is string
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    function requestDoc(requestId) {
+      return firestore.get(/databases/(default)/documents/serviceRequests/$(requestId));
+    }
+
+    function opportunityId(requestId) {
+      return request.auth.uid + '_' + requestId;
+    }
+
+    function hasTechnicianOpportunity(requestId) {
+      return hasActiveAccount()
+        && firestore.exists(
+          /databases/(default)/documents/technicianOpportunities/$(opportunityId(requestId))
+        );
+    }
+
+    function canReadRequestImage(requestId, clientId) {
+      return hasActiveAccount()
+        && (
+          request.auth.uid == clientId
+          || hasTechnicianOpportunity(requestId)
+          || (
+            firestore.exists(/databases/(default)/documents/serviceRequests/$(requestId))
+            && requestDoc(requestId).data.assignedTechnicianId == request.auth.uid
+          )
+        );
+    }
+
+    match /service-request-images/{requestId}/{clientId}/{fileName} {
+      allow create: if hasActiveAccount()
+        && request.auth.uid == clientId
+        && validImage();
+
+      allow read: if canReadRequestImage(requestId, clientId);
+
+      allow delete: if hasActiveAccount()
+        && request.auth.uid == clientId;
+
+      allow update: if false;
+    }
+
+
+    function isChatParticipant(requestId) {
+      return hasActiveAccount()
+        && firestore.exists(/databases/(default)/documents/serviceRequests/$(requestId))
+        && (
+          requestDoc(requestId).data.clientId == request.auth.uid
+          || requestDoc(requestId).data.assignedTechnicianId == request.auth.uid
+        );
+    }
+
+    function chatWritable(requestId) {
+      return hasActiveAccount()
+        && isChatParticipant(requestId)
+        && (
+          requestDoc(requestId).data.status == 'accepted'
+          || requestDoc(requestId).data.status == 'en_route'
+          || requestDoc(requestId).data.status == 'arrived'
+          || requestDoc(requestId).data.status == 'in_progress'
+          || requestDoc(requestId).data.status == 'completed'
+        );
+    }
+
+    match /chat-images/{requestId}/{senderId}/{messageId}/{fileName} {
+      allow create: if chatWritable(requestId)
+        && request.auth.uid == senderId
+        && validImage();
+
+      allow read: if isChatParticipant(requestId);
+
+      allow delete: if hasActiveAccount()
+        && request.auth.uid == senderId;
+      allow update: if false;
+    }
+
+    match /technician-application-documents/{applicationId}/{userId}/{category}/{fileName} {
+      allow create: if hasActiveAccount()
+        && request.auth.uid == userId
+        && !applicationExists(applicationId)
+        && validApplicationDocumentCategory(category)
+        && fileName.matches(
+          '[A-Za-z0-9_-]{8,128}[.](pdf|jpg|jpeg|png|webp)'
+        )
+        && validApplicationDocument();
+
+      allow read: if hasActiveAccount()
+        && (
+          request.auth.uid == userId
+          || isAdmin()
+        );
+
+      allow delete: if hasActiveAccount()
+        && request.auth.uid == userId
+        && !applicationExists(applicationId);
+
+      allow update: if false;
+    }
+
+
+    match /profile-avatars/{userId}/{fileName} {
+      allow read: if hasActiveAccount();
+
+      allow create, update: if hasActiveAccount()
+        && request.auth.uid == userId
+        && validImage()
+        && fileName == 'avatar';
+
+      allow delete: if hasActiveAccount()
+        && request.auth.uid == userId;
+    }
+
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,56 @@
+ServiGo - validación automatizada de la revisión para Firebase real
+Fecha local de revisión: 2026-11-08
+Entorno de auditoría: Linux / Node.js v22.16.0
+
+VALIDACIONES APROBADAS
+======================
+[OK] TypeScript frontend: tsc -p tsconfig.app.json --noEmit
+[OK] Plantillas Angular estrictas: ngc -p tsconfig.app.json
+[OK] TypeScript de specs: tsc -p tsconfig.spec.json --noEmit
+[OK] ESLint frontend TypeScript y HTML
+[OK] TypeScript de Cloud Functions
+[OK] ESLint de Cloud Functions
+[OK] JSON de firebase.json y firestore.indexes.json
+[OK] 29 archivos SCSS compilados individualmente
+[OK] Mayor CSS comprimido: 19.104 bytes
+[OK] Componente de mayor tamaño: service-detail.page.scss
+[OK] Lógica de dominio: presupuesto aceptado, cancelación, cotizaciones y ratings
+[OK] Coordenadas fallback exactas para cliente y técnico
+[OK] environments real y productivo con useFirebaseEmulators: false
+[OK] Hosting con puente /api/webpay-return hacia webpayReturn
+[OK] Índice compuesto de quotes(requestId, technicianId)
+[OK] Escaneo de claves privadas, service accounts y credenciales administrativas
+[OK] npm audit --offline frontend: 0 vulnerabilidades conocidas
+[OK] npm audit --offline Functions: 0 vulnerabilidades conocidas
+
+AJUSTES DE COMPILACIÓN
+======================
+[OK] tsconfig.app.json declara rootDir=./src para TypeScript 6
+[OK] tsconfig.spec.json declara rootDir=./src para TypeScript 6
+[OK] Budget de estilos por componente: warning 28 kB / error 32 kB
+
+VALIDACIONES QUE DEBEN EJECUTARSE EN WINDOWS
+=============================================
+El build Angular completo no se ejecutó en este contenedor porque Angular CLI
+22.1.8 exige Node.js >=22.22.3 o >=24.15.0 y el contenedor tiene v22.16.0.
+
+Vitest tampoco pudo iniciar con los node_modules heredados desde Windows porque
+sus bindings nativos no corresponden a Linux. El ZIP final excluye node_modules;
+por lo tanto, npm ci instalará los binarios correctos en el equipo de pruebas.
+
+Ejecutar con Node.js 24.22.2:
+  npm ci
+  npm --prefix functions ci
+  npm run lint
+  npm run build
+  npm run lint:functions
+  npm run build:functions
+  npm run test:unit
+  npm run test:functions
+
+ALCANCE
+=======
+La auditoría confirma consistencia estática, seguridad de configuración y lógica
+de dominio. No afirma que Firebase haya sido desplegado ni que Webpay haya sido
+confirmado desde este entorno. La validación end-to-end debe realizarse después
+del despliegue en servigo-dev y con Webpay Integration.

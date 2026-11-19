@@ -1,0 +1,780 @@
+<ion-content>
+
+  <main
+    class="request-container"
+  >
+
+    <!-- HEADER -->
+
+    <header
+      class="request-header"
+    >
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="request-logo"
+      />
+
+    </header>
+
+
+    <!-- ÉXITO -->
+
+    <section
+      class="success-card"
+      *ngIf="success"
+    >
+
+      <div
+        class="success-icon"
+      >
+
+        <ion-icon
+          name="checkmark-circle"
+        ></ion-icon>
+
+      </div>
+
+
+      <span
+        class="success-eyebrow"
+      >
+        SOLICITUD PUBLICADA
+      </span>
+
+
+      <h1>
+        Estamos buscando
+        técnicos para ti
+      </h1>
+
+
+      <p>
+        Tu solicitud ya está publicada.
+        ServiGo buscará técnicos compatibles
+        con el servicio y la ubicación.
+      </p>
+
+
+      <div
+        class="request-code"
+      >
+
+        <span>
+          Código de solicitud
+        </span>
+
+        <strong>
+          {{ requestId }}
+        </strong>
+
+      </div>
+
+
+      <ion-button
+        expand="block"
+        type="button"
+        (click)="goHome()"
+      >
+        Volver al inicio
+      </ion-button>
+
+    </section>
+
+
+    <!-- FORMULARIO -->
+
+    <ng-container
+      *ngIf="!success"
+    >
+
+      <section
+        class="intro"
+      >
+
+        <span>
+          NUEVA SOLICITUD
+        </span>
+
+        <h1>
+          ¿Qué necesitas resolver?
+        </h1>
+
+        <p>
+          Cuéntanos qué ocurre y dónde.
+          Con esta información buscaremos
+          técnicos compatibles.
+        </p>
+
+      </section>
+
+
+      <form
+        [formGroup]="form"
+      >
+
+        <!-- CATEGORÍA -->
+
+        <section
+          class="form-card"
+        >
+
+          <div
+            class="section-heading"
+          >
+
+            <div
+              class="section-number"
+            >
+              1
+            </div>
+
+            <div>
+
+              <h2>
+                Tipo de servicio
+              </h2>
+
+              <p>
+                Selecciona la categoría
+                que mejor representa tu necesidad.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="category-grid"
+          >
+
+            <button
+              type="button"
+              class="category-option"
+              *ngFor="
+                let category
+                of categories
+              "
+              [class.selected]="
+                form.controls.category.value
+                  === category.name
+              "
+              (click)="
+                selectCategory(
+                  category.name
+                )
+              "
+            >
+
+              <div
+                class="category-icon"
+              >
+
+                <ion-icon
+                  [name]="
+                    category.icon
+                  "
+                ></ion-icon>
+
+              </div>
+
+              <span>
+                {{ category.name }}
+              </span>
+
+            </button>
+
+          </div>
+
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.category.touched &&
+              form.controls.category.invalid
+            "
+          >
+            Selecciona una categoría.
+          </div>
+
+        </section>
+
+
+        <!-- DESCRIPCIÓN -->
+
+        <section
+          class="form-card"
+        >
+
+          <div
+            class="section-heading"
+          >
+
+            <div
+              class="section-number"
+            >
+              2
+            </div>
+
+            <div>
+
+              <h2>
+                Describe el problema
+              </h2>
+
+              <p>
+                Mientras más claro seas,
+                mejores serán las propuestas.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <ion-textarea
+            label="Descripción"
+            labelPlacement="stacked"
+            formControlName="description"
+            [autoGrow]="true"
+            placeholder="Ej: Tengo una filtración bajo el lavaplatos. El agua aparece cuando abro la llave..."
+          ></ion-textarea>
+
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.description.touched &&
+              form.controls.description.invalid
+            "
+          >
+            Describe el problema con al menos
+            20 caracteres.
+          </div>
+
+
+          <!-- FOTOS DEL PROBLEMA -->
+
+          <div
+            class="photo-upload"
+          >
+
+            <div
+              class="photo-upload-heading"
+            >
+              <div>
+                <strong>Fotos del problema</strong>
+                <span>Ayuda al técnico a evaluar mejor el trabajo.</span>
+              </div>
+
+              <span
+                class="photo-counter"
+              >
+                {{ selectedPhotos.length }}/5
+              </span>
+            </div>
+
+            <div
+              class="photo-grid"
+              *ngIf="selectedPhotos.length > 0"
+            >
+              <div
+                class="photo-preview"
+                *ngFor="let photo of selectedPhotos; let i = index"
+              >
+                <img
+                  [src]="photo.previewUrl"
+                  alt="Foto del problema"
+                />
+
+                <button
+                  type="button"
+                  class="photo-remove"
+                  aria-label="Eliminar foto"
+                  (click)="removePhoto(i)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <label
+              class="photo-add-button"
+              [class.disabled]="selectedPhotos.length >= 5"
+            >
+              <ion-icon
+                name="camera-outline"
+              ></ion-icon>
+
+              <span>
+                {{
+                  selectedPhotos.length === 0
+                    ? 'Agregar fotos'
+                    : 'Agregar otra foto'
+                }}
+              </span>
+
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                [disabled]="selectedPhotos.length >= 5"
+                (change)="onPhotosSelected($event)"
+              />
+            </label>
+
+            <p
+              class="photo-help"
+            >
+              JPG, PNG o WEBP · Máx. 5 MB por foto · Hasta 5 imágenes
+            </p>
+
+            <div
+              class="field-error"
+              *ngIf="photoError"
+            >
+              {{ photoError }}
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- UBICACIÓN -->
+
+        <section
+          class="form-card"
+        >
+
+          <div
+            class="section-heading"
+          >
+
+            <div
+              class="section-number"
+            >
+              3
+            </div>
+
+            <div>
+
+              <h2>
+                Ubicación
+              </h2>
+
+              <p>
+                Indica dónde debe realizarse
+                el servicio.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <ion-input
+            label="Dirección"
+            labelPlacement="stacked"
+            formControlName="address"
+            placeholder="Ej: Av. Concha y Toro 1234"
+          ></ion-input>
+
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.address.touched &&
+              form.controls.address.invalid
+            "
+          >
+            Ingresa la dirección del servicio.
+          </div>
+
+
+          <ion-input
+            label="Comuna"
+            labelPlacement="stacked"
+            formControlName="commune"
+            placeholder="Ej: Puente Alto"
+          ></ion-input>
+
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.commune.touched &&
+              form.controls.commune.invalid
+            "
+          >
+            Ingresa la comuna.
+          </div>
+
+
+          <div class="location-actions">
+            <button
+              type="button"
+              class="location-button"
+              [disabled]="
+                geocoding ||
+                locating ||
+                form.controls.address.invalid ||
+                form.controls.commune.invalid
+              "
+              (click)="searchAddress()"
+            >
+              <ion-icon name="search-outline"></ion-icon>
+
+              <span *ngIf="!geocoding">
+                Buscar dirección
+              </span>
+
+              <span *ngIf="geocoding">
+                Buscando dirección...
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="location-button location-button--secondary"
+              [disabled]="geocoding || locating"
+              (click)="useCurrentLocation()"
+            >
+              <ion-icon name="navigate-outline"></ion-icon>
+
+              <span *ngIf="!locating">
+                Usar mi ubicación
+              </span>
+
+              <span *ngIf="locating">
+                Obteniendo ubicación...
+              </span>
+            </button>
+          </div>
+
+
+          <div
+            class="location-error"
+            *ngIf="locationError"
+          >
+            {{ locationError }}
+          </div>
+
+
+          <div
+            class="location-notice"
+            *ngIf="locationNotice"
+            [class.location-notice--fallback]="locationSource === 'fallback'"
+            role="status"
+            aria-live="polite"
+          >
+            <ion-icon name="location-outline"></ion-icon>
+            <span>{{ locationNotice }}</span>
+          </div>
+
+
+          <section
+            class="location-preview"
+            *ngIf="
+              latitude !== null &&
+              longitude !== null
+            "
+          >
+
+            <div
+              class="location-preview-heading"
+            >
+              <div>
+                <span>UBICACIÓN ENCONTRADA</span>
+                <h3>¿Es aquí donde necesitas el servicio?</h3>
+              </div>
+
+              <ion-icon
+                name="location-outline"
+              ></ion-icon>
+            </div>
+
+            <p
+              class="geocoded-address"
+              *ngIf="geocodedDisplayName"
+            >
+              {{ geocodedDisplayName }}
+            </p>
+
+            <div
+              id="new-request-location-map"
+              class="location-map"
+            ></div>
+
+            <p
+              class="location-help"
+            >
+              Si el punto no está exactamente en el domicilio,
+              arrastra el marcador 🏠 hasta la ubicación correcta.
+            </p>
+
+            <button
+              type="button"
+              class="confirm-location-button"
+              [class.confirmed]="locationConfirmed"
+              (click)="confirmLocation()"
+            >
+              <ion-icon
+                [name]="
+                  locationConfirmed
+                    ? 'checkmark-circle'
+                    : 'location-outline'
+                "
+              ></ion-icon>
+
+              <span>
+                {{
+                  locationConfirmed
+                    ? 'Ubicación confirmada'
+                    : 'Confirmar ubicación'
+                }}
+              </span>
+            </button>
+
+          </section>
+
+
+          <div
+            class="location-confirmed"
+            *ngIf="locationConfirmed"
+          >
+
+            <ion-icon
+              name="checkmark-circle"
+            ></ion-icon>
+
+            Domicilio confirmado. Esta será la ubicación
+            utilizada para buscar técnicos y mostrar el seguimiento.
+
+          </div>
+
+        </section>
+
+
+        <!-- FECHA -->
+
+        <section
+          class="form-card"
+        >
+
+          <div
+            class="section-heading"
+          >
+
+            <div
+              class="section-number"
+            >
+              4
+            </div>
+
+            <div>
+
+              <h2>
+                ¿Cuándo lo necesitas?
+              </h2>
+
+              <p>
+                Selecciona una fecha
+                y hora de reserva.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <ion-input
+            label="Fecha preferida"
+            labelPlacement="stacked"
+            type="date"
+            [min]="today"
+            formControlName="preferredDate"
+          ></ion-input>
+
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.preferredDate.touched &&
+              form.controls.preferredDate.invalid
+            "
+          >
+            Selecciona una fecha.
+          </div>
+
+
+          <ion-input
+            label="Hora de reserva"
+            labelPlacement="stacked"
+            type="time"
+            formControlName="timeSlot"
+          ></ion-input>
+
+
+          <div
+            class="field-error"
+            *ngIf="
+              form.controls.timeSlot.touched &&
+              form.controls.timeSlot.invalid
+            "
+          >
+            Selecciona una hora para el servicio.
+          </div>
+
+
+          <div class="schedule-policy-notice">
+            <strong>Ventana de llegada ServiGo</strong>
+            <p>
+              La hora seleccionada es la hora reservada. El técnico que acepte tu servicio
+              podrá llegar desde esa hora y hasta un máximo de 2 horas después.
+            </p>
+            <p>
+              Si cancelas el mismo día después de contratar un técnico, puede aplicarse una
+              penalización del 50% del valor de la visita técnica; si cancelas con 1 hora o
+              menos de anticipación, la penalización será del 100%.
+            </p>
+          </div>
+
+        </section>
+
+
+        <!-- URGENCIA -->
+
+        <section
+          class="form-card"
+        >
+
+          <div
+            class="section-heading"
+          >
+
+            <div
+              class="section-number"
+            >
+              5
+            </div>
+
+            <div>
+
+              <h2>
+                Urgencia
+              </h2>
+
+              <p>
+                Esto ayudará a priorizar
+                técnicos disponibles.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="urgency-list"
+          >
+
+            <button
+              type="button"
+              *ngFor="
+                let option
+                of urgencyOptions
+              "
+              class="urgency-option"
+              [class.selected]="
+                form.controls.urgency.value
+                  === option.value
+              "
+              [class.urgent]="
+                option.value === 'urgent'
+              "
+              (click)="
+                selectUrgency(
+                  option.value
+                )
+              "
+            >
+
+              <div>
+
+                <strong>
+                  {{ option.label }}
+                </strong>
+
+                <span>
+                  {{ option.description }}
+                </span>
+
+              </div>
+
+              <div
+                class="selection-dot"
+              ></div>
+
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- ERROR -->
+
+        <div
+          class="form-error"
+          *ngIf="errorMessage"
+        >
+          {{ errorMessage }}
+        </div>
+
+
+        <!-- PUBLICAR -->
+
+        <ion-button
+          expand="block"
+          type="button"
+          class="publish-button"
+          [disabled]="loading"
+          (click)="submit()"
+        >
+
+          <ion-spinner
+            *ngIf="loading"
+            name="crescent"
+          ></ion-spinner>
+
+          <span
+            *ngIf="!loading"
+          >
+            Publicar solicitud
+          </span>
+
+        </ion-button>
+
+      </form>
+
+    </ng-container>
+
+  </main>
+
+</ion-content>

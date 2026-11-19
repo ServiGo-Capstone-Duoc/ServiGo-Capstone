@@ -1,0 +1,1495 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background:
+    var(--servigo-background);
+}
+
+.detail-container {
+  width: 100%;
+  max-width: 650px;
+
+  margin: 0 auto;
+
+  padding:
+    18px
+    18px
+    30px;
+}
+
+
+.detail-header {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  margin-bottom: 18px;
+}
+
+
+.detail-logo {
+  width: 120px;
+}
+
+
+.back-button {
+  width: 42px;
+  height: 42px;
+
+  display: grid;
+  place-items: center;
+
+  border: 0;
+  border-radius: 13px;
+
+  background: var(--servigo-surface);
+
+  color:
+    var(--servigo-blue);
+}
+
+
+.request-card {
+  margin-bottom: 22px;
+
+  padding: 18px;
+
+  border-radius: 20px;
+
+  background: var(--servigo-surface);
+
+  border:
+    1px solid
+    rgba(var(--servigo-blue-rgb), 0.08);
+
+  > span {
+    color:
+      var(--servigo-blue);
+
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  h1 {
+    margin:
+      4px
+      0
+      9px;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 23px;
+  }
+
+  > p {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 11px;
+    line-height: 1.5;
+  }
+}
+
+
+.request-info {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 9px;
+
+  margin-top: 14px;
+
+  > div {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 4px;
+
+    padding:
+      6px
+      8px;
+
+    border-radius: 10px;
+
+    background: var(--servigo-input-background);
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 9px;
+  }
+
+  ion-icon {
+    color:
+      var(--servigo-blue);
+  }
+}
+
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 12px;
+
+  span {
+    color:
+      var(--servigo-blue);
+
+    font-size: 8px;
+    font-weight: 800;
+  }
+
+  h2 {
+    margin:
+      2px
+      0
+      0;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 17px;
+  }
+
+  > strong {
+    width: 32px;
+    height: 32px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 10px;
+
+    background:
+      var(--servigo-blue-light);
+
+    color:
+      var(--servigo-blue);
+
+    font-size: 12px;
+  }
+}
+
+
+.quote-card {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  margin-bottom: 10px;
+
+  padding: 14px;
+
+  border:
+    1px solid
+    rgba(var(--servigo-blue-rgb), 0.08);
+
+  border-radius: 17px;
+
+  background: var(--servigo-surface);
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+
+.quote-card:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+
+.quote-avatar {
+  width: 44px;
+  height: 44px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 14px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+
+  ion-icon {
+    font-size: 21px;
+  }
+}
+
+
+.quote-main {
+  min-width: 0;
+
+  flex: 1;
+
+  > span {
+    color:
+      var(--servigo-blue);
+
+    font-size: 8px;
+    font-weight: 800;
+  }
+
+  h3 {
+    margin:
+      2px
+      0;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 13px;
+  }
+
+  small {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 8px;
+  }
+}
+
+
+.quote-price {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  color:
+    var(--servigo-blue);
+
+  strong {
+    color:
+      var(--servigo-text);
+
+    font-size: 13px;
+  }
+}
+
+
+.empty-quotes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 30px 20px;
+
+  border-radius: 18px;
+
+  background: var(--servigo-surface);
+
+  text-align: center;
+
+  ion-icon {
+    color:
+      var(--servigo-blue);
+
+    font-size: 36px;
+  }
+
+  strong {
+    color:
+      var(--servigo-text);
+
+    font-size: 12px;
+  }
+
+  span {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 9px;
+  }
+}
+
+/* =========================================
+ * SERVICIO FINALIZADO
+ * ========================================= */
+
+.service-completed-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-bottom: 20px;
+  padding: 20px;
+
+  border: 1px solid var(--servigo-success-border);
+  border-radius: 22px;
+
+  background: var(--servigo-success-soft);
+}
+
+.service-completed-card > ion-icon {
+  flex: 0 0 auto;
+
+  color: var(--servigo-success);
+
+  font-size: 38px;
+}
+
+.service-completed-card span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--servigo-success);
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.service-completed-card strong {
+  display: block;
+
+  color: var(--servigo-text);
+
+  font-size: 17px;
+}
+
+.service-completed-card p {
+  margin:
+    5px
+    0
+    0;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 13px;
+}
+
+
+/* =========================================
+ * EVALUACIÓN
+ * ========================================= */
+
+.review-section {
+  margin-top: 20px;
+  padding: 24px;
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 24px;
+
+  background: var(--servigo-surface);
+}
+
+.review-heading > span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: var(--servigo-blue);
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.review-heading h2 {
+  margin:
+    0
+    0
+    5px;
+
+  color: var(--servigo-text);
+
+  font-size: 21px;
+}
+
+.review-heading p {
+  margin:
+    0
+    0
+    20px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 13px;
+}
+
+
+/* ESTRELLAS */
+
+.review-stars {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 10px;
+}
+
+.review-stars button {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 12px;
+
+  background: var(--servigo-background);
+
+  color: var(--servigo-text-disabled);
+
+  font-size: 27px;
+
+  cursor: pointer;
+}
+
+.review-stars button.active {
+  background: var(--servigo-warning-soft);
+
+  color: var(--servigo-warning);
+}
+
+.review-stars.readonly ion-icon {
+  color: var(--servigo-warning);
+
+  font-size: 27px;
+}
+
+
+/* LABEL */
+
+.rating-label {
+  display: block;
+
+  margin-bottom: 16px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* COMENTARIO */
+
+.review-comment {
+  width: 100%;
+  min-height: 120px;
+
+  box-sizing: border-box;
+
+  padding: 14px;
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 16px;
+
+  outline: none;
+
+  resize: vertical;
+
+  background: var(--servigo-surface-soft);
+
+  color: var(--servigo-text);
+
+  font: inherit;
+
+  line-height: 1.5;
+}
+
+.review-comment:focus {
+  border-color: var(--servigo-blue);
+}
+
+
+/* MENSAJES */
+
+.review-error {
+  margin-top: 10px;
+
+  color: var(--servigo-error);
+
+  font-size: 13px;
+}
+
+.review-success {
+  margin-top: 10px;
+
+  color: var(--servigo-success);
+
+  font-size: 13px;
+}
+
+
+/* BOTÓN */
+
+.submit-review-button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 50px;
+
+  margin-top: 16px;
+  padding: 13px 18px;
+
+  border: 0;
+  border-radius: 16px;
+
+  background: var(--servigo-blue);
+
+  color: var(--servigo-on-primary);
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.submit-review-button:disabled {
+  opacity: 0.6;
+
+  cursor: default;
+}
+
+
+/* REVIEW YA ENVIADA */
+
+.review-completed {
+  padding: 20px;
+
+  border-radius: 18px;
+
+  background: var(--servigo-success-soft);
+
+  text-align: center;
+}
+
+.review-completed > ion-icon {
+  color: var(--servigo-success);
+
+  font-size: 38px;
+}
+
+.review-completed > strong {
+  display: block;
+
+  margin:
+    7px
+    0
+    14px;
+
+  color: var(--servigo-text);
+}
+
+.review-completed .review-stars {
+  justify-content: center;
+}
+
+.review-completed p {
+  margin: 0;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+/* ============================================================
+   PAGO DEL SERVICIO
+   ============================================================ */
+
+.payment-card,
+.payment-approved-card {
+  margin-top: 20px;
+  padding: 24px;
+
+  background: var(--servigo-surface);
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 22px;
+
+  box-shadow:
+    var(--servigo-shadow-card);
+}
+
+
+/* ============================================================
+   ENCABEZADO PAGO
+   ============================================================ */
+
+.payment-heading {
+  margin-bottom: 20px;
+}
+
+
+.payment-heading span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: var(--servigo-blue);
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 0.06em;
+}
+
+
+.payment-heading h2 {
+  margin: 0;
+
+  color: var(--servigo-text);
+
+  font-size: 22px;
+  font-weight: 750;
+
+  line-height: 1.2;
+}
+
+
+/* ============================================================
+   TOTAL
+   ============================================================ */
+
+.payment-total {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 18px;
+  padding: 18px 20px;
+
+  background: var(--servigo-surface-soft);
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 16px;
+}
+
+
+.payment-total span {
+  color: var(--servigo-text-secondary);
+
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 0.05em;
+}
+
+
+.payment-total strong {
+  color: var(--servigo-text);
+
+  font-size: 26px;
+  font-weight: 800;
+
+  line-height: 1;
+}
+
+
+/* ============================================================
+   TEXTO EXPLICATIVO
+   ============================================================ */
+
+.payment-copy {
+  margin:
+    0
+    0
+    20px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+
+/* ============================================================
+   ERROR
+   ============================================================ */
+
+.payment-unavailable,
+.payment-error {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.payment-unavailable {
+  display: grid;
+  gap: 4px;
+
+  color: var(--servigo-warning-strong);
+  background: var(--servigo-warning-soft);
+  border: 1px solid var(--servigo-warning-border);
+}
+
+.payment-unavailable strong {
+  font-weight: 800;
+}
+
+.payment-unavailable span {
+  color: var(--servigo-text-secondary);
+}
+
+.payment-error {
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border: 1px solid var(--servigo-error-border);
+  font-weight: 600;
+}
+
+
+/* ============================================================
+   BOTÓN PAGAR
+   ============================================================ */
+
+.payment-button {
+  width: 100%;
+  min-height: 52px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  padding:
+    0
+    20px;
+
+  appearance: none;
+
+  color: var(--servigo-on-primary);
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--servigo-blue) 0%,
+      var(--servigo-blue-dark) 100%
+    );
+
+  border: 0;
+  border-radius: 15px;
+
+  box-shadow:
+    var(--servigo-shadow-primary);
+
+  font-family: inherit;
+
+  font-size: 15px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+
+.payment-button:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    var(--servigo-shadow-primary-strong);
+}
+
+
+.payment-button:active:not(:disabled) {
+  transform:
+    translateY(0);
+}
+
+
+.payment-button:disabled {
+  cursor: not-allowed;
+}
+
+.payment-button--processing:disabled {
+  opacity: 0.78;
+}
+
+.payment-button--unavailable:disabled {
+  opacity: 1;
+
+  color: var(--servigo-text-disabled);
+  background: var(--servigo-surface-muted);
+
+  border: 1px solid var(--servigo-border-strong);
+  box-shadow: none;
+}
+
+
+.payment-button ion-spinner {
+  width: 22px;
+  height: 22px;
+
+  --color: var(--servigo-on-primary);
+}
+
+
+/* ============================================================
+   PAGO APROBADO
+   ============================================================ */
+
+.payment-approved-card {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 16px;
+
+  background: var(--servigo-success-soft);
+
+  border-color: var(--servigo-success-border);
+}
+
+
+.payment-approved-card > ion-icon {
+  flex:
+    0
+    0
+    auto;
+
+  width: 42px;
+  height: 42px;
+
+  color: var(--servigo-success);
+}
+
+
+.payment-approved-card > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-start;
+}
+
+
+.payment-approved-card span {
+  margin-bottom: 4px;
+
+  color: var(--servigo-success);
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 0.06em;
+}
+
+
+.payment-approved-card strong {
+  margin-bottom: 8px;
+
+  color: var(--servigo-success-strong);
+
+  font-size: 26px;
+  font-weight: 800;
+
+  line-height: 1.15;
+}
+
+
+.payment-approved-card p {
+  margin:
+    0
+    0
+    12px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+
+.payment-approved-card small {
+  display: block;
+
+  max-width: 100%;
+
+  margin-top: 4px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (
+  max-width: 600px
+) {
+
+  .payment-card,
+  .payment-approved-card {
+    margin-top: 16px;
+
+    padding: 18px;
+
+    border-radius: 18px;
+  }
+
+
+  .payment-heading h2 {
+    font-size: 20px;
+  }
+
+
+  .payment-total {
+    padding:
+      16px
+      17px;
+  }
+
+
+  .payment-total strong {
+    font-size: 23px;
+  }
+
+
+  .payment-approved-card > ion-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+
+  .payment-approved-card strong {
+    font-size: 23px;
+  }
+
+
+  .payment-button {
+    min-height: 50px;
+  }
+}
+
+
+/* ============================================================
+   SEGUIMIENTO EN TIEMPO REAL
+   ============================================================ */
+
+.tracking-card {
+  margin-bottom: 22px;
+  padding: 20px;
+
+  border-radius: 22px;
+
+  background: var(--servigo-surface);
+
+  border: 1px solid rgba(var(--servigo-blue-rgb), 0.14);
+
+  box-shadow:
+    var(--servigo-shadow-card);
+}
+
+
+.tracking-header {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 13px;
+
+  margin-bottom: 16px;
+
+  > div:last-child {
+    min-width: 0;
+  }
+
+  span {
+    color: var(--servigo-blue);
+
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+
+  h2 {
+    margin: 3px 0 4px;
+
+    color: var(--servigo-text);
+
+    font-size: 19px;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+
+    color: var(--servigo-text-secondary);
+
+    font-size: 11px;
+    line-height: 1.45;
+  }
+}
+
+
+.tracking-icon {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 42px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 14px;
+
+  background: var(--servigo-blue-light);
+
+  color: var(--servigo-blue);
+
+  ion-icon {
+    width: 23px;
+    height: 23px;
+  }
+}
+
+
+.tracking-waiting {
+  min-height: 92px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 16px;
+
+  border-radius: 16px;
+
+  background: var(--servigo-input-background);
+
+  ion-spinner {
+    flex: 0 0 auto;
+
+    --color: var(--servigo-blue);
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+  }
+
+  strong {
+    color: var(--servigo-text);
+
+    font-size: 12px;
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+
+
+.tracking-status {
+  min-height: 92px;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 13px;
+
+  padding: 16px;
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 16px;
+
+  ion-icon {
+    flex: 0 0 auto;
+
+    width: 23px;
+    height: 23px;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+  }
+
+  strong {
+    color: var(--servigo-text);
+
+    font-size: 12px;
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+
+    font-size: 10px;
+    line-height: 1.45;
+  }
+}
+
+
+.tracking-status--unavailable {
+  background: var(--servigo-warning-soft);
+  border-color: var(--servigo-warning-border);
+
+  ion-icon {
+    color: var(--servigo-warning-strong);
+  }
+}
+
+
+.tracking-status--error {
+  background: var(--servigo-error-soft);
+  border-color: var(--servigo-error-border);
+
+  ion-icon {
+    color: var(--servigo-error-strong);
+  }
+}
+
+
+.tracking-map {
+  width: 100%;
+  height: 290px;
+
+  overflow: hidden;
+
+  border-radius: 18px;
+
+  background: var(--servigo-surface-muted);
+
+  border: 1px solid var(--servigo-divider);
+
+  z-index: 1;
+}
+
+
+.tracking-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 10px;
+
+  margin-top: 12px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+
+    padding: 13px;
+
+    border-radius: 14px;
+
+    background: var(--servigo-input-background);
+  }
+
+  span {
+    color: var(--servigo-text-secondary);
+
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  strong {
+    color: var(--servigo-text);
+
+    font-size: 15px;
+  }
+}
+
+
+.tracking-update {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin-top: 12px;
+
+  color: var(--servigo-success);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  ion-icon {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+
+.tracking-estimate-note {
+  display: block;
+
+  margin-top: 8px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+
+.tracking-no-destination {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  padding: 14px;
+
+  border-radius: 14px;
+
+  background: var(--servigo-warning-soft);
+
+  color: var(--servigo-warning-strong);
+
+  font-size: 10px;
+  line-height: 1.45;
+
+  ion-icon {
+    flex: 0 0 auto;
+
+    width: 18px;
+    height: 18px;
+  }
+}
+
+
+/* ============================================================
+   ESTADOS OPERATIVOS DEL CLIENTE
+   ============================================================ */
+
+.arrival-card,
+.in-progress-card {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 13px;
+
+  margin-bottom: 22px;
+  padding: 18px;
+
+  border-radius: 20px;
+
+  background: var(--servigo-surface);
+
+  border: 1px solid rgba(var(--servigo-blue-rgb), 0.10);
+
+  > ion-icon {
+    width: 34px;
+    height: 34px;
+
+    flex: 0 0 auto;
+
+    color: var(--servigo-blue);
+  }
+
+  > div {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+  }
+
+  span {
+    color: var(--servigo-blue);
+
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  strong {
+    margin-top: 3px;
+
+    color: var(--servigo-text);
+
+    font-size: 14px;
+  }
+
+  p {
+    margin: 5px 0 0;
+
+    color: var(--servigo-text-secondary);
+
+    font-size: 10px;
+    line-height: 1.45;
+  }
+}
+
+
+.arrival-card {
+  background: var(--servigo-success-soft);
+
+  border-color: var(--servigo-success-border);
+
+  > ion-icon,
+  span {
+    color: var(--servigo-success);
+  }
+}
+
+
+@media (max-width: 600px) {
+  .tracking-card {
+    padding: 17px;
+
+    border-radius: 19px;
+  }
+
+  .tracking-map {
+    height: 250px;
+  }
+
+  .tracking-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+
+/* CANCELACION */
+.cancellation-card,.cancelled-card{margin-top:18px;border-radius:22px}.cancellation-card{padding:22px;background:var(--servigo-surface);border:1px solid var(--servigo-border);box-shadow:var(--servigo-shadow-card)}.cancellation-summary{display:flex;align-items:center;justify-content:space-between;gap:22px}.cancellation-summary span,.cancellation-form>span,.cancelled-card span{display:block;margin-bottom:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em}.cancellation-summary span,.cancellation-form>span{color:var(--servigo-text-secondary)}.cancellation-summary strong{display:block;color:var(--servigo-text)}.cancellation-summary p,.cancellation-form p,.cancelled-card p{margin:6px 0 0;line-height:1.5}.cancellation-summary p,.cancellation-form p{color:var(--servigo-text-secondary)}.open-cancellation-button,.cancel-back-button,.confirm-cancellation-button{min-height:46px;border:0;border-radius:14px;font-weight:800;cursor:pointer}.open-cancellation-button{padding:0 18px;color:var(--servigo-error-strong);background:var(--servigo-error-soft);border:1px solid var(--servigo-error-border)}.open-cancellation-button:disabled,.cancel-back-button:disabled,.confirm-cancellation-button:disabled{opacity:.55;cursor:not-allowed}.cancellation-form h2{margin:0;color:var(--servigo-text);font-size:1.25rem}.cancellation-reason{width:100%;min-height:120px;margin-top:18px;padding:14px 16px;resize:vertical;border:1px solid var(--servigo-border-strong);border-radius:14px;outline:none;background:var(--servigo-surface);color:var(--servigo-text);font:inherit;line-height:1.5;box-sizing:border-box}.cancellation-counter{display:block;margin-top:6px;text-align:right;color:var(--servigo-text-tertiary)}.cancellation-error{margin-top:12px;padding:11px 13px;border-radius:12px;color:var(--servigo-error-strong);background:var(--servigo-error-soft);font-size:.9rem;font-weight:700}.cancellation-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.cancel-back-button{padding:0 18px;color:var(--servigo-text);background:var(--servigo-surface-hover)}.confirm-cancellation-button{min-width:190px;padding:0 20px;color:var(--servigo-on-primary);background:var(--servigo-error-strong)}.cancelled-card{display:flex;align-items:flex-start;gap:14px;padding:20px;color:var(--servigo-error-strong);background:var(--servigo-error-soft);border:1px solid var(--servigo-error-border)}.cancelled-card>ion-icon{width:28px;height:28px;margin-top:2px}.cancelled-card span{color:var(--servigo-error-strong)}.cancelled-card strong{display:block;color:var(--servigo-error-strong)}.cancelled-card p{color:var(--servigo-error-strong)}@media(max-width:640px){.cancellation-summary{align-items:stretch;flex-direction:column}.open-cancellation-button{width:100%}.cancellation-actions{flex-direction:column-reverse}.cancel-back-button,.confirm-cancellation-button{width:100%}}
+
+/* =========================================
+ * SERVIGO DESIGN SYSTEM V1 - DETALLE SERVICIO
+ * ========================================= */
+.detail-container { max-width: var(--servigo-page-max); padding: 18px 20px calc(var(--servigo-tabbar-height) + 40px); }
+.detail-header { min-height: 48px; margin-bottom: 22px; }
+.detail-logo { width: 104px; }
+.back-button { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--servigo-border); box-shadow: none; }
+.request-card, .cancelled-card, .cancellation-card, .tracking-card, .arrival-card, .in-progress-card, .service-completed-card, .payment-card, .payment-approved-card, .review-section {
+  border-color: var(--servigo-border); border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card);
+}
+.request-card { padding: 18px; margin-bottom: 16px; }
+.request-card > span { font-size: 11px; letter-spacing: .06em; }
+.request-card h1 { font-size: 22px; line-height: 1.15; }
+.request-info { font-size: 13px; line-height: 1.5; }
+.tracking-header h2, .payment-heading h2, .review-heading h2, .quotes-section .section-heading h2 { font-size: 18px; }
+.tracking-header p, .payment-copy, .review-heading p { font-size: 13px; line-height: 1.5; }
+.tracking-stats { gap: 10px; }
+.tracking-stats > div { border-radius: var(--servigo-radius-md); }
+.quote-card { border-color: var(--servigo-border); border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card); }
+.quote-main h3 { font-size: 15px; }
+.quote-main span, .quote-main p { font-size: 12px; line-height: 1.45; }
+.quote-price { font-size: 16px; }
+.payment-button, .submit-review-button, .confirm-cancellation-button { min-height: 50px; border-radius: var(--servigo-radius-md); font-size: 14px; box-shadow: 0 10px 22px rgba(var(--servigo-blue-rgb), .16); }
+.open-cancellation-button, .cancel-back-button { min-height: 44px; border-radius: var(--servigo-radius-md); font-size: 13px; }
+.review-stars button { min-width: 44px; min-height: 44px; }
+.review-comment { font-size: 14px; }
+.loading-state, .error-state, .empty-quotes { font-size: 13px; }
+
+
+/* Ubicación de continuidad cuando el dispositivo del técnico no entrega GPS. */
+.tracking-status--fallback {
+  border-color: var(--servigo-warning-border);
+  background: var(--servigo-warning-soft);
+  color: var(--servigo-warning-strong);
+}
+
+.tracking-status--fallback ion-icon {
+  color: var(--servigo-warning);
+}
+
+
+.payment-summary-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-md);
+  background: var(--servigo-surface-soft);
+  color: var(--servigo-text-secondary);
+}
+
+.payment-summary-loading ion-spinner {
+  width: 20px;
+  height: 20px;
+}
+
+.payment-retry-button {
+  align-self: flex-start;
+  min-height: 40px;
+  margin-top: 4px;
+  padding: 0 14px;
+  border: 1px solid var(--servigo-warning-border);
+  border-radius: var(--servigo-radius-pill);
+  background: transparent;
+  color: var(--servigo-warning-strong);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.payment-retry-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancellation-penalty-preview {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--servigo-error-soft);
+  border: 1px solid var(--servigo-error-border);
+}
+
+.cancellation-penalty-preview strong,
+.cancellation-penalty-preview span {
+  display: block;
+}
+
+.cancellation-penalty-preview span {
+  margin-top: 4px;
+  color: var(--servigo-text-secondary);
+  font-size: .86rem;
+}
+
+.cancellation-penalty-preview.no-penalty {
+  background: var(--servigo-surface-hover);
+  border-color: var(--servigo-border);
+}

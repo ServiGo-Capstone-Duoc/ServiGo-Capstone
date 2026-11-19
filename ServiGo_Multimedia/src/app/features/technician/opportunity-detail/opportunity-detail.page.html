@@ -1,0 +1,322 @@
+<ion-content>
+
+  <main
+    class="detail-container"
+  >
+
+
+    <!-- HEADER -->
+
+    <header
+      class="detail-header"
+    >
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="detail-logo"
+      />
+
+    </header>
+
+
+    <!-- CARGANDO -->
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+
+      <span>
+        Cargando oportunidad...
+      </span>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="error-state"
+      *ngIf="
+        !loading &&
+        errorMessage
+      "
+    >
+
+      {{ errorMessage }}
+
+    </div>
+
+
+    <!-- DETALLE -->
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        !errorMessage &&
+        opportunity as item
+      "
+    >
+
+
+      <!-- HERO -->
+
+      <section
+        class="hero-card"
+      >
+
+        <span
+          class="eyebrow"
+        >
+          OPORTUNIDAD
+        </span>
+
+
+        <div
+          class="hero-title"
+        >
+
+          <div
+            class="hero-icon"
+          >
+
+            <ion-icon
+              name="construct-outline"
+            ></ion-icon>
+
+          </div>
+
+
+          <div>
+
+            <h1>
+              {{
+                item.request.category
+              }}
+            </h1>
+
+
+            <span>
+
+              Match
+
+              {{
+                item
+                  .opportunity
+                  .matchScore
+              }}%
+
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <p>
+          {{
+            item.request.description
+          }}
+        </p>
+
+      </section>
+
+
+      <!-- INFORMACIÓN DEL SERVICIO -->
+
+      <section
+        class="detail-card"
+      >
+
+        <h2>
+          Información del servicio
+        </h2>
+
+
+        <!-- UBICACIÓN -->
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+
+          <div>
+
+            <span>
+              Ubicación
+            </span>
+
+
+            <strong>
+              {{
+                item.request.commune
+              }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- FECHA -->
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="calendar-outline"
+          ></ion-icon>
+
+
+          <div>
+
+            <span>
+              Fecha solicitada
+            </span>
+
+
+            <strong>
+              {{
+                getPreferredDate()
+              }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- HORARIO -->
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="time-outline"
+          ></ion-icon>
+
+
+          <div>
+
+            <span>
+              Horario
+            </span>
+
+
+            <strong>
+              {{
+                item.request.timeSlot
+              }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- URGENCIA -->
+
+        <div
+          class="info-row"
+        >
+
+          <ion-icon
+            name="flash-outline"
+          ></ion-icon>
+
+
+          <div>
+
+            <span>
+              Urgencia
+            </span>
+
+
+            <strong>
+              {{
+                getUrgencyLabel()
+              }}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- COMPATIBILIDAD -->
+
+      <section
+        class="detail-card"
+      >
+
+        <h2>
+          Compatibilidad
+        </h2>
+
+
+        <div
+          class="reasons"
+        >
+
+          <span
+            *ngFor="
+              let reason
+              of item
+                .opportunity
+                .matchReasons
+            "
+          >
+            {{ reason }}
+          </span>
+
+        </div>
+
+      </section>
+
+
+      <!-- COTIZAR -->
+
+      <ion-button
+        expand="block"
+        type="button"
+        class="quote-button"
+        (click)="quote()"
+      >
+
+        Cotizar servicio
+
+      </ion-button>
+
+
+    </ng-container>
+
+  </main>
+
+</ion-content>

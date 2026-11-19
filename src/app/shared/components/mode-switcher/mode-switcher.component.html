@@ -1,0 +1,32 @@
+<div
+  class="mode-switcher"
+>
+
+  <button
+    type="button"
+    class="mode-button"
+    [class.active]="
+      activeMode === 'cliente'
+    "
+    (click)="
+      changeMode('cliente')
+    "
+  >
+    Cliente
+  </button>
+
+
+  <button
+    type="button"
+    class="mode-button technician"
+    [class.active]="
+      activeMode === 'tecnico'
+    "
+    (click)="
+      changeMode('tecnico')
+    "
+  >
+    Técnico
+  </button>
+
+</div>

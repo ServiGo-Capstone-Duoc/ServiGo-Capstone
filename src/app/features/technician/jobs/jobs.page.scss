@@ -1,0 +1,602 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background: var(--servigo-background);
+}
+
+.jobs-container {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding:
+    24px
+    20px
+    120px;
+}
+
+
+/* =========================================
+ * HEADER
+ * ========================================= */
+
+.jobs-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.back-button {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 16px;
+
+  background: var(--servigo-surface);
+  color: var(--servigo-blue);
+
+  font-size: 24px;
+
+  cursor: pointer;
+
+  box-shadow:
+    var(--servigo-shadow-card);
+}
+
+.jobs-logo {
+  width: 150px;
+  max-width: 45%;
+  height: auto;
+  display: block;
+}
+
+
+/* =========================================
+ * INTRO
+ * ========================================= */
+
+.jobs-intro {
+  margin-bottom: 28px;
+}
+
+.jobs-intro > span {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: var(--servigo-blue);
+
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.jobs-intro h1 {
+  margin:
+    0
+    0
+    8px;
+
+  color: var(--servigo-text);
+
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.jobs-intro p {
+  margin: 0;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+
+/* =========================================
+ * LOADING / ERROR
+ * ========================================= */
+
+.loading-state,
+.error-state,
+.empty-state {
+  min-height: 180px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 32px;
+
+  border:
+    1px solid
+    var(--servigo-border);
+
+  border-radius: 24px;
+
+  background: var(--servigo-surface);
+
+  text-align: center;
+}
+
+.loading-state {
+  gap: 14px;
+
+  color: var(--servigo-text-secondary);
+}
+
+.error-state {
+  color: var(--servigo-error);
+}
+
+
+/* =========================================
+ * EMPTY
+ * ========================================= */
+
+.empty-state ion-icon {
+  margin-bottom: 14px;
+
+  color: var(--servigo-blue);
+
+  font-size: 42px;
+}
+
+.empty-state h2 {
+  margin:
+    0
+    0
+    8px;
+
+  color: var(--servigo-text);
+
+  font-size: 20px;
+}
+
+.empty-state p {
+  max-width: 420px;
+
+  margin: 0;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+/* =========================================
+ * LISTA
+ * ========================================= */
+
+.jobs-list {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 18px;
+}
+
+
+/* =========================================
+ * CARD
+ * ========================================= */
+
+.job-card {
+  width: 100%;
+
+  display: block;
+
+  padding: 20px;
+
+  border:
+    1px solid
+    var(--servigo-border);
+
+  border-radius: 24px;
+
+  background: var(--servigo-surface);
+
+  color: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  box-shadow:
+    var(--servigo-shadow-card);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.job-card:hover {
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    var(--servigo-shadow-floating);
+}
+
+
+/* =========================================
+ * TOP
+ * ========================================= */
+
+.job-top {
+  display: grid;
+
+  grid-template-columns:
+    52px
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 14px;
+}
+
+.job-icon {
+  width: 52px;
+  height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  background: var(--servigo-blue-light);
+
+  color: var(--servigo-blue);
+
+  font-size: 25px;
+}
+
+.job-main {
+  min-width: 0;
+}
+
+.job-main span {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: var(--servigo-blue);
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.job-main h2 {
+  margin: 0;
+
+  color: var(--servigo-text);
+
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.status-badge {
+  padding:
+    7px
+    11px;
+
+  border-radius: 999px;
+
+  background: var(--servigo-success-soft);
+
+  color: var(--servigo-success);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================
+ * DESCRIPCIÓN
+ * ========================================= */
+
+.job-description {
+  margin:
+    18px
+    0;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+/* =========================================
+ * META
+ * ========================================= */
+
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap:
+    10px
+    16px;
+
+  padding-bottom: 17px;
+
+  border-bottom:
+    1px solid
+    var(--servigo-surface-muted);
+}
+
+.job-meta span {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 5px;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 12px;
+}
+
+.job-meta ion-icon {
+  color: var(--servigo-blue);
+
+  font-size: 16px;
+}
+
+
+/* =========================================
+ * FOOTER
+ * ========================================= */
+
+.job-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 5px;
+
+  padding-top: 16px;
+
+  color: var(--servigo-blue);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.job-footer ion-icon {
+  font-size: 18px;
+}
+
+
+/* =========================================
+ * RESPONSIVE
+ * ========================================= */
+
+@media (
+  max-width: 720px
+) {
+
+  .jobs-container {
+    padding:
+      18px
+      16px
+      110px;
+  }
+
+  .jobs-list {
+    grid-template-columns:
+      1fr;
+  }
+
+  .jobs-intro h1 {
+    font-size: 27px;
+  }
+
+  .job-card {
+    padding: 17px;
+  }
+
+  .job-top {
+    grid-template-columns:
+      48px
+      minmax(0, 1fr)
+      auto;
+
+    gap: 11px;
+  }
+
+  .job-icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+
+@media (
+  max-width: 420px
+) {
+
+  .jobs-logo {
+    width: 125px;
+  }
+
+  .status-badge {
+    padding:
+      6px
+      8px;
+
+    font-size: 10px;
+  }
+}
+
+/* =========================================
+ * ACTIVO / HISTORIAL
+ * ========================================= */
+
+.services-view-switcher,
+.jobs-view-switcher {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+
+  margin-bottom: 24px;
+  padding: 5px;
+
+  border: 1px solid var(--servigo-border);
+  border-radius: 18px;
+
+  background: var(--servigo-surface-muted);
+}
+
+
+.services-view-switcher button,
+.jobs-view-switcher button {
+  min-height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding:
+    9px
+    14px;
+
+  border: 0;
+  border-radius: 14px;
+
+  background: transparent;
+
+  color: var(--servigo-text-secondary);
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+.services-view-switcher button.active,
+.jobs-view-switcher button.active {
+  background: var(--servigo-surface);
+
+  color: var(--servigo-blue);
+
+  box-shadow:
+    var(--servigo-shadow-card);
+}
+
+
+.services-view-switcher strong,
+.jobs-view-switcher strong {
+  min-width: 24px;
+  height: 24px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    0
+    6px;
+
+  border-radius: 999px;
+
+  background: var(--servigo-blue-light);
+
+  color: var(--servigo-blue);
+
+  font-size: 11px;
+}
+
+
+/* =========================================
+ * ESTADOS HISTÓRICOS
+ * ========================================= */
+
+.status-badge.completed {
+  background: var(--servigo-success-soft);
+
+  color: var(--servigo-success);
+}
+
+
+.status-badge.cancelled {
+  background: var(--servigo-error-soft);
+
+  color: var(--servigo-error);
+}
+
+/* =========================================
+ * ESTADO ECONÓMICO DEL HISTORIAL
+ * ========================================= */
+
+.job-payment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--servigo-border);
+  border-radius: 14px;
+  background: var(--servigo-surface-muted);
+}
+
+.job-payment > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.job-payment span {
+  color: var(--servigo-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.job-payment strong {
+  font-size: 13px;
+}
+
+.job-payment strong.paid {
+  color: var(--servigo-success);
+}
+
+.job-payment strong.pending {
+  color: var(--servigo-warning-strong);
+}
+
+.job-payment-amount {
+  color: var(--servigo-text);
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}

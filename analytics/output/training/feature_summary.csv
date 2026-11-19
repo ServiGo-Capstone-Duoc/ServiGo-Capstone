@@ -1,0 +1,12 @@
+﻿feature,type,used_by_model
+commune,categorical,1
+category,categorical,1
+creation_time_band,categorical,1
+creation_month,numeric,1
+creation_weekday_number,numeric,1
+is_weekend,numeric,1
+demand_lag_1,numeric,1
+demand_lag_7,numeric,1
+rolling_mean_7,numeric,1
+rolling_mean_28,numeric,1
+synthetic_expected_demand,forbidden,0

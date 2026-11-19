@@ -1,0 +1,606 @@
+<ion-content>
+
+  <main class="admin-container">
+
+    <header class="admin-header">
+
+      <img
+        src="assets/branding/servigo-logo-horizontal.png"
+        alt="ServiGo"
+        class="admin-logo"
+      />
+
+      <div class="admin-title">
+
+        <span>
+          Administración
+        </span>
+
+        <h1>
+          Validación de técnicos
+        </h1>
+
+      </div>
+
+      <button
+        type="button"
+        class="technicians-button"
+        (click)="manageTechnicians()"
+      >
+        <ion-icon name="people-outline"></ion-icon>
+        Gestionar técnicos
+      </button>
+
+    </header>
+
+
+    <!-- MENSAJES -->
+
+    <div
+      class="admin-message success"
+      *ngIf="successMessage"
+    >
+      {{ successMessage }}
+    </div>
+
+
+    <div
+      class="admin-message error"
+      *ngIf="errorMessage"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <!-- CARGANDO -->
+
+    <div
+      class="loading-state"
+      *ngIf="loading"
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando postulaciones...
+      </span>
+
+    </div>
+
+
+    <!-- LISTADO -->
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        !selectedApplication
+      "
+    >
+
+      <div
+        class="admin-toolbar"
+      >
+
+        <div>
+
+          <strong>
+            Postulaciones pendientes
+          </strong>
+
+          <span>
+            {{ applications.length }}
+            por revisar
+          </span>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="refresh-button"
+          (click)="loadApplications()"
+        >
+
+          <ion-icon
+            name="refresh-outline"
+          ></ion-icon>
+
+        </button>
+
+      </div>
+
+
+      <div
+        class="empty-state"
+        *ngIf="
+          applications.length === 0
+        "
+      >
+
+        <ion-icon
+          name="checkmark-circle-outline"
+        ></ion-icon>
+
+        <h2>
+          Todo al día
+        </h2>
+
+        <p>
+          No existen postulaciones
+          pendientes de revisión.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="application-card"
+        *ngFor="
+          let application
+          of applications
+        "
+        (click)="
+          openApplication(
+            application
+          )
+        "
+      >
+
+        <div
+          class="application-avatar"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div
+          class="application-summary"
+        >
+
+          <strong>
+            {{ application.fullName }}
+          </strong>
+
+          <span>
+            {{ application.baseCommune }}
+            ·
+            {{ application.experienceYears }}
+            años de experiencia
+          </span>
+
+
+          <div
+            class="specialty-summary"
+          >
+
+            <span
+              *ngFor="
+                let specialty
+                of application.specialties
+              "
+            >
+              {{ specialty }}
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="pending-label"
+        >
+          Pendiente
+        </div>
+
+      </button>
+
+    </ng-container>
+
+
+    <!-- DETALLE -->
+
+    <section
+      class="application-detail"
+      *ngIf="
+        selectedApplication
+        as application
+      "
+    >
+
+      <button
+        type="button"
+        class="back-list-button"
+        (click)="closeApplication()"
+      >
+        ← Volver a postulaciones
+      </button>
+
+
+      <div
+        class="detail-header"
+      >
+
+        <div
+          class="application-avatar large"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            POSTULANTE
+          </span>
+
+          <h2>
+            {{ application.fullName }}
+          </h2>
+
+          <p>
+            {{ application.rut }}
+            ·
+            {{ application.phone }}
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="detail-card"
+      >
+
+        <div
+          class="detail-title"
+        >
+
+          <ion-icon
+            name="construct-outline"
+          ></ion-icon>
+
+          <strong>
+            Especialidades
+          </strong>
+
+        </div>
+
+
+        <div
+          class="specialty-summary"
+        >
+
+          <span
+            *ngFor="
+              let specialty
+              of application.specialties
+            "
+          >
+            {{ specialty }}
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="detail-card"
+      >
+
+        <div
+          class="detail-title"
+        >
+
+          <ion-icon
+            name="document-text-outline"
+          ></ion-icon>
+
+          <strong>
+            Experiencia
+          </strong>
+
+        </div>
+
+
+        <p>
+          <strong>
+            {{ application.experienceYears }}
+            años
+          </strong>
+        </p>
+
+        <p>
+          {{
+            application
+              .experienceDescription
+          }}
+        </p>
+
+      </div>
+
+
+      <div
+        class="detail-card"
+      >
+
+        <div
+          class="detail-title"
+        >
+
+          <ion-icon
+            name="location-outline"
+          ></ion-icon>
+
+          <strong>
+            Cobertura
+          </strong>
+
+        </div>
+
+
+        <p>
+          {{
+            application.baseCommune
+          }}
+        </p>
+
+        <p>
+          Radio de atención:
+          {{
+            application.serviceRadiusKm
+          }}
+          km
+        </p>
+
+      </div>
+
+
+      <div class="detail-card documents-review-card">
+
+        <div class="detail-title documents-title">
+
+          <ion-icon
+            name="shield-checkmark-outline"
+          ></ion-icon>
+
+          <div>
+            <strong>
+              Documentación de respaldo
+            </strong>
+
+            <span>
+              {{ applicationDocuments.length }}
+              archivos recuperados
+            </span>
+          </div>
+
+          <span
+            class="review-status"
+            [class.ready]="documentsReady"
+          >
+            {{
+              documentsReady
+                ? 'Mínimo completo'
+                : 'Revisión pendiente'
+            }}
+          </span>
+
+        </div>
+
+        <div
+          class="documents-loading"
+          *ngIf="documentsLoading"
+        >
+          <ion-spinner name="crescent"></ion-spinner>
+          <span>Recuperando archivos protegidos...</span>
+        </div>
+
+        <div
+          class="document-warning"
+          *ngIf="documentErrorMessage"
+          role="alert"
+        >
+          {{ documentErrorMessage }}
+        </div>
+
+        <div
+          class="document-warning"
+          *ngIf="
+            !documentsLoading &&
+            !documentErrorMessage &&
+            !documentsReady
+          "
+        >
+          Debe existir una identificación y al menos un título,
+          certificado, licencia o respaldo profesional antes de aprobar.
+        </div>
+
+        <div
+          class="review-document-list"
+          *ngIf="
+            !documentsLoading &&
+            applicationDocuments.length > 0
+          "
+        >
+          <article
+            class="review-document"
+            *ngFor="let fileDocument of applicationDocuments"
+          >
+            <div class="review-document-icon">
+              <ion-icon name="document-text-outline"></ion-icon>
+            </div>
+
+            <div class="review-document-copy">
+              <span>
+                {{ categoryLabel(fileDocument.category) }}
+              </span>
+
+              <strong>
+                {{ fileDocument.originalName }}
+              </strong>
+
+              <small>
+                {{ formatFileSize(fileDocument.size) }}
+                ·
+                {{ fileDocument.contentType }}
+              </small>
+            </div>
+
+            <div class="review-document-actions">
+              <button
+                type="button"
+                title="Abrir documento"
+                [disabled]="openingDocumentPath !== ''"
+                (click)="openDocument(fileDocument)"
+              >
+                <ion-spinner
+                  *ngIf="
+                    openingDocumentPath ===
+                    fileDocument.storagePath
+                  "
+                  name="crescent"
+                ></ion-spinner>
+
+                <ion-icon
+                  *ngIf="
+                    openingDocumentPath !==
+                    fileDocument.storagePath
+                  "
+                  name="eye-outline"
+                ></ion-icon>
+              </button>
+
+              <button
+                type="button"
+                title="Descargar documento"
+                [disabled]="openingDocumentPath !== ''"
+                (click)="openDocument(fileDocument, true)"
+              >
+                <ion-icon name="download-outline"></ion-icon>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div class="declared-document-summary">
+          <span>
+            Identificación declarada:
+            <strong>
+              {{ application.identificationDocumentCount }}
+            </strong>
+          </span>
+
+          <span>
+            Respaldos profesionales declarados:
+            <strong>
+              {{ application.professionalDocumentCount }}
+            </strong>
+          </span>
+
+          <span>
+            Adicionales declarados:
+            <strong>
+              {{ application.additionalDocumentCount }}
+            </strong>
+          </span>
+        </div>
+
+      </div>
+
+
+      <!-- RECHAZO -->
+
+      <div
+        class="detail-card reject-card"
+      >
+
+        <ion-textarea
+          label="Motivo de rechazo"
+          labelPlacement="stacked"
+          [value]="rejectionReason"
+          (ionInput)="
+            rejectionReason =
+              $any($event.target).value ?? ''
+          "
+          placeholder="Indica qué debe corregir el postulante..."
+          [autoGrow]="true"
+        ></ion-textarea>
+
+      </div>
+
+
+      <!-- ACCIONES -->
+
+      <div
+        class="admin-actions"
+      >
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="danger"
+          [disabled]="actionLoading"
+          (click)="reject()"
+        >
+
+          <ion-icon
+            slot="start"
+            name="close-circle-outline"
+          ></ion-icon>
+
+          Rechazar
+
+        </ion-button>
+
+
+        <ion-button
+          expand="block"
+          [disabled]="
+            actionLoading ||
+            documentsLoading ||
+            !documentsReady
+          "
+          (click)="approve()"
+        >
+
+          <ion-spinner
+            *ngIf="actionLoading"
+            name="crescent"
+          ></ion-spinner>
+
+          <ng-container
+            *ngIf="!actionLoading"
+          >
+
+            <ion-icon
+              slot="start"
+              name="checkmark-circle-outline"
+            ></ion-icon>
+
+            Aprobar técnico
+
+          </ng-container>
+
+        </ion-button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</ion-content>

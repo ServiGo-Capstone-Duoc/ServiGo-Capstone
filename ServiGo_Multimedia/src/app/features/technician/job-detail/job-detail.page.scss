@@ -1,0 +1,526 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background: #f5f7fb;
+}
+
+.job-detail-container {
+  width: 100%;
+  max-width: 760px;
+
+  margin: 0 auto;
+
+  padding:
+    24px
+    20px
+    120px;
+}
+
+
+/* HEADER */
+
+.job-detail-header {
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  margin-bottom: 28px;
+}
+
+.back-button {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 16px;
+
+  background: #ffffff;
+  color: #0879ee;
+
+  font-size: 24px;
+
+  cursor: pointer;
+}
+
+.detail-logo {
+  width: 150px;
+  max-width: 45%;
+
+  height: auto;
+
+  display: block;
+}
+
+
+/* ESTADOS GENERALES */
+
+.loading-state,
+.error-state {
+  min-height: 180px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+
+  padding: 30px;
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius: 24px;
+
+  background: #ffffff;
+}
+
+.error-state {
+  color: #c62828;
+}
+
+
+/* RESUMEN */
+
+.job-summary-card,
+.information-card,
+.status-card {
+  margin-bottom: 18px;
+
+  padding: 24px;
+
+  border:
+    1px solid
+    #e1e8f1;
+
+  border-radius: 24px;
+
+  background: #ffffff;
+}
+
+.job-summary-card > span {
+  display: block;
+
+  margin-bottom: 16px;
+
+  color: #0879ee;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+
+  text-transform: uppercase;
+}
+
+.job-title {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 16px;
+}
+
+.job-icon {
+  width: 58px;
+  height: 58px;
+
+  flex:
+    0
+    0
+    58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 18px;
+
+  background: #eaf4ff;
+
+  color: #0879ee;
+
+  font-size: 28px;
+}
+
+.job-title h1 {
+  margin:
+    2px
+    0
+    7px;
+
+  color: #202b3c;
+
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.job-title p {
+  margin: 0;
+
+  color: #697386;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+/* INFORMACIÓN */
+
+.information-card h2 {
+  margin:
+    0
+    0
+    20px;
+
+  color: #202b3c;
+
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 14px;
+
+  padding:
+    15px
+    0;
+
+  border-bottom:
+    1px solid
+    #edf0f4;
+}
+
+.info-row:last-child {
+  border-bottom: 0;
+}
+
+.info-row > ion-icon {
+  margin-top: 2px;
+
+  color: #0879ee;
+
+  font-size: 22px;
+}
+
+.info-row div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.info-row span {
+  color: #7b8493;
+
+  font-size: 11px;
+}
+
+.info-row strong {
+  color: #202b3c;
+
+  font-size: 14px;
+}
+
+.info-row small {
+  color: #697386;
+
+  font-size: 12px;
+}
+
+
+/* STATUS */
+
+.status-card {
+  border-color: #cfe4fb;
+
+  background: #f7fbff;
+}
+
+.status-card > span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #0879ee;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.status-card strong {
+  display: block;
+
+  color: #202b3c;
+
+  font-size: 20px;
+}
+
+.status-card p {
+  margin:
+    10px
+    0
+    0;
+
+  color: #697386;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+/* MOBILE */
+
+@media (
+  max-width: 600px
+) {
+
+  .job-detail-container {
+    padding:
+      18px
+      16px
+      110px;
+  }
+
+  .job-summary-card,
+  .information-card,
+  .status-card {
+    padding: 19px;
+  }
+
+  .detail-logo {
+    width: 125px;
+  }
+
+  .job-title h1 {
+    font-size: 23px;
+  }
+}
+
+/* =========================================
+ * CANCELACIÓN DEL TRABAJO
+ * ========================================= */
+
+.cancellation-card,
+.cancelled-card {
+  margin-top: 18px;
+  border-radius: 22px;
+}
+
+.cancellation-card {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.cancellation-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.cancellation-summary > div {
+  min-width: 0;
+}
+
+.cancellation-summary span,
+.cancellation-form > span,
+.cancelled-card span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.cancellation-summary span,
+.cancellation-form > span {
+  color: #64748b;
+}
+
+.cancellation-summary strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.cancellation-summary p,
+.cancellation-form p,
+.cancelled-card p {
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.cancellation-summary p,
+.cancellation-form p {
+  color: #64748b;
+}
+
+.open-cancellation-button,
+.cancel-back-button,
+.confirm-cancellation-button {
+  min-height: 46px;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.open-cancellation-button {
+  flex: 0 0 auto;
+  padding: 0 18px;
+  color: #b42318;
+  background: #fff1f0;
+  border: 1px solid rgba(180, 35, 24, 0.16);
+}
+
+.open-cancellation-button:hover:not(:disabled),
+.cancel-back-button:hover:not(:disabled),
+.confirm-cancellation-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.open-cancellation-button:disabled,
+.cancel-back-button:disabled,
+.confirm-cancellation-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cancellation-form h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.cancellation-reason {
+  width: 100%;
+  min-height: 120px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.cancellation-reason:focus {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
+}
+
+.cancellation-counter {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+  color: #94a3b8;
+}
+
+.cancellation-error {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  color: #b42318;
+  background: #fff1f0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.cancellation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cancel-back-button,
+.confirm-cancellation-button {
+  border: 0;
+}
+
+.cancel-back-button {
+  padding: 0 18px;
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.confirm-cancellation-button {
+  min-width: 190px;
+  padding: 0 20px;
+  color: #fff;
+  background: #b42318;
+}
+
+.confirm-cancellation-button ion-spinner {
+  width: 20px;
+  height: 20px;
+}
+
+.cancelled-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  color: #7f1d1d;
+  background: #fff7f7;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+}
+
+.cancelled-card > ion-icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-top: 2px;
+}
+
+.cancelled-card span {
+  color: #b42318;
+}
+
+.cancelled-card strong {
+  display: block;
+  color: #7f1d1d;
+  font-size: 1rem;
+}
+
+.cancelled-card p {
+  color: #991b1b;
+}
+
+@media (max-width: 640px) {
+  .cancellation-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .open-cancellation-button {
+    width: 100%;
+  }
+
+  .cancellation-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancel-back-button,
+  .confirm-cancellation-button {
+    width: 100%;
+  }
+}

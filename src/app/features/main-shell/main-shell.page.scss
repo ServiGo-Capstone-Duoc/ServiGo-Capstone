@@ -1,0 +1,112 @@
+ :host {
+  display: block;
+  height: 100%;
+}
+
+ion-tabs {
+  height: 100%;
+}
+
+ion-tab-bar {
+  --background: color-mix(in srgb, var(--servigo-surface) 98%, transparent);
+  --border: 0;
+  height: calc(var(--servigo-tabbar-height) + env(safe-area-inset-bottom));
+  min-height: var(--servigo-tabbar-height);
+  padding: 5px 8px env(safe-area-inset-bottom);
+  border-top: 1px solid var(--servigo-border);
+  box-shadow: 0 -8px 28px color-mix(in srgb, var(--servigo-text) 8%, transparent);
+  z-index: 30;
+}
+
+ion-tab-button {
+  --color: var(--servigo-text-secondary);
+  --color-selected: var(--servigo-blue);
+  --background: transparent;
+  position: relative;
+  min-height: 60px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+ion-tab-button ion-icon {
+  margin-bottom: 3px;
+  font-size: 22px;
+}
+
+ion-tab-button.tab-selected {
+  --background: var(--servigo-blue-light);
+}
+
+ion-tab-button.tab-selected::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 22px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: var(--servigo-radius-pill);
+  background: var(--servigo-blue);
+}
+
+/* =========================================
+ * CAMPANA GLOBAL DE NOTIFICACIONES
+ * ========================================= */
+
+.global-notification-button {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 10px);
+  right: max(
+    16px,
+    calc((100vw - var(--servigo-page-max)) / 2 + 16px)
+  );
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--servigo-border);
+  border-radius: 14px;
+  background: var(--servigo-surface);
+  color: var(--servigo-blue);
+  box-shadow: var(--servigo-shadow-card);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.global-notification-button:active {
+  transform: scale(0.96);
+}
+
+.global-notification-button:focus-visible {
+  outline: 3px solid color-mix(
+    in srgb,
+    var(--servigo-blue) 32%,
+    transparent
+  );
+  outline-offset: 2px;
+}
+
+.global-notification-button ion-icon {
+  font-size: 22px;
+}
+
+.global-notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid var(--servigo-surface);
+  border-radius: 999px;
+  background: var(--servigo-yellow);
+  color: var(--servigo-text);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 900;
+}

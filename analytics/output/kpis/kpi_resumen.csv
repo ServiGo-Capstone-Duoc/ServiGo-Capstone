@@ -1,0 +1,16 @@
+﻿kpi,value,unit
+Solicitudes,8.0,cantidad
+Contratadas,8.0,cantidad
+Completadas,7.0,cantidad
+Canceladas,0.0,cantidad
+Pagadas,2.0,cantidad
+Evaluadas,4.0,cantidad
+Tasa contratación,100.0,%
+Tasa completitud,87.5,%
+Tasa cancelación,0.0,%
+Tasa pago,28.57,%
+Cobertura evaluación,57.14,%
+Rating promedio,5.0,rating
+Ticket cotizado promedio,263213.25,CLP
+Pago promedio,669778.0,CLP
+Monto total pagado,1339556.0,CLP

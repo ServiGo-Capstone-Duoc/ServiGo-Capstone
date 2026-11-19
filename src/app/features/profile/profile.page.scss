@@ -1,0 +1,808 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background:
+    var(--servigo-background);
+}
+
+.profile-container {
+  width: 100%;
+  max-width: 720px;
+
+  margin: 0 auto;
+
+  padding:
+    20px
+    18px
+    28px;
+}
+
+
+/* HEADER */
+
+.profile-header {
+  min-height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 18px;
+}
+
+.profile-logo {
+  display: block;
+
+  width: 125px;
+  height: auto;
+
+  object-fit: contain;
+}
+
+.profile-header span {
+  color:
+    var(--servigo-text-secondary);
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+/* IDENTIDAD */
+
+.identity-card {
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  padding: 20px;
+
+  background: var(--servigo-surface);
+
+  border:
+    1px solid
+    rgba(var(--servigo-blue-rgb), 0.09);
+
+  border-radius: 22px;
+
+  box-shadow:
+    var(--servigo-shadow-card);
+}
+
+.avatar {
+  width: 74px;
+  height: 74px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  overflow: hidden;
+
+  border-radius: 24px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+
+  img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+  }
+
+  ion-icon {
+    font-size: 36px;
+  }
+}
+
+.identity-copy {
+  min-width: 0;
+
+  h1 {
+    margin:
+      0
+      0
+      7px;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 22px;
+    font-weight: 800;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.role-badge {
+  display: inline-flex;
+
+  padding:
+    5px
+    9px;
+
+  border-radius: 20px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  margin-top: 9px;
+
+  ion-icon {
+    color:
+      var(--servigo-yellow);
+
+    font-size: 16px;
+  }
+
+  strong {
+    color:
+      var(--servigo-text);
+
+    font-size: 13px;
+  }
+
+  span {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 11px;
+  }
+}
+
+
+/* SECCIONES */
+
+.profile-section {
+  margin-top: 28px;
+
+  h2 {
+    margin:
+      0
+      0
+      12px;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 17px;
+    font-weight: 800;
+  }
+}
+
+.menu-item {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding:
+    13px
+    14px;
+
+  margin-bottom: 9px;
+
+  border:
+    1px solid
+    rgba(var(--servigo-blue-rgb), 0.08);
+
+  border-radius: 16px;
+
+  background: var(--servigo-surface);
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform
+    0.15s ease;
+
+  &:active {
+    transform:
+      scale(0.985);
+  }
+}
+
+.menu-icon {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 13px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+
+  ion-icon {
+    font-size: 21px;
+  }
+}
+
+.menu-copy {
+  min-width: 0;
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  strong {
+    color:
+      var(--servigo-text);
+
+    font-size: 13px;
+  }
+
+  span {
+    overflow: hidden;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 11px;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.arrow {
+  flex: 0 0 auto;
+
+  color: var(--servigo-text-tertiary);
+
+  font-size: 18px;
+}
+
+
+/* TÉCNICO */
+
+.technician-card {
+  position: relative;
+
+  overflow: hidden;
+
+  display: flex;
+
+  gap: 14px;
+
+  margin-top: 28px;
+
+  padding: 20px;
+
+  border-radius: 22px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--servigo-blue),
+      var(--servigo-blue-dark)
+    );
+
+  box-shadow:
+    0 12px 30px
+    rgba(var(--servigo-blue-rgb), 0.20);
+
+  &::after {
+    content: '';
+
+    position: absolute;
+
+    width: 130px;
+    height: 130px;
+
+    top: -55px;
+    right: -45px;
+
+    border-radius: 50%;
+
+    background:
+      var(--servigo-warning-ring);
+
+    pointer-events: none;
+  }
+}
+
+.technician-icon {
+  position: relative;
+
+  z-index: 1;
+
+  width: 48px;
+  height: 48px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 15px;
+
+  background:
+    var(--servigo-yellow);
+
+  color: var(--servigo-text);
+
+  ion-icon {
+    font-size: 24px;
+  }
+}
+
+.technician-copy {
+  position: relative;
+
+  z-index: 2;
+
+  min-width: 0;
+
+  flex: 1;
+
+  color: var(--servigo-on-primary);
+
+  h2 {
+    margin:
+      4px
+      0
+      6px;
+
+    color: var(--servigo-on-primary);
+
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  p {
+    margin:
+      0
+      0
+      14px;
+
+    color:
+      var(--servigo-on-primary-muted);
+
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+.technician-eyebrow {
+  color:
+    var(--servigo-yellow);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.5px;
+}
+
+.technician-button {
+  position: relative;
+
+  z-index: 3;
+
+  min-height: 42px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding:
+    0
+    14px;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  background: var(--servigo-surface);
+
+  color:
+    var(--servigo-blue-dark);
+
+  font-family: inherit;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    box-shadow:
+      var(--servigo-shadow-floating);
+  }
+
+  &:active {
+    transform:
+      scale(0.96);
+  }
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+
+/* SALIR */
+
+.logout-button {
+  width: 100%;
+
+  min-height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-top: 28px;
+  margin-bottom: 8px;
+
+  border:
+    1px solid var(--servigo-error-border);
+
+  border-radius: 16px;
+
+  background: var(--servigo-surface);
+
+  color: var(--servigo-error-strong);
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 19px;
+  }
+}
+
+/* =========================================
+   ESTADO POSTULACIÓN TÉCNICO
+   ========================================= */
+
+.application-status-card {
+  display: flex;
+
+  gap: 14px;
+
+  margin-top: 28px;
+
+  padding: 20px;
+
+  border-radius: 22px;
+
+  background: var(--servigo-surface);
+
+  border:
+    1px solid
+    rgba(var(--servigo-blue-rgb), 0.10);
+
+  box-shadow:
+    var(--servigo-shadow-card);
+}
+
+
+.application-status-icon {
+  width: 48px;
+  height: 48px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 15px;
+
+  ion-icon {
+    font-size: 25px;
+  }
+}
+
+
+.application-status-copy {
+  min-width: 0;
+
+  flex: 1;
+
+  > span {
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 0.5px;
+  }
+
+  h2 {
+    margin:
+      0
+      0
+      6px;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  p {
+    margin:
+      0
+      0
+      12px;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+
+/* PENDIENTE */
+
+.application-status-card.pending {
+
+  .application-status-icon {
+    background: var(--servigo-warning-soft);
+
+    color: var(--servigo-warning);
+  }
+
+  .application-status-copy > span {
+    color: var(--servigo-warning);
+  }
+}
+
+
+/* APROBADO */
+
+.application-status-card.approved {
+
+  border-color:
+    color-mix(in srgb, var(--servigo-success) 20%, transparent);
+
+  .application-status-icon {
+    background: var(--servigo-success-soft);
+
+    color: var(--servigo-success);
+  }
+
+  .application-status-copy > span {
+    color: var(--servigo-success);
+  }
+}
+
+
+/* RECHAZADO */
+
+.application-status-card.rejected {
+
+  border-color:
+    color-mix(in srgb, var(--servigo-error) 18%, transparent);
+
+  .application-status-icon {
+    background: var(--servigo-error-soft);
+
+    color: var(--servigo-error);
+  }
+
+  .application-status-copy > span {
+    color: var(--servigo-error);
+  }
+}
+
+
+/* BADGES */
+
+.status-pill {
+  display: inline-flex;
+
+  padding:
+    6px
+    10px;
+
+  border-radius: 20px;
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+
+.status-pill.pending {
+  background: var(--servigo-warning-soft);
+
+  color: var(--servigo-warning-strong);
+}
+
+
+.status-pill.approved {
+  background: var(--servigo-success-soft);
+
+  color: var(--servigo-success-strong);
+}
+
+
+/* REINTENTO */
+
+.retry-button {
+  min-height: 38px;
+
+  padding:
+    0
+    13px;
+
+  border:
+    1px solid var(--servigo-error-border);
+
+  border-radius: 11px;
+
+  background: var(--servigo-surface);
+
+  color: var(--servigo-error-strong);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+/* PERFIL PROFESIONAL VERIFICADO */
+
+.professional-profile-card {
+  margin-bottom: 18px;
+  padding: 18px;
+  color: var(--servigo-text);
+  background: var(--servigo-surface);
+  border: 1px solid var(--servigo-border);
+  border-radius: var(--servigo-radius-lg);
+  box-shadow: var(--servigo-shadow-card);
+}
+
+.professional-heading {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 13px;
+}
+
+.professional-heading h2 {
+  margin: 2px 0 0;
+  color: var(--servigo-text);
+  font-size: 17px;
+}
+
+.professional-status {
+  padding: 5px 9px;
+  color: var(--servigo-success-strong);
+  background: var(--servigo-success-soft);
+  border: 1px solid var(--servigo-success-border);
+  border-radius: var(--servigo-radius-pill);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.professional-status.inactive {
+  color: var(--servigo-warning-strong);
+  background: var(--servigo-warning-soft);
+  border-color: var(--servigo-warning-border);
+}
+
+.professional-status.suspended {
+  color: var(--servigo-error-strong);
+  background: var(--servigo-error-soft);
+  border-color: var(--servigo-error-border);
+}
+
+.professional-profile-card > p {
+  margin: 0 0 13px;
+  color: var(--servigo-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.professional-facts,
+.professional-specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.professional-facts {
+  margin-bottom: 11px;
+}
+
+.professional-facts span {
+  color: var(--servigo-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.professional-facts span:not(:last-child)::after {
+  margin-left: 7px;
+  color: var(--servigo-border-strong);
+  content: '·';
+}
+
+.professional-specialties {
+  margin-bottom: 12px;
+}
+
+.professional-specialties span {
+  padding: 5px 8px;
+  color: var(--servigo-blue-dark);
+  background: var(--servigo-blue-light);
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.professional-profile-card small {
+  display: block;
+  padding-top: 11px;
+  color: var(--servigo-text-tertiary);
+  border-top: 1px solid var(--servigo-border);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 430px) {
+  .professional-heading {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .professional-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

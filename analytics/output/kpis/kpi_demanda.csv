@@ -1,0 +1,7 @@
+﻿creation_date,creation_year,creation_month,creation_weekday,creation_hour,year_month,commune,category,time_slot,urgency,requests,accepted,completed,cancelled,paid,acceptance_rate,completion_rate,cancellation_rate
+2026-10-03 00:00:00+00:00,2026,10,Saturday,20,2026-10,Puente Alto,Electricidad,Mañana,urgent,1,1,1,0,0,100.0,100.0,0.0
+2026-10-10 00:00:00+00:00,2026,10,Saturday,14,2026-10,Puente Alto,Electricidad,Mañana,soon,1,1,1,0,0,100.0,100.0,0.0
+2026-10-12 00:00:00+00:00,2026,10,Monday,17,2026-10,Puente Alto,Electricidad,Mañana,soon,1,1,1,0,0,100.0,100.0,0.0
+2026-10-12 00:00:00+00:00,2026,10,Monday,18,2026-10,Puente Alto,Electricidad,Mañana,normal,1,1,1,0,0,100.0,100.0,0.0
+2026-10-12 00:00:00+00:00,2026,10,Monday,18,2026-10,Puente Alto,Electricidad,Mañana,soon,2,2,2,0,2,100.0,100.0,0.0
+2026-10-12 00:00:00+00:00,2026,10,Monday,23,2026-10,Puente Alto,Electricidad,Mañana,soon,2,2,1,0,0,100.0,50.0,0.0

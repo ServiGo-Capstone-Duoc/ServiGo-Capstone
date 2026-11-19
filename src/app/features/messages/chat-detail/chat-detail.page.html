@@ -1,0 +1,307 @@
+<ion-content>
+
+  <main
+    class="chat-container"
+  >
+
+    <header
+      class="chat-header"
+    >
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="back()"
+      >
+
+        <ion-icon
+          name="arrow-back-outline"
+        ></ion-icon>
+
+      </button>
+
+
+      <div
+        class="chat-service-icon"
+      >
+
+        <ion-icon
+          name="construct-outline"
+        ></ion-icon>
+
+      </div>
+
+
+      <div
+        class="chat-title"
+        *ngIf="
+          request as service
+        "
+      >
+
+        <strong>
+          {{ service.category }}
+        </strong>
+
+        <span>
+          {{ service.commune }}
+        </span>
+
+      </div>
+
+    </header>
+
+
+    <div
+      class="loading-state"
+      *ngIf="
+        loading
+      "
+    >
+
+      <ion-spinner
+        name="crescent"
+      ></ion-spinner>
+
+      <span>
+        Cargando conversación...
+      </span>
+
+    </div>
+
+
+    <div
+      class="error-state"
+      *ngIf="
+        !loading &&
+        errorMessage
+      "
+    >
+
+      {{ errorMessage }}
+
+    </div>
+
+
+    <ng-container
+      *ngIf="
+        !loading &&
+        request
+      "
+    >
+
+      <section
+        class="messages-area"
+      >
+
+        <div
+          class="chat-empty"
+          *ngIf="
+            messages.length === 0
+          "
+        >
+
+          <strong>
+            Inicia la conversación
+          </strong>
+
+          <span>
+            Coordina aquí los detalles
+            de este servicio.
+          </span>
+
+        </div>
+
+
+        <div
+          class="message-row"
+          *ngFor="
+            let message
+            of messages
+          "
+          [class.own]="
+            isOwnMessage(
+              message
+            )
+          "
+        >
+
+          <div
+            class="message-bubble"
+          >
+
+            <span
+              class="message-author"
+              *ngIf="
+                !isOwnMessage(
+                  message
+                )
+              "
+            >
+
+              {{ message.senderName }}
+
+            </span>
+
+
+            <p
+              *ngIf="message.type === 'text'"
+            >
+              {{ message.text }}
+            </p>
+
+            <button
+              type="button"
+              class="message-image-button"
+              *ngIf="message.type === 'image' && imageUrls[message.id] as imageUrl"
+              (click)="openImage(imageUrl)"
+            >
+              <img
+                [src]="imageUrl"
+                alt="Imagen compartida en el chat"
+              />
+            </button>
+
+            <div
+              class="message-image-loading"
+              *ngIf="message.type === 'image' && !imageUrls[message.id]"
+            >
+              <ion-spinner name="crescent"></ion-spinner>
+              <span>Cargando imagen...</span>
+            </div>
+
+
+            <small>
+              {{
+                formatTime(
+                  message.createdAt
+                )
+              }}
+            </small>
+
+          </div>
+
+        </div>
+
+      </section>
+
+<!-- ================================= -->
+<!-- CONVERSACIÓN SOLO LECTURA -->
+<!-- ================================= -->
+
+<section
+  class="chat-readonly"
+  *ngIf="
+    isReadOnly
+  "
+>
+
+  <strong>
+    Servicio cancelado
+  </strong>
+
+  <span>
+    Esta conversación se conserva como historial.
+    No es posible enviar nuevos mensajes.
+  </span>
+
+</section>
+      <section
+        class="chat-image-preview"
+        *ngIf="selectedImagePreview && !isReadOnly"
+      >
+        <img [src]="selectedImagePreview" alt="Vista previa de la imagen" />
+        <div class="chat-image-preview__actions">
+          <button type="button" class="preview-cancel" (click)="clearSelectedImage()">Cancelar</button>
+          <button type="button" class="preview-send" [disabled]="sending" (click)="sendSelectedImage()">
+            <ion-spinner *ngIf="sending" name="crescent"></ion-spinner>
+            <span *ngIf="!sending">Enviar foto</span>
+          </button>
+        </div>
+      </section>
+
+      <section
+  class="composer"
+  *ngIf="
+    !isReadOnly
+  "
+>
+
+        <input
+          #chatImageInput
+          type="file"
+          class="chat-image-input"
+          accept="image/jpeg,image/png,image/webp"
+          (change)="onImageSelected($event)"
+        />
+
+        <button
+          type="button"
+          class="attach-button"
+          [disabled]="sending"
+          (click)="chatImageInput.click()"
+          aria-label="Adjuntar imagen"
+        >
+          <ion-icon name="camera-outline"></ion-icon>
+        </button>
+
+        <textarea
+          [(ngModel)]="
+            messageText
+          "
+          maxlength="1000"
+          rows="1"
+          placeholder="Escribe un mensaje..."
+          (keydown.enter)="
+            $event.preventDefault();
+            sendMessage()
+          "
+        ></textarea>
+
+
+        <button
+          type="button"
+          [disabled]="
+            sending ||
+            !messageText.trim()
+          "
+          (click)="
+            sendMessage()
+          "
+        >
+
+          <ion-spinner
+            *ngIf="
+              sending
+            "
+            name="crescent"
+          ></ion-spinner>
+
+
+          <ion-icon
+            *ngIf="
+              !sending
+            "
+            name="send-outline"
+          ></ion-icon>
+
+        </button>
+
+      </section>
+
+    </ng-container>
+
+    <div
+      class="chat-image-viewer"
+      *ngIf="viewerUrl"
+      (click)="closeImage()"
+    >
+      <button type="button" class="viewer-close" (click)="closeImage(); $event.stopPropagation()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+      <img [src]="viewerUrl" alt="Imagen del chat ampliada" (click)="$event.stopPropagation()" />
+    </div>
+
+  </main>
+
+</ion-content>

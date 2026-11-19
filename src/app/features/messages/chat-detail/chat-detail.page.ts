@@ -1,0 +1,649 @@
+import {
+  CommonModule
+} from '@angular/common';
+
+import {
+  ChangeDetectorRef,
+  Component,
+  OnDestroy,
+  inject
+} from '@angular/core';
+
+import {
+  FormsModule
+} from '@angular/forms';
+
+import {
+  ActivatedRoute,
+  Router
+} from '@angular/router';
+
+import {
+  IonContent,
+  IonIcon,
+  IonSpinner
+} from '@ionic/angular';
+
+import {
+  addIcons
+} from 'ionicons';
+
+import {
+  arrowBackOutline,
+  sendOutline,
+  constructOutline,
+  cameraOutline,
+  closeOutline
+} from 'ionicons/icons';
+
+import {
+  AuthService
+} from '../../../core/services/auth.service';
+
+import {
+  ChatService
+} from '../../../core/services/chat.service';
+
+import {
+  ProfileService
+} from '../../../core/services/profile.service';
+
+import {
+  NotificationService
+} from '../../../core/services/notification.service';
+
+import {
+  ChatMessage
+} from '../../../core/models/chat-message.model';
+
+import {
+  ServiceRequest
+} from '../../../core/models/service-request.model';
+
+import {
+  MediaStorageService
+} from '../../../core/services/media-storage.service';
+
+
+@Component({
+  selector:
+    'app-chat-detail',
+
+  templateUrl:
+    './chat-detail.page.html',
+
+  styleUrls: [
+    './chat-detail.page.scss'
+  ],
+
+  standalone:
+    true,
+
+  imports: [
+    CommonModule,
+    FormsModule,
+    IonContent,
+    IonIcon,
+    IonSpinner
+  ]
+})
+export class ChatDetailPage
+  implements OnDestroy {
+
+
+  private readonly router =
+    inject(
+      Router
+    );
+
+
+  private readonly route =
+    inject(
+      ActivatedRoute
+    );
+
+
+  private readonly authService =
+    inject(
+      AuthService
+    );
+
+
+  private readonly chatService =
+    inject(
+      ChatService
+    );
+
+
+  private readonly profileService =
+    inject(
+      ProfileService
+    );
+
+
+  private readonly notificationService =
+    inject(
+      NotificationService
+    );
+
+
+  private readonly mediaStorageService =
+    inject(
+      MediaStorageService
+    );
+
+
+  private readonly cdr =
+    inject(
+      ChangeDetectorRef
+    );
+
+
+  request:
+    ServiceRequest | null =
+      null;
+
+
+  messages:
+    ChatMessage[] =
+      [];
+
+
+  currentUserId =
+    '';
+
+
+  currentUserName =
+    '';
+
+
+  messageText =
+    '';
+
+
+  loading =
+    true;
+
+
+  sending =
+    false;
+
+
+  errorMessage =
+    '';
+
+  selectedImageFile: File | null = null;
+  selectedImagePreview = '';
+  imageUrls: Record<string, string> = {};
+  viewerUrl = '';
+
+
+  private unsubscribeMessages:
+    (() => void)
+    | null =
+      null;
+
+
+  constructor() {
+
+    addIcons({
+
+      arrowBackOutline,
+
+      sendOutline,
+
+      constructOutline,
+      cameraOutline,
+      closeOutline
+    });
+  }
+
+
+  async ionViewWillEnter():
+    Promise<void> {
+
+    await this.loadChat();
+  }
+
+
+  ionViewWillLeave():
+    void {
+
+    this.stopListening();
+    this.clearSelectedImage();
+    this.clearLoadedImages();
+  }
+
+
+  ngOnDestroy():
+    void {
+
+    this.stopListening();
+    this.clearSelectedImage();
+    this.clearLoadedImages();
+  }
+
+
+  async loadChat():
+    Promise<void> {
+
+
+    this.stopListening();
+
+
+    this.loading =
+      true;
+
+
+    this.errorMessage =
+      '';
+
+
+    this.messages =
+      [];
+
+
+    const requestId =
+      this.route.snapshot
+        .paramMap
+        .get(
+          'requestId'
+        );
+
+
+    const user =
+      await this.authService
+        .waitForAuthReady();
+
+
+    if (
+      !requestId
+      ||
+      !user
+    ) {
+
+      this.loading =
+        false;
+
+
+      this.errorMessage =
+        'No pudimos abrir esta conversación.';
+
+
+      this.cdr
+        .detectChanges();
+
+
+      return;
+    }
+
+
+    this.currentUserId =
+      user.uid;
+
+
+    this.currentUserName =
+      user.displayName
+      ??
+      user.email
+      ??
+      'Usuario ServiGo';
+
+
+    try {
+
+      this.request =
+        await this.chatService
+          .getConversationRequest(
+            requestId,
+            user.uid
+          );
+
+
+      if (
+        !this.request
+      ) {
+
+        this.errorMessage =
+          'Esta conversación no está disponible.';
+
+
+        return;
+      }
+
+
+      try {
+
+        await this.notificationService
+          .markChatNotificationsAsRead(
+            requestId
+          );
+
+
+      } catch (notificationError) {
+
+        console.warn(
+          '[ServiGo Chat] No fue posible marcar las notificaciones como leídas:',
+          notificationError
+        );
+      }
+
+
+      this.unsubscribeMessages =
+        this.chatService
+          .listenToMessages(
+
+            requestId,
+
+            messages => {
+
+              this.messages =
+                messages;
+
+              void this.syncImageUrls(messages);
+
+              this.cdr
+                .detectChanges();
+            },
+
+            () => {
+
+              this.errorMessage =
+                'No pudimos actualizar los mensajes.';
+
+
+              this.cdr
+                .detectChanges();
+            }
+          );
+
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo Chat] Error abriendo conversación:',
+        error
+      );
+
+
+      this.errorMessage =
+        'No pudimos abrir esta conversación.';
+
+
+    } finally {
+
+      this.loading =
+        false;
+
+
+      this.cdr
+        .detectChanges();
+    }
+  }
+/*
+ * =========================================
+ * CHAT SOLO LECTURA
+ * =========================================
+ *
+ * Los mensajes de un servicio cancelado
+ * se conservan como historial.
+ *
+ * La interfaz bloquea nuevos mensajes y
+ * Firestore Rules aplica la misma restricción
+ * de forma autoritativa.
+ */
+
+get isReadOnly():
+  boolean {
+
+  return (
+    this.request?.status ===
+      'cancelled'
+  );
+}
+
+  async sendMessage():
+    Promise<void> {
+
+
+if (
+  !this.request
+  ||
+  !this.currentUserId
+  ||
+  this.sending
+  ||
+  this.isReadOnly
+) {
+
+  return;
+}
+
+
+    const text =
+      this.messageText
+        .trim();
+
+
+    if (
+      !text
+    ) {
+
+      return;
+    }
+
+
+    this.sending =
+      true;
+
+
+    this.errorMessage =
+      '';
+
+
+    try {
+
+      await this.chatService
+        .sendMessage(
+
+          this.request.id,
+
+          this.currentUserId,
+
+          this.currentUserName,
+
+          text
+        );
+
+
+      this.messageText =
+        '';
+
+
+    } catch (error) {
+
+      console.error(
+        '[ServiGo Chat] Error enviando mensaje:',
+        error
+      );
+
+
+      this.errorMessage =
+        'No pudimos enviar el mensaje.';
+
+
+    } finally {
+
+      this.sending =
+        false;
+
+
+      this.cdr
+        .detectChanges();
+    }
+  }
+
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+
+    const validationError = this.mediaStorageService.validateImage(file);
+    if (validationError) {
+      this.errorMessage = validationError;
+      return;
+    }
+
+    this.clearSelectedImage();
+    this.selectedImageFile = file;
+    this.selectedImagePreview = URL.createObjectURL(file);
+    this.errorMessage = '';
+  }
+
+  clearSelectedImage(): void {
+    if (this.selectedImagePreview) {
+      URL.revokeObjectURL(this.selectedImagePreview);
+    }
+    this.selectedImagePreview = '';
+    this.selectedImageFile = null;
+  }
+
+  async sendSelectedImage(): Promise<void> {
+    if (!this.request || !this.currentUserId || !this.selectedImageFile || this.sending || this.isReadOnly) return;
+
+    this.sending = true;
+    this.errorMessage = '';
+    let uploadedPath = '';
+
+    try {
+      const messageId = this.chatService.createMessageId(this.request.id);
+      uploadedPath = await this.mediaStorageService.uploadChatImage(
+        this.request.id,
+        this.currentUserId,
+        messageId,
+        this.selectedImageFile
+      );
+
+      await this.chatService.sendImageMessage(
+        this.request.id,
+        this.currentUserId,
+        this.currentUserName,
+        messageId,
+        uploadedPath
+      );
+
+      this.clearSelectedImage();
+    } catch (error) {
+      console.error('[ServiGo Chat] Error enviando imagen:', error);
+      if (uploadedPath) {
+        await this.mediaStorageService.deletePaths([uploadedPath]);
+      }
+      this.errorMessage = 'No pudimos enviar la imagen.';
+    } finally {
+      this.sending = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  openImage(url: string): void {
+    this.viewerUrl = url;
+  }
+
+  closeImage(): void {
+    this.viewerUrl = '';
+  }
+
+  private async syncImageUrls(messages: ChatMessage[]): Promise<void> {
+    const validIds = new Set(messages.filter(m => m.type === 'image' && m.imagePath).map(m => m.id));
+
+    for (const [id, url] of Object.entries(this.imageUrls)) {
+      if (!validIds.has(id)) {
+        this.mediaStorageService.revokeObjectUrl(url);
+        delete this.imageUrls[id];
+      }
+    }
+
+    for (const message of messages) {
+      if (message.type !== 'image' || !message.imagePath || this.imageUrls[message.id]) continue;
+      try {
+        this.imageUrls[message.id] = await this.mediaStorageService.loadImageObjectUrl(message.imagePath);
+        this.cdr.detectChanges();
+      } catch (error) {
+        console.error('[ServiGo Chat] Error cargando imagen:', error);
+      }
+    }
+  }
+
+  private clearLoadedImages(): void {
+    for (const url of Object.values(this.imageUrls)) {
+      this.mediaStorageService.revokeObjectUrl(url);
+    }
+    this.imageUrls = {};
+    this.viewerUrl = '';
+  }
+
+
+  isOwnMessage(
+    message:
+      ChatMessage
+  ): boolean {
+
+    return message.senderId ===
+      this.currentUserId;
+  }
+
+
+  formatTime(
+    date:
+      Date | null
+  ): string {
+
+
+    if (
+      !date
+    ) {
+
+      return '';
+    }
+
+
+    return date.toLocaleTimeString(
+      'es-CL',
+      {
+        hour:
+          '2-digit',
+
+        minute:
+          '2-digit'
+      }
+    );
+  }
+
+
+  async back():
+    Promise<void> {
+
+    await this.router
+      .navigateByUrl(
+        '/app/messages'
+      );
+  }
+
+
+  private stopListening():
+    void {
+
+
+    if (
+      this.unsubscribeMessages
+    ) {
+
+      this.unsubscribeMessages();
+
+      this.unsubscribeMessages =
+        null;
+    }
+  }
+}

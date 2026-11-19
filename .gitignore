@@ -1,0 +1,108 @@
+# ============================================================
+# ServiGo - archivos locales que no deben versionarse
+# ============================================================
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+$RECYCLE.BIN/
+
+# Editores e IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+*.sublime-project
+*.sublime-workspace
+*.sw[mnpcod]
+*~
+
+# Dependencias
+node_modules/
+functions/node_modules/
+
+# Angular / Ionic / Capacitor
+.angular/
+.ionic/
+www/
+dist/
+out-tsc/
+platforms/
+plugins/
+.sourcemaps/
+.versions/
+
+# Pruebas y cobertura
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Archivos temporales y registros
+*.log
+*.tmp
+*.tmp.*
+.tmp/
+tmp/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+firebase-debug*.log
+
+# Variables de entorno y credenciales
+.env
+.env.*
+!.env.example
+functions/.env
+functions/.env.*
+!functions/.env.example
+!functions/.env.servigo-dev.example
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*service-account*.json
+*serviceAccount*.json
+*firebase-adminsdk*.json
+
+# Firebase local
+.firebase/
+emulator-data/
+
+# Configuración Android local y compilaciones
+android/.gradle/
+android/.idea/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/app/google-services.json
+
+# Salidas compiladas de Cloud Functions
+functions/lib/
+
+# Auditorías, respaldos y paquetes locales
+*.zip
+backup_*/
+Auditoria_*/
+ServiGo_Centro_Notificaciones/
+ServiGo_Google_SignIn/
+Multimedia_CP3_Actual*/
+
+# Otros caches
+.sass-cache/
+.nx/
+bazel-out/
+connect.lock
+libpeerconnection.log
+testem.log
+typings/
+
+# Persistencia local del Firebase Emulator Suite
+.firebase-emulator-data/
+ServiGo_Fix_*/
+ServiGo_Hotfix_*/

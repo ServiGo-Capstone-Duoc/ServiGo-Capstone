@@ -1,0 +1,1099 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --background:
+    var(--servigo-background);
+}
+
+.request-container {
+  width: 100%;
+  max-width: 620px;
+
+  margin: 0 auto;
+
+  padding:
+    18px
+    18px
+    30px;
+}
+
+
+/* HEADER */
+
+.request-header {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  margin-bottom: 18px;
+}
+
+.request-logo {
+  width: 120px;
+  height: auto;
+}
+
+.back-button {
+  width: 42px;
+  height: 42px;
+
+  display: grid;
+  place-items: center;
+
+  border: 0;
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  color:
+    var(--servigo-blue);
+
+  box-shadow:
+    0 5px 16px
+    rgba(31, 41, 55, 0.06);
+
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 21px;
+  }
+}
+
+
+/* INTRO */
+
+.intro {
+  margin-bottom: 22px;
+
+  > span {
+    color:
+      var(--servigo-blue);
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 0.6px;
+  }
+
+  h1 {
+    margin:
+      5px
+      0
+      8px;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 28px;
+    line-height: 1.08;
+
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+
+/* CARDS */
+
+.form-card {
+  margin-bottom: 14px;
+
+  padding: 18px;
+
+  border:
+    1px solid
+    rgba(11, 115, 224, 0.08);
+
+  border-radius: 20px;
+
+  background: #ffffff;
+
+  ion-input,
+  ion-textarea {
+    margin-top: 10px;
+
+    --background: #f7f9fc;
+
+    --padding-start: 13px;
+    --padding-end: 13px;
+
+    border-radius: 13px;
+  }
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 11px;
+
+  margin-bottom: 14px;
+
+  h2 {
+    margin: 0;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  p {
+    margin:
+      3px
+      0
+      0;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+
+.section-number {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 10px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+
+/* CATEGORÍAS */
+
+.category-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+}
+
+.category-option {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  min-width: 0;
+
+  min-height: 50px;
+
+  padding:
+    8px
+    10px;
+
+  border:
+    1px solid #dde7f3;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  color:
+    var(--servigo-text);
+
+  cursor: pointer;
+
+  span {
+    overflow: hidden;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &.selected {
+    border-color:
+      var(--servigo-blue);
+
+    background:
+      var(--servigo-blue-light);
+
+    color:
+      var(--servigo-blue);
+  }
+}
+
+.category-icon {
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 10px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+
+  ion-icon {
+    font-size: 17px;
+  }
+}
+
+
+/* FOTOS */
+
+.photo-placeholder {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 13px;
+
+  padding: 12px;
+
+  border:
+    1px dashed #ccd8e7;
+
+  border-radius: 14px;
+
+  background: #fafcff;
+
+  div:last-child {
+    display: flex;
+    flex-direction: column;
+
+    gap: 2px;
+  }
+
+  strong {
+    color:
+      var(--servigo-text);
+
+    font-size: 11px;
+  }
+
+  span {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 9px;
+  }
+}
+
+.photo-icon {
+  width: 36px;
+  height: 36px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background:
+    var(--servigo-blue-light);
+
+  color:
+    var(--servigo-blue);
+}
+
+
+/* UBICACIÓN */
+
+.location-button {
+  width: 100%;
+
+  min-height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  margin-top: 12px;
+
+  border:
+    1px solid
+    var(--servigo-blue);
+
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  color:
+    var(--servigo-blue);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 18px;
+  }
+}
+
+.location-confirmed {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin-top: 9px;
+
+  color: #15803d;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+
+/* HORARIOS */
+
+.time-slots {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+
+  margin-top: 12px;
+
+  button {
+    min-height: 38px;
+
+    border:
+      1px solid #dde7f3;
+
+    border-radius: 12px;
+
+    background: #ffffff;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    &.selected {
+      border-color:
+        var(--servigo-blue);
+
+      background:
+        var(--servigo-blue-light);
+
+      color:
+        var(--servigo-blue);
+    }
+  }
+}
+
+
+/* URGENCIA */
+
+.urgency-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.urgency-option {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding:
+    11px
+    12px;
+
+  border:
+    1px solid #dde7f3;
+
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  > div:first-child {
+    display: flex;
+    flex-direction: column;
+
+    gap: 2px;
+  }
+
+  strong {
+    color:
+      var(--servigo-text);
+
+    font-size: 11px;
+  }
+
+  span {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 9px;
+  }
+
+  &.selected {
+    border-color:
+      var(--servigo-blue);
+
+    background:
+      var(--servigo-blue-light);
+  }
+
+  &.urgent.selected {
+    border-color: #ef4444;
+
+    background: #fef2f2;
+  }
+}
+
+.selection-dot {
+  width: 13px;
+  height: 13px;
+
+  flex: 0 0 auto;
+
+  border:
+    2px solid #cbd5e1;
+
+  border-radius: 50%;
+}
+
+.urgency-option.selected {
+
+  .selection-dot {
+    border:
+      4px solid
+      var(--servigo-blue);
+  }
+}
+
+.urgency-option.urgent.selected {
+
+  .selection-dot {
+    border-color:
+      #ef4444;
+  }
+}
+
+
+/* VALIDACIÓN */
+
+.field-error {
+  margin:
+    5px
+    4px
+    8px;
+
+  color: #dc2626;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.form-error {
+  margin-bottom: 12px;
+
+  padding:
+    11px
+    13px;
+
+  border:
+    1px solid #fecaca;
+
+  border-radius: 12px;
+
+  background: #fef2f2;
+
+  color: #b91c1c;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* PUBLICAR */
+
+.publish-button {
+  --background:
+    var(--servigo-blue);
+
+  --border-radius:
+    15px;
+
+  min-height: 52px;
+
+  margin-top: 4px;
+
+  font-weight: 800;
+}
+
+
+/* ÉXITO */
+
+.success-card {
+  padding:
+    34px
+    22px;
+
+  text-align: center;
+
+  border-radius: 24px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 10px
+    30px
+    rgba(31, 41, 55, 0.06);
+
+  h1 {
+    margin:
+      8px
+      0;
+
+    color:
+      var(--servigo-text);
+
+    font-size: 24px;
+  }
+
+  p {
+    margin:
+      0
+      0
+      18px;
+
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+.success-icon {
+  color: #22c55e;
+
+  ion-icon {
+    font-size: 60px;
+  }
+}
+
+.success-eyebrow {
+  display: block;
+
+  margin-top: 7px;
+
+  color:
+    var(--servigo-blue);
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.request-code {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  margin-bottom: 20px;
+
+  padding: 12px;
+
+  border-radius: 13px;
+
+  background: #f7f9fc;
+
+  span {
+    color:
+      var(--servigo-text-secondary);
+
+    font-size: 9px;
+  }
+
+  strong {
+    color:
+      var(--servigo-text);
+
+    font-size: 10px;
+
+    word-break: break-all;
+  }
+}
+/* =========================================
+ * SERVIGO DESIGN SYSTEM V1 - NUEVA SOLICITUD
+ * ========================================= */
+.request-container { max-width: var(--servigo-page-max); padding: 18px 20px calc(var(--servigo-tabbar-height) + 36px); }
+.request-header { min-height: 48px; margin-bottom: 22px; }
+.request-logo { width: 104px; }
+.back-button { width: 44px; height: 44px; border-radius: 14px; box-shadow: none; border: 1px solid var(--servigo-border); }
+.intro { margin-bottom: 22px; }
+.intro > span { font-size: 11px; letter-spacing: .08em; }
+.intro h1 { margin: 5px 0 7px; font-size: 28px; line-height: 1.04; letter-spacing: -.025em; }
+.intro p { font-size: 14px; line-height: 1.5; }
+.form-card { margin-bottom: 14px; padding: 18px; border-color: var(--servigo-border); border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card); }
+.section-heading { gap: 12px; margin-bottom: 17px; }
+.section-heading h2 { font-size: 17px; line-height: 1.25; }
+.section-heading p { margin-top: 4px; font-size: 12px; line-height: 1.45; }
+.section-number { width: 34px; height: 34px; border-radius: 12px; font-size: 13px; }
+.form-card ion-input, .form-card ion-textarea { margin-top: 11px; --background: var(--servigo-surface-soft); --padding-start: 14px; --padding-end: 14px; border: 1px solid var(--servigo-border); border-radius: 14px; font-size: 14px; }
+.category-grid { gap: 10px; }
+.category-option { min-height: 56px; padding: 9px 11px; border-color: var(--servigo-border); border-radius: var(--servigo-radius-md); }
+.category-option span { font-size: 12px; }
+.category-icon { width: 36px; height: 36px; border-radius: 12px; }
+.photo-placeholder { padding: 14px; border-radius: var(--servigo-radius-md); }
+.photo-placeholder strong { font-size: 13px; }
+.photo-placeholder span { font-size: 12px; line-height: 1.4; }
+.location-button, .confirm-location-button { min-height: 48px; border-radius: var(--servigo-radius-md); font-size: 13px; font-weight: 800; }
+.time-slots { gap: 9px; }
+.urgency-option { min-height: 54px; border-radius: var(--servigo-radius-md); }
+.publish-button { min-height: 52px; border-radius: var(--servigo-radius-md); font-size: 14px; box-shadow: 0 10px 22px rgba(11,115,224,.18); }
+.field-error, .location-error, .form-error { font-size: 12px; line-height: 1.4; }
+.success-card { border-radius: var(--servigo-radius-lg); box-shadow: var(--servigo-shadow-card); }
+.success-card h1 { font-size: 26px; }
+.success-card p { font-size: 14px; }
+.success-eyebrow { font-size: 11px; }
+.request-code span { font-size: 11px; }
+.request-code strong { font-size: 12px; }
+
+/* ==========================================================
+   MAPA UBICACION SERVICIO
+   ========================================================== */
+
+.location-map {
+  display: block;
+
+  width: 100%;
+  height: 220px;
+  min-height: 220px;
+
+  margin-top: 16px;
+  margin-bottom: 16px;
+
+  border-radius: 16px;
+
+  overflow: hidden;
+
+  background: #e9eef5;
+
+  position: relative;
+
+  z-index: 1;
+}
+
+
+/*
+ * Leaflet necesita que su contenedor interno
+ * conserve el tamaño completo.
+ */
+
+.location-map .leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+
+/*
+ * Marcador ServiGo.
+ */
+
+:host ::ng-deep .servigo-location-marker {
+  background: transparent;
+  border: 0;
+}
+
+
+:host ::ng-deep .servigo-location-marker__pin {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50% 50% 50% 0;
+
+  background: #0879ee;
+
+  color: #ffffff;
+
+  font-size: 20px;
+
+  box-shadow:
+    0 6px 16px
+    rgba(8, 121, 238, 0.28);
+
+  transform:
+    rotate(-45deg);
+}
+
+
+:host ::ng-deep .servigo-location-marker__pin {
+  line-height: 1;
+}
+
+
+/*
+ * Controles Leaflet.
+ */
+
+:host ::ng-deep .leaflet-control-zoom {
+  border: 0 !important;
+
+  box-shadow:
+    0 4px 14px
+    rgba(23, 32, 51, 0.12) !important;
+}
+
+
+:host ::ng-deep .leaflet-control-zoom a {
+  color: #172033 !important;
+
+  border: 0 !important;
+}
+
+
+:host ::ng-deep .leaflet-control-attribution {
+  font-size: 9px;
+}
+
+/* ==========================================================
+   SERVIGO - LOCATION RESULT
+   ========================================================== */
+
+.location-preview {
+  margin-top: 14px;
+  padding: 16px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5eaf1;
+  border-radius: 18px;
+
+  box-shadow:
+    0 8px 24px
+    rgba(23, 32, 51, 0.06);
+}
+
+
+/* ==========================================================
+   TITULO UBICACION
+   ========================================================== */
+
+.location-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin-bottom: 14px;
+}
+
+
+.location-preview-heading > div {
+  min-width: 0;
+}
+
+
+.location-preview-heading span {
+  display: inline-flex;
+  align-items: center;
+
+  margin-bottom: 6px;
+
+  color: #0879ee;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  line-height: 1.2;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+
+.location-preview-heading h3 {
+  margin: 0;
+
+  color: #172033;
+
+  font-size: 18px;
+  font-weight: 800;
+
+  line-height: 1.2;
+
+  letter-spacing: -0.02em;
+}
+
+
+.location-preview-heading > ion-icon {
+  flex: 0 0 auto;
+
+  width: 38px;
+  height: 38px;
+
+  padding: 9px;
+
+  color: #0879ee;
+
+  background: #eaf4ff;
+
+  border-radius: 12px;
+
+  box-sizing: border-box;
+}
+
+
+/* ==========================================================
+   DIRECCION ENCONTRADA
+   ========================================================== */
+
+.geocoded-address {
+  position: relative;
+
+  margin: 0 0 14px;
+  padding: 12px 14px 12px 38px;
+
+  color: #344054;
+
+  background: #f7f9fc;
+
+  border: 1px solid #e8edf4;
+  border-radius: 12px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  line-height: 1.45;
+}
+
+
+.geocoded-address::before {
+  content: '⌖';
+
+  position: absolute;
+
+  left: 14px;
+  top: 50%;
+
+  color: #0879ee;
+
+  font-size: 18px;
+  font-weight: 800;
+
+  transform: translateY(-50%);
+}
+
+
+/* ==========================================================
+   MAPA
+   ========================================================== */
+
+.location-map {
+  width: 100%;
+  height: 220px;
+  min-height: 220px;
+
+  margin: 0 0 14px;
+
+  overflow: hidden;
+
+  background: #e9eef5;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 4px 14px
+    rgba(23, 32, 51, 0.06);
+}
+
+
+/* ==========================================================
+   AYUDA
+   ========================================================== */
+
+.location-help {
+  position: relative;
+
+  margin: 0 0 14px;
+  padding: 11px 12px 11px 36px;
+
+  color: #667085;
+
+  background: #f8fafc;
+
+  border-radius: 12px;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  line-height: 1.45;
+}
+
+
+.location-help::before {
+  content: '↕';
+
+  position: absolute;
+
+  left: 13px;
+  top: 10px;
+
+  color: #0879ee;
+
+  font-size: 16px;
+  font-weight: 800;
+}
+
+
+/* ==========================================================
+   BOTON CONFIRMAR
+   ========================================================== */
+
+.confirm-location-button {
+  width: 100%;
+  min-height: 48px;
+
+  padding: 0 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  color: #0879ee;
+
+  background: #ffffff;
+
+  border: 1.5px solid #0879ee;
+  border-radius: 14px;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  line-height: 1;
+
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 100ms ease;
+}
+
+
+.confirm-location-button ion-icon {
+  flex: 0 0 auto;
+
+  font-size: 19px;
+}
+
+
+.confirm-location-button:active {
+  transform: scale(0.98);
+}
+
+
+/* ==========================================================
+   UBICACION CONFIRMADA
+   ========================================================== */
+
+.confirm-location-button.confirmed {
+  color: #137a42;
+
+  background: #edf9f2;
+
+  border-color: #b7e5ca;
+}
+
+
+.location-confirmed {
+  margin-top: 10px;
+  padding: 11px 12px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  color: #137a42;
+
+  background: #edf9f2;
+
+  border: 1px solid #ccebd8;
+  border-radius: 12px;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  line-height: 1.4;
+}
+
+
+.location-confirmed ion-icon {
+  flex: 0 0 auto;
+
+  margin-top: 1px;
+
+  color: #16a05d;
+
+  font-size: 17px;
+}
