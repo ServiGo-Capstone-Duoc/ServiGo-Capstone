@@ -1,8 +1,8 @@
 # ServiGo
 
-## Número de grupo
-2
+## Grupo2
 
 ## Integrantes
+- Julio Soto
 - Mauricio Pardo
 - Muriel Miranda
